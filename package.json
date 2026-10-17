@@ -1,0 +1,17 @@
+{
+  "name": "simulateur-hydraulique-3d",
+  "version": "1.0.0",
+  "description": "Simulation 3D d'un circuit hydraulique pour la formation des mécaniciens (PWA + APK Android).",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "serve": "npx http-server www -p 8080 -c-1",
+    "cap:sync": "npx cap sync android"
+  },
+  "devDependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/cli": "8.5.3",
+    "@capacitor/core": "8.5.3"
+  }
+}

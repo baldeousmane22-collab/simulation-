@@ -1,0 +1,53 @@
+# ===================================================================
+# Publication de l'application web (PWA) sur GitHub Pages
+# Le contenu du dossier « www » est copié dans la branche « gh-pages ».
+# Adresse : https://<compte>.github.io/<dépôt>/
+# ===================================================================
+name: Publier sur GitHub Pages
+
+on:
+  push:
+    branches: [main, 'claude/**']
+    paths: ['www/**', '.github/workflows/pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v5
+
+      - name: Vérifier la présence des fichiers essentiels
+        run: |
+          for f in index.html manifest.webmanifest sw.js js/app.js js/scene3d.js vendor/three.min.js; do
+            test -f "www/$f" || { echo "Fichier manquant : www/$f"; exit 1; }
+          done
+
+      - name: Publier dans la branche gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./www
+          publish_branch: gh-pages
+          force_orphan: true
+          commit_message: "Publication de l'application web"
+
+      - name: Activer GitHub Pages sur la branche gh-pages (si ce n'est pas déjà fait)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api "repos/${{ github.repository }}/pages" > /dev/null 2>&1 && { echo "GitHub Pages déjà actif."; exit 0; }
+          gh api -X POST "repos/${{ github.repository }}/pages" \
+            -f "source[branch]=gh-pages" -f "source[path]=/" \
+            && echo "GitHub Pages activé." \
+            || echo "::warning::Activez GitHub Pages : Settings > Pages > Branch : gh-pages / (root)."
