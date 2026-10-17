@@ -1,0 +1,120 @@
+# ===================================================================
+# Application iPhone / iPad (Capacitor iOS) — construite sur un Mac GitHub
+#
+# 1) À chaque modification : compilation de contrôle (sans signature),
+#    pour vérifier que le projet iOS est correct.
+# 2) Si les secrets Apple sont présents : archive signée automatiquement
+#    (signature « cloud » Apple) et envoi sur TestFlight.
+#
+# Secrets à créer (Settings > Secrets and variables > Actions) :
+#   APPLE_TEAM_ID          identifiant d'équipe (10 caractères)
+#   APPSTORE_KEY_ID        ID de la clé API App Store Connect
+#   APPSTORE_ISSUER_ID     Issuer ID de la clé API
+#   APPSTORE_PRIVATE_KEY   contenu du fichier AuthKey_XXXX.p8
+# La clé API doit avoir le rôle « Admin » (pour gérer les certificats).
+# L'app « fr.formation.hydraulique3d » doit exister dans App Store Connect.
+# ===================================================================
+name: Construire l'app iPhone
+
+on:
+  push:
+    branches: [main, 'claude/**']
+    paths: ['www/**', 'ios/**', 'package.json', 'package-lock.json', 'capacitor.config.json', '.github/workflows/ios.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios:
+    runs-on: macos-latest
+    env:
+      BUILD_NUMBER: ${{ github.run_number }}
+      VERSION_NAME: 1.0.${{ github.run_number }}
+      HAS_APPLE: ${{ secrets.APPSTORE_PRIVATE_KEY != '' && secrets.APPLE_TEAM_ID != '' }}
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v5
+
+      - name: Installer Node.js 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Installer les dépendances (Capacitor)
+        run: npm ci
+
+      - name: Copier l'application web dans le projet iOS
+        run: npx cap sync ios
+
+      - name: Compilation de contrôle (simulateur, sans signature)
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App \
+            -configuration Release -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            MARKETING_VERSION="$VERSION_NAME" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            build | tail -n 30
+          test "${PIPESTATUS[0]}" -eq 0
+
+      - name: Pas de compte Apple configuré
+        if: env.HAS_APPLE != 'true'
+        run: echo "::notice::Projet iOS compilé avec succès. Ajoutez les secrets Apple (voir en-tête du fichier) pour produire l'app signée et l'envoyer sur TestFlight."
+
+      - name: Préparer la clé API App Store Connect
+        if: env.HAS_APPLE == 'true'
+        env:
+          APPSTORE_PRIVATE_KEY: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/apple"
+          printf '%s' "$APPSTORE_PRIVATE_KEY" > "$RUNNER_TEMP/apple/AuthKey.p8"
+
+      - name: Archiver l'app signée
+        if: env.HAS_APPLE == 'true'
+        env:
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+          ISSUER: ${{ secrets.APPSTORE_ISSUER_ID }}
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/Hydraulique3D.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/apple/AuthKey.p8" \
+            -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER" \
+            DEVELOPMENT_TEAM="$TEAM" CODE_SIGN_STYLE=Automatic \
+            MARKETING_VERSION="$VERSION_NAME" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            archive | tail -n 40
+          test "${PIPESTATUS[0]}" -eq 0
+
+      - name: Exporter l'IPA et l'envoyer sur TestFlight
+        if: env.HAS_APPLE == 'true'
+        env:
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+          ISSUER: ${{ secrets.APPSTORE_ISSUER_ID }}
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>${TEAM}</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/Hydraulique3D.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/apple/AuthKey.p8" \
+            -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER"
+          echo "::notice::Version $VERSION_NAME envoyée sur TestFlight (disponible après le traitement par Apple, 10 à 30 min)."

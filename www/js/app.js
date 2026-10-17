@@ -493,6 +493,12 @@ if (dansApk && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
   });
 }
 
+/* iPhone / iPad : Safari n'affiche pas d'invitation d'installation,
+   on explique donc la manipulation (sauf si l'appli est déjà installée). */
+const surIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const dejaInstallee = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+if (surIOS && !dejaInstallee && !dansApk) $('#aide-ios').hidden = false;
+
 /* Initialisation de l'affichage */
 history.replaceState({ ecran: 'accueil' }, '');
 majCommandes();
