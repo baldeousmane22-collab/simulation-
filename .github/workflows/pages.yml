@@ -1,7 +1,10 @@
 # ===================================================================
 # Publication de l'application web (PWA) sur GitHub Pages
-# Le contenu du dossier « www » est copié dans la branche « gh-pages ».
 # Adresse : https://<compte>.github.io/<dépôt>/
+#
+# Fonctionne avec les deux réglages possibles de Settings > Pages > Source :
+#  - « Deploy from a branch » (gh-pages) : job « branche-gh-pages »
+#  - « GitHub Actions »                  : job « deploiement-actions »
 # ===================================================================
 name: Publier sur GitHub Pages
 
@@ -14,13 +17,14 @@ on:
 permissions:
   contents: write
   pages: write
+  id-token: write
 
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
-  publier:
+  branche-gh-pages:
     runs-on: ubuntu-latest
     steps:
       - name: Récupérer le code
@@ -41,13 +45,27 @@ jobs:
           force_orphan: true
           commit_message: "Publication de l'application web"
 
-      - name: Activer GitHub Pages sur la branche gh-pages (si ce n'est pas déjà fait)
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh api "repos/${{ github.repository }}/pages" > /dev/null 2>&1 && { echo "GitHub Pages déjà actif."; exit 0; }
-          gh api -X POST "repos/${{ github.repository }}/pages" \
-            -f "source[branch]=gh-pages" -f "source[path]=/" \
-            && echo "GitHub Pages activé." \
-            || echo "::warning::Activez GitHub Pages : Settings > Pages > Branch : gh-pages / (root)."
+  # Déploiement direct (réglage « GitHub Actions ») : uniquement depuis main.
+  # Si le dépôt est réglé sur « Deploy from a branch », ce job est ignoré sans erreur.
+  deploiement-actions:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    environment:
+      name: github-pages
+      url: ${{ steps.deploiement.outputs.page_url }}
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v5
+
+      - name: Préparer le site
+        run: touch www/.nojekyll
+
+      - name: Envoyer les fichiers du site
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./www
+
+      - name: Déployer sur GitHub Pages
+        id: deploiement
+        uses: actions/deploy-pages@v4
