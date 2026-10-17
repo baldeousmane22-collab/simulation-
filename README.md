@@ -24,8 +24,20 @@ on utilise l'application web, qui s'installe comme une vraie appli :
 2. Toucher **Partager** (carré avec une flèche ⬆️) puis **« Sur l'écran d'accueil »**.
 3. L'icône « Hydraulique 3D » apparaît : l'appli s'ouvre en plein écran et marche hors connexion.
 
-Une appli iPhone « native » (fichier .ipa) demanderait un compte Apple Developer
-(99 $/an) pour être signée et distribuée via TestFlight ou l'App Store.
+**Version iPhone native (facultatif)** : le dossier `ios/` contient le projet iOS
+(Capacitor) et le workflow « Construire l'app iPhone » le compile sur un Mac GitHub.
+Pour obtenir une app installable, Apple impose un compte **Apple Developer (99 $/an)** :
+
+1. S'inscrire sur https://developer.apple.com/programs/ .
+2. Dans App Store Connect (https://appstoreconnect.apple.com) : **Apps → +** → nouvelle app,
+   identifiant de paquet `fr.formation.hydraulique3d`, nom « Hydraulique 3D ».
+3. **Utilisateurs et accès → Intégrations → Clés API App Store Connect** : créer une clé
+   avec le rôle **Admin**, télécharger le fichier `AuthKey_XXXX.p8`.
+4. Dans GitHub → Settings → Secrets and variables → Actions, créer :
+   `APPLE_TEAM_ID` (Membership details sur developer.apple.com), `APPSTORE_KEY_ID`,
+   `APPSTORE_ISSUER_ID` et `APPSTORE_PRIVATE_KEY` (tout le contenu du fichier .p8).
+5. Relancer le workflow « Construire l'app iPhone » : l'app est signée et envoyée sur
+   **TestFlight**. Les élèves installent l'app gratuite « TestFlight » puis l'invitation.
 
 ## 2. Télécharger l'APK Android
 
