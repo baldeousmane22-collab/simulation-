@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Simulateur hydraulique 3D</title>
+  <meta name="description" content="Simulation 3D d'un circuit hydraulique pour la formation des mécaniciens : pompe, limiteur, distributeur 4/3, vérin, pannes et quiz.">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Hydraulique 3D">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ================================================================
+     ÉCRAN D'ACCUEIL
+     ================================================================ -->
+<section id="accueil" class="ecran actif" aria-label="Accueil">
+  <div class="accueil-contenu">
+    <img class="logo" src="icons/icon-192.png" alt="" width="96" height="96">
+    <h1>Simulateur hydraulique 3D</h1>
+    <p class="sous-titre">Formation mécanicien — circuit de base : pompe, limiteur de pression, distributeur 4/3, vérin double effet.</p>
+
+    <button id="btn-simulation" class="btn-geant" type="button">
+      <span class="ico" aria-hidden="true">▶</span> Simulation
+    </button>
+
+    <div class="grille-modes">
+      <button type="button" class="btn-mode" data-ouvrir="pas"><span aria-hidden="true">👣</span>Pas à pas</button>
+      <button type="button" class="btn-mode" data-ouvrir="pannes"><span aria-hidden="true">🛠️</span>Pannes</button>
+      <button type="button" class="btn-mode" data-ouvrir="quiz"><span aria-hidden="true">❓</span>Quiz</button>
+      <button type="button" class="btn-mode" data-ouvrir="schema"><span aria-hidden="true">📐</span>Schéma ISO</button>
+    </div>
+
+    <div class="legende-accueil">
+      <span><i class="pastille asp"></i>Aspiration</span>
+      <span><i class="pastille hp"></i>Haute pression</span>
+      <span><i class="pastille ret"></i>Retour réservoir</span>
+    </div>
+
+    <button id="btn-installer" class="btn-secondaire" type="button" hidden>📲 Installer sur l'écran d'accueil</button>
+    <p class="pied">Gestes : 1 doigt = tourner · 2 doigts = zoomer / déplacer · toucher un composant = sa fiche.<br>
+      Fonctionne hors connexion après la première ouverture. <span id="version"></span></p>
+  </div>
+</section>
+
+<!-- ================================================================
+     ÉCRAN DE SIMULATION
+     ================================================================ -->
+<section id="sim" class="ecran" aria-label="Simulation">
+  <!-- Zone 3D -->
+  <div id="vue3d">
+    <canvas id="canvas3d" aria-label="Vue 3D du circuit hydraulique"></canvas>
+
+    <div class="barre-haut">
+      <button type="button" class="btn-rond" id="btn-retour" title="Retour à l'accueil" aria-label="Retour à l'accueil">←</button>
+      <div class="titre-sim" id="titre-mode">Simulation</div>
+      <button type="button" class="btn-rond" id="btn-etiquettes" title="Afficher / masquer les étiquettes" aria-label="Étiquettes" aria-pressed="true">🏷️</button>
+      <button type="button" class="btn-rond" id="btn-schema" title="Schéma ISO 1219" aria-label="Schéma ISO">📐</button>
+    </div>
+
+    <div class="hud">
+      <div class="hud-pression"><small>Pression</small><b id="hud-p">0</b><small>bar</small></div>
+      <div id="hud-alerte" class="hud-alerte" hidden></div>
+    </div>
+
+    <div class="legende-3d" aria-hidden="true">
+      <span><i class="pastille asp"></i>Aspi.</span>
+      <span><i class="pastille hp"></i>Pression</span>
+      <span><i class="pastille ret"></i>Retour</span>
+      <span><i class="pastille repos"></i>Repos</span>
+    </div>
+
+    <button type="button" id="btn-recentrer" class="btn-recentrer">⌖ Recentrer la vue</button>
+
+    <div id="astuce" class="astuce" hidden>
+      ☝️ 1 doigt : tourner · ✌️ 2 doigts : zoomer / déplacer<br>👆 Touchez un composant pour voir sa fiche
+    </div>
+    <div id="chargement" class="chargement"><div class="roue"></div>Chargement de la 3D…</div>
+  </div>
+
+  <!-- Panneau de commandes -->
+  <div id="panneau">
+    <!-- Barre rapide : toujours visible -->
+    <div class="barre-rapide">
+      <button type="button" id="btn-pompe" class="btn-pompe" aria-pressed="false">
+        <i class="voyant"></i><span class="lib-pompe">Pompe<small>OFF</small></span>
+      </button>
+      <div class="segmente" role="group" aria-label="Distributeur">
+        <button type="button" data-dist="-1" title="Rentrée de tige"><b>◀</b><span>Rentrée</span></button>
+        <button type="button" data-dist="0" class="actif" title="Neutre"><b>■</b><span>Neutre</span></button>
+        <button type="button" data-dist="1" title="Sortie de tige"><b>▶</b><span>Sortie</span></button>
+      </div>
+      <button type="button" id="btn-replier" class="btn-rond petit" aria-label="Replier le panneau" title="Replier / déplier">▾</button>
+    </div>
+
+    <nav class="onglets" role="tablist">
+      <button type="button" role="tab" data-onglet="commandes" class="actif">Commandes</button>
+      <button type="button" role="tab" data-onglet="pas">Pas à pas</button>
+      <button type="button" role="tab" data-onglet="pannes">Pannes</button>
+      <button type="button" role="tab" data-onglet="quiz">Quiz</button>
+    </nav>
+
+    <div class="contenu-panneau">
+      <!-- Onglet Commandes -->
+      <div class="onglet actif" data-contenu="commandes">
+        <div id="message" class="message"></div>
+
+        <label class="curseur">
+          <span class="lib">Débit (vitesse du vérin) <b id="val-debit">100 %</b></span>
+          <input type="range" id="curseur-debit" min="10" max="100" step="5" value="100">
+          <span class="bornes"><span>lent</span><span>rapide</span></span>
+        </label>
+        <label class="curseur">
+          <span class="lib">Réglage du limiteur de pression <b id="val-tarage">120 bar</b></span>
+          <input type="range" id="curseur-tarage" min="20" max="200" step="5" value="120">
+          <span class="bornes"><span>20 bar</span><span>200 bar</span></span>
+        </label>
+
+        <div class="mesures">
+          <div><small>Pression pompe</small><b id="m-pression">0 bar</b></div>
+          <div><small>Débit pompe</small><b id="m-qpompe">0 L/min</b></div>
+          <div><small>Débit au limiteur</small><b id="m-qlim">0 L/min</b></div>
+          <div><small>Vitesse de tige</small><b id="m-vitesse">0 mm/s</b></div>
+          <div><small>Force du vérin</small><b id="m-force">0 N</b></div>
+          <div><small>Sortie de tige</small><b id="m-position">0 mm</b></div>
+        </div>
+        <button type="button" id="btn-reinit" class="btn-secondaire">↺ Réinitialiser le banc</button>
+      </div>
+
+      <!-- Onglet Pas à pas -->
+      <div class="onglet" data-contenu="pas">
+        <div class="etapes-points" id="etapes-points"></div>
+        <h2 id="etape-titre"></h2>
+        <p id="etape-texte" class="texte-etape"></p>
+        <div class="nav-etapes">
+          <button type="button" id="etape-prec" class="btn-secondaire">◀ Précédent</button>
+          <button type="button" id="etape-suiv" class="btn-principal">Suivant ▶</button>
+        </div>
+      </div>
+
+      <!-- Onglet Pannes -->
+      <div class="onglet" data-contenu="pannes">
+        <p class="aide">Activez une panne et observez les symptômes sur le banc (bruit, vitesse, manomètre, fuite…).</p>
+        <div id="liste-pannes" class="liste-pannes"></div>
+        <div id="detail-panne" class="detail-panne" hidden></div>
+        <div class="mystere">
+          <h3>🔍 Panne mystère</h3>
+          <p class="aide">Une panne est activée au hasard. Observez le banc, puis faites votre diagnostic.</p>
+          <button type="button" id="btn-mystere" class="btn-principal">Lancer une panne mystère</button>
+          <div id="mystere-choix" class="choix" hidden></div>
+          <div id="mystere-resultat" class="resultat" hidden></div>
+        </div>
+        <button type="button" id="btn-reparer" class="btn-secondaire">🔧 Tout réparer</button>
+      </div>
+
+      <!-- Onglet Quiz -->
+      <div class="onglet" data-contenu="quiz">
+        <div id="quiz"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feuille : fiche d'un composant -->
+  <div id="fiche" class="feuille" role="dialog" aria-modal="true" aria-labelledby="fiche-nom" hidden>
+    <div class="feuille-entete">
+      <h2 id="fiche-nom"></h2>
+      <button type="button" class="btn-rond petit fermer" data-fermer="fiche" aria-label="Fermer">✕</button>
+    </div>
+    <div class="feuille-corps" id="fiche-corps"></div>
+  </div>
+
+  <!-- Feuille : schéma ISO 1219 -->
+  <div id="schema" class="feuille large" role="dialog" aria-modal="true" aria-labelledby="schema-titre" hidden>
+    <div class="feuille-entete">
+      <h2 id="schema-titre">Schéma hydraulique (ISO 1219)</h2>
+      <button type="button" class="btn-rond petit fermer" data-fermer="schema" aria-label="Fermer">✕</button>
+    </div>
+    <div class="feuille-corps">
+      <div id="schema-svg" class="schema-svg"></div>
+      <p class="aide">Les conduites changent de couleur en direct. La case jaune du distributeur est la position active.</p>
+    </div>
+  </div>
+</section>
+
+<div id="erreur-webgl" class="erreur" hidden>
+  <h2>La 3D n'a pas pu démarrer</h2>
+  <p>Votre navigateur ne prend pas en charge WebGL ou il est désactivé. Essayez avec Chrome à jour.</p>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

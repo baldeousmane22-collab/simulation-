@@ -1,0 +1,121 @@
+# ===================================================================
+# Construction de l'APK Android signé (release) avec Capacitor
+# - minSdk 24 (Android 7.0) ; targetSdk / compileSdk 36 (Android 16)
+# - L'APK est publié dans « Releases » du dépôt :
+#   https://github.com/<compte>/<dépôt>/releases/latest
+#
+# Signature : si les secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
+# ANDROID_KEY_ALIAS et ANDROID_KEY_PASSWORD existent, ils sont utilisés
+# (signature identique d'une version à l'autre). Sinon une clé temporaire
+# est créée à chaque construction (il faut alors désinstaller l'ancienne
+# version avant d'installer la nouvelle).
+# ===================================================================
+name: Construire l'APK Android
+
+on:
+  push:
+    branches: [main, 'claude/**']
+    paths: ['www/**', 'android/**', 'package.json', 'package-lock.json', 'capacitor.config.json', '.github/workflows/android.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      VERSION_CODE: ${{ github.run_number }}
+      VERSION_NAME: 1.0.${{ github.run_number }}
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Installer Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Installer le SDK Android
+        uses: android-actions/setup-android@v3
+
+      - name: Installer les dépendances (Capacitor)
+        run: npm ci
+
+      - name: Copier l'application web dans le projet Android
+        run: npx cap sync android
+
+      - name: Préparer la clé de signature
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KS_KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          KS="$RUNNER_TEMP/signature.jks"
+          if [ -n "$KS_B64" ]; then
+            echo "Utilisation de la clé enregistrée dans les secrets du dépôt."
+            echo "$KS_B64" | base64 -d > "$KS"
+            echo "KEYSTORE_PASSWORD=$KS_PASS" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=$KS_ALIAS" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=${KS_KEY_PASS:-$KS_PASS}" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Aucun secret de signature : création d'une clé temporaire."
+            PASS="$(openssl rand -hex 16)"
+            echo "::add-mask::$PASS"
+            keytool -genkeypair -v -keystore "$KS" -alias hydraulique \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "$PASS" -keypass "$PASS" \
+              -dname "CN=Simulateur hydraulique 3D, OU=Formation, O=Formation mecanique, C=FR"
+            echo "KEYSTORE_PASSWORD=$PASS" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=hydraulique" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=$PASS" >> "$GITHUB_ENV"
+          fi
+          echo "KEYSTORE_PATH=$KS" >> "$GITHUB_ENV"
+
+      - name: Construire l'APK release signé
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease
+
+      - name: Vérifier la signature et renommer l'APK
+        run: |
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          test -f "$APK" || { ls -R android/app/build/outputs; exit 1; }
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/apksigner" verify --verbose "$APK"
+          "$BT/aapt" dump badging "$APK" | grep -E "package:|sdkVersion|targetSdkVersion"
+          mkdir -p sortie
+          cp "$APK" sortie/Hydraulique3D.apk
+
+      - name: Conserver l'APK (artefact de la construction)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Hydraulique3D-apk
+          path: sortie/Hydraulique3D.apk
+
+      - name: Publier l'APK dans les « Releases »
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: Simulateur hydraulique 3D — version 1.0.${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          make_latest: 'true'
+          files: sortie/Hydraulique3D.apk
+          body: |
+            APK Android signé du simulateur hydraulique 3D (Android 7.0 minimum).
+
+            **Installation** : téléchargez `Hydraulique3D.apk` sur le téléphone, ouvrez-le,
+            puis autorisez l'installation depuis cette source si Android le demande.

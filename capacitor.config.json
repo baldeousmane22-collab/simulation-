@@ -1,0 +1,8 @@
+{
+  "appId": "fr.formation.hydraulique3d",
+  "appName": "Hydraulique 3D",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#0f172a"
+  }
+}

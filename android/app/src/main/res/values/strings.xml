@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Hydraulique 3D</string>
+    <string name="title_activity_main">Hydraulique 3D</string>
+    <string name="package_name">fr.formation.hydraulique3d</string>
+    <string name="custom_url_scheme">fr.formation.hydraulique3d</string>
+</resources>
