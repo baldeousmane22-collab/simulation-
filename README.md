@@ -15,6 +15,18 @@ schéma ISO 1219 et quiz.
   (ou le bouton « Installer » sur l'écran d'accueil de l'appli).
 - Après la première ouverture, elle fonctionne **hors connexion**.
 
+### Sur iPhone / iPad
+
+Un fichier APK ne s'installe pas sur iPhone (c'est un format Android). Sur iPhone,
+on utilise l'application web, qui s'installe comme une vraie appli :
+
+1. Ouvrir le lien ci-dessus dans **Safari**.
+2. Toucher **Partager** (carré avec une flèche ⬆️) puis **« Sur l'écran d'accueil »**.
+3. L'icône « Hydraulique 3D » apparaît : l'appli s'ouvre en plein écran et marche hors connexion.
+
+Une appli iPhone « native » (fichier .ipa) demanderait un compte Apple Developer
+(99 $/an) pour être signée et distribuée via TestFlight ou l'App Store.
+
 ## 2. Télécharger l'APK Android
 
 **Lien direct :** https://github.com/baldeousmane22-collab/simulation-/releases/latest/download/Hydraulique3D.apk

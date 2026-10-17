@@ -5,7 +5,7 @@
    « cache d'abord, réseau en secours ». Changer VERSION_CACHE à chaque
    nouvelle livraison pour forcer la mise à jour chez les élèves.
    ===================================================================== */
-const VERSION_CACHE = 'hydraulique-3d-v1.0.0';
+const VERSION_CACHE = 'hydraulique-3d-v1.0.1';
 const FICHIERS = [
   './',
   './index.html',
@@ -19,7 +19,8 @@ const FICHIERS = [
   './vendor/three.min.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './icons/icon-maskable-512.png'
+  './icons/icon-maskable-512.png',
+  './icons/apple-touch-icon.png'
 ];
 
 self.addEventListener('install', (e) => {

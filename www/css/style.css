@@ -67,6 +67,7 @@ h1, h2, h3 { margin: 0 0 .4em; line-height: 1.2; }
 .pastille { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
 .pastille.asp { background: var(--asp); } .pastille.hp { background: var(--hp); }
 .pastille.ret { background: var(--ret); } .pastille.repos { background: var(--repos); }
+.aide-ios { background: var(--fond2); border: 1px solid var(--fond3); border-radius: var(--rayon); padding: 10px 12px; margin: 0; font-size: .9rem; color: var(--texte2); max-width: 420px; }
 .pied { color: #94a3b8; font-size: .82rem; margin: 6px 0 0; }
 
 /* --------------------------- Boutons communs ------------------------ */
