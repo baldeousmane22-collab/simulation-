@@ -6,6 +6,7 @@ import { SimulationHydraulique, CARAC } from './simulation.js';
 import { FICHES, ETAPES, PANNES, QUIZ } from './donnees.js';
 import { svgSchema, majSchema } from './schema.js';
 import { VERSION } from './version.js';
+import { initBanc } from './accouplement/app.js';
 
 const $ = (sel, racine = document) => racine.querySelector(sel);
 const $$ = (sel, racine = document) => [...racine.querySelectorAll(sel)];
@@ -30,7 +31,11 @@ $('#version').textContent = 'Version ' + VERSION;
 function afficherEcran(id) {
   $$('.ecran').forEach(e => e.classList.toggle('actif', e.id === id));
   if (id === 'sim') demarrerBoucle(); else arreterBoucle();
+  if (id === 'accoup') banc.demarrerBoucle(); else banc.arreterBoucle();
 }
+// Banc « moteur + accouplement + réducteur » (écran #accoup, module séparé)
+const banc = initBanc(afficherEcran);
+const ECRANS_3D = ['sim', 'accoup'];
 
 async function ouvrirSimulation(onglet = 'commandes', depuisHistorique = false) {
   if (!depuisHistorique) history.pushState({ ecran: 'sim' }, '');
@@ -56,8 +61,8 @@ function retourAccueil() {
 // Bouton retour du téléphone / navigateur : ferme d'abord une feuille ouverte
 window.addEventListener('popstate', (e) => {
   const st = e.state || {};
-  if (feuilleOuverte()) { fermerFeuilles(true); if (st.ecran === 'sim') return; }
-  if (st.ecran === 'sim') afficherEcran('sim');
+  if (feuilleOuverte()) { fermerFeuilles(true); if (ECRANS_3D.includes(st.ecran)) return; }
+  if (ECRANS_3D.includes(st.ecran)) afficherEcran(st.ecran);
   else retourAccueil();
 });
 
@@ -113,8 +118,9 @@ function image(t) {
 
 // Pause automatique quand l'application passe en arrière-plan
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) arreterBoucle();
+  if (document.hidden) { arreterBoucle(); banc.arreterBoucle(); }
   else if ($('#sim').classList.contains('actif')) demarrerBoucle();
+  else if ($('#accoup').classList.contains('actif')) banc.demarrerBoucle();
 });
 
 /* =====================================================================
@@ -123,7 +129,7 @@ document.addEventListener('visibilitychange', () => {
 const btnPompe = $('#btn-pompe');
 btnPompe.addEventListener('click', () => { sim.cmd.pompe = !sim.cmd.pompe; majCommandes(); });
 
-$$('.segmente button').forEach(b => b.addEventListener('click', () => {
+$$('#sim .segmente button').forEach(b => b.addEventListener('click', () => {
   sim.cmd.distributeur = Number(b.dataset.dist);
   majCommandes();
 }));
@@ -157,7 +163,7 @@ function majCommandes() {
   const c = sim.cmd;
   btnPompe.setAttribute('aria-pressed', String(c.pompe));
   btnPompe.querySelector('small').textContent = c.pompe ? 'MARCHE' : 'ARRÊT';
-  $$('.segmente button').forEach(b => b.classList.toggle('actif', Number(b.dataset.dist) === c.distributeur));
+  $$('#sim .segmente button').forEach(b => b.classList.toggle('actif', Number(b.dataset.dist) === c.distributeur));
   curDebit.value = c.debitPct;
   curTarage.value = c.tarage;
   $('#val-debit').textContent = `${c.debitPct} % (${(CARAC.QNOM * c.debitPct / 100).toFixed(1)} L/min)`;
@@ -178,13 +184,13 @@ function majZones() {
     rects.push(o);
     return o;
   };
-  $$('.barre-haut > *').forEach(ajouter);
-  $$('.hud > *').forEach(ajouter);
-  const legende = ajouter($('.legende-3d'));
+  $$('#sim .barre-haut > *').forEach(ajouter);
+  $$('#sim .hud > *').forEach(ajouter);
+  const legende = ajouter($('#sim .legende-3d'));
   const recentrer = ajouter($('#btn-recentrer'));
   scene.setObstacles(rects);
   // Marges pour le cadrage : barre du haut + afficheur de pression, et boutons du bas
-  const barre = $('.hud-pression').getBoundingClientRect();
+  const barre = $('#sim .hud-pression').getBoundingClientRect();
   const basObjets = [legende, recentrer].filter(Boolean).map(r => r.y0);
   scene.setMarges({
     haut: Math.max(0, barre.bottom - zone.top + 4),
@@ -218,20 +224,20 @@ function majInterface() {
    ONGLETS DU PANNEAU
    ===================================================================== */
 const TITRES = { commandes: 'Simulation libre', pas: 'Mode pas à pas', pannes: 'Mode pannes', quiz: 'Quiz' };
-$$('.onglets button').forEach(b => b.addEventListener('click', () => choisirOnglet(b.dataset.onglet)));
+$$('#sim .onglets button').forEach(b => b.addEventListener('click', () => choisirOnglet(b.dataset.onglet)));
 
 function choisirOnglet(nom) {
   ongletActif = nom;
   $('#panneau').classList.remove('replie');
-  $$('.onglets button').forEach(b => {
+  $$('#sim .onglets button').forEach(b => {
     b.classList.toggle('actif', b.dataset.onglet === nom);
     b.setAttribute('aria-selected', String(b.dataset.onglet === nom));
   });
-  $$('.onglet').forEach(o => o.classList.toggle('actif', o.dataset.contenu === nom));
+  $$('#sim .onglet').forEach(o => o.classList.toggle('actif', o.dataset.contenu === nom));
   $('#titre-mode').textContent = TITRES[nom] || 'Simulation';
   if (nom === 'pas') allerEtape(etapeCourante);
   if (nom === 'quiz' && !quiz.commence) demarrerQuiz();
-  $('.contenu-panneau').scrollTop = 0;
+  $('#sim .contenu-panneau').scrollTop = 0;
 }
 
 /* =====================================================================
@@ -267,6 +273,7 @@ function fermerFeuilles(depuisHistorique = false) {
   if (!feuilleOuverte()) return;
   $$('.feuille').forEach(f => { f.hidden = true; });
   if (scene && ongletActif !== 'pas') scene.selectionner(null);
+  banc.surFermetureFeuilles();
   if (!depuisHistorique) history.back();
 }
 $$('[data-fermer]').forEach(b => b.addEventListener('click', () => fermerFeuilles()));
@@ -350,7 +357,7 @@ function afficherDetailPanne(cle) {
 }
 
 function majPannes() {
-  $$('.panne-ligne').forEach(l => {
+  $$('#liste-pannes .panne-ligne').forEach(l => {
     const actif = !!sim.pannes[l.dataset.panne];
     $('input', l).checked = actif && !panneMystere;
     l.classList.toggle('active', actif && !panneMystere);
@@ -456,7 +463,7 @@ function afficherQuestion() {
     if (quiz.index < n - 1) { quiz.index++; afficherQuestion(); }
     else afficherCorrection();
   });
-  $('.contenu-panneau').scrollTop = 0;
+  $('#sim .contenu-panneau').scrollTop = 0;
 }
 
 function afficherCorrection() {
@@ -475,7 +482,7 @@ function afficherCorrection() {
     }).join('')}
     <button type="button" class="btn-principal" id="quiz-recommencer" style="width:100%">↺ Recommencer le quiz</button>`;
   $('#quiz-recommencer').addEventListener('click', demarrerQuiz);
-  $('.contenu-panneau').scrollTop = 0;
+  $('#sim .contenu-panneau').scrollTop = 0;
 }
 
 /* =====================================================================
@@ -528,7 +535,7 @@ if ('serviceWorker' in navigator && !dansApk && (location.protocol === 'https:' 
 if (dansApk && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
   const AppNative = window.Capacitor.Plugins.App;
   AppNative.addListener('backButton', () => {
-    if (feuilleOuverte() || $('#sim').classList.contains('actif')) history.back();
+    if (feuilleOuverte() || ECRANS_3D.some(id => $('#' + id).classList.contains('actif'))) history.back();
     else AppNative.exitApp();
   });
 }
