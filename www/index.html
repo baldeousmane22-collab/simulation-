@@ -37,6 +37,11 @@
       <button type="button" class="btn-mode" data-ouvrir="schema"><span aria-hidden="true">📐</span>Schéma ISO</button>
     </div>
 
+    <hr class="separateur-accueil">
+    <button id="btn-accouplement" class="btn-geant bleu" type="button">
+      <span class="ico" aria-hidden="true">⚙️</span><span>Moteur + réducteur<small>accouplement, alignement, pannes</small></span>
+    </button>
+
     <div class="legende-accueil">
       <span><i class="pastille asp"></i>Aspiration</span>
       <span><i class="pastille hp"></i>Haute pression</span>
@@ -186,6 +191,186 @@
       <div id="schema-svg" class="schema-svg"></div>
       <p class="aide">Les conduites changent de couleur en direct. La case jaune du distributeur est la position active.</p>
     </div>
+  </div>
+</section>
+
+<!-- ================================================================
+     ÉCRAN DU BANC MOTEUR + ACCOUPLEMENT + RÉDUCTEUR
+     ================================================================ -->
+<section id="accoup" class="ecran ecran-sim" aria-label="Banc moteur et réducteur">
+  <div id="ac-vue3d" class="zone3d">
+    <canvas id="ac-canvas" class="canvas3d" aria-label="Vue 3D du moteur, de l'accouplement et du réducteur"></canvas>
+
+    <div class="barre-haut">
+      <button type="button" class="btn-rond" id="ac-retour" title="Retour à l'accueil" aria-label="Retour à l'accueil">←</button>
+      <div class="titre-sim" id="ac-titre">Moteur + réducteur</div>
+      <button type="button" class="btn-rond" id="ac-etiquettes" title="Afficher / masquer les étiquettes" aria-label="Étiquettes" aria-pressed="true">🏷️</button>
+    </div>
+
+    <div class="hud">
+      <div class="hud-ligne">
+        <div class="hud-pression"><small>Moteur</small><b id="ac-hud-n">0</b><small>tr/min</small></div>
+        <div class="hud-pression"><small>Sortie</small><b id="ac-hud-ns">0</b><small>tr/min</small></div>
+      </div>
+      <div id="ac-alerte" class="hud-alerte" hidden></div>
+    </div>
+
+    <div class="legende-3d texte-seul" aria-hidden="true">Désalignement exagéré ×40 · rotations ralenties</div>
+    <button type="button" id="ac-recentrer" class="btn-recentrer">⌖ Recentrer la vue</button>
+    <div id="ac-chargement" class="chargement"><div class="roue"></div>Chargement de la 3D…</div>
+  </div>
+
+  <div id="ac-panneau" class="panneau">
+    <div class="barre-rapide">
+      <button type="button" id="ac-marche" class="btn-pompe" aria-pressed="false">
+        <i class="voyant"></i><span class="lib-pompe">Moteur<small>ARRÊT</small></span>
+      </button>
+      <div class="segmente" role="group" aria-label="Sens de rotation">
+        <button type="button" data-sens="-1" title="Sens inverse"><b>↺</b><span>Inverse</span></button>
+        <button type="button" data-sens="1" class="actif" title="Sens avant"><b>↻</b><span>Avant</span></button>
+      </div>
+      <button type="button" id="ac-replier" class="btn-rond petit btn-replier" aria-label="Replier le panneau" title="Replier / déplier">▾</button>
+    </div>
+
+    <nav class="onglets" role="tablist">
+      <button type="button" role="tab" data-ac-onglet="commandes" class="actif">Commandes</button>
+      <button type="button" role="tab" data-ac-onglet="alignement">Alignement</button>
+      <button type="button" role="tab" data-ac-onglet="pannes">Pannes</button>
+      <button type="button" role="tab" data-ac-onglet="quiz">Quiz</button>
+    </nav>
+
+    <div class="contenu-panneau" id="ac-contenu">
+      <!-- Onglet Commandes -->
+      <div class="onglet actif" data-ac-contenu="commandes">
+        <div id="ac-message" class="message"></div>
+        <button type="button" id="ac-rearmer" class="btn-principal btn-rearmer" hidden>🔄 Réarmer le relais thermique</button>
+
+        <label class="curseur">
+          <span class="lib">Fréquence du variateur <b id="ac-val-f">50 Hz</b></span>
+          <input type="range" id="ac-curseur-f" min="5" max="60" step="1" value="50">
+          <span class="bornes"><span>5 Hz</span><span>60 Hz</span></span>
+        </label>
+        <div class="lib-groupe"><span>Rapport de réduction i</span><b id="ac-val-i">i = 10 · η = 0,94</b></div>
+        <div class="choix-rapport" role="group" aria-label="Rapport de réduction" id="ac-rapports"></div>
+        <label class="curseur">
+          <span class="lib">Charge : couple résistant en sortie <b id="ac-val-c">50 N·m</b></span>
+          <input type="range" id="ac-curseur-c" min="0" max="400" step="5" value="50">
+          <span class="bornes"><span>à vide</span><span>400 N·m</span></span>
+        </label>
+
+        <div class="mesures">
+          <div><small>Vitesse moteur</small><b id="ac-m-n">0 tr/min</b></div>
+          <div><small>Couple moteur</small><b id="ac-m-c">0 N·m</b></div>
+          <div id="ac-c-i"><small>Intensité (In 3,4 A)</small><b id="ac-m-i">0 A</b></div>
+          <div><small>Vitesse sortie</small><b id="ac-m-ns">0 tr/min</b></div>
+          <div><small>Couple sortie</small><b id="ac-m-cs">0 N·m</b></div>
+          <div><small>Puissance moteur</small><b id="ac-m-p">0 W</b></div>
+          <div><small>Rendement réel</small><b id="ac-m-eta">—</b></div>
+          <div><small>Glissement</small><b id="ac-m-g">—</b></div>
+          <div id="ac-c-vib"><small>Vibrations</small><b id="ac-m-vib">0 mm/s</b></div>
+          <div id="ac-c-tred"><small>Huile réducteur</small><b id="ac-m-tred">20 °C</b></div>
+          <div><small>Accouplement</small><b id="ac-m-tacc">20 °C</b></div>
+          <div id="ac-c-usure"><small>Usure étoile</small><b id="ac-m-usure">0 %</b></div>
+        </div>
+        <button type="button" id="ac-reinit" class="btn-secondaire pleine-largeur">↺ Réinitialiser le banc</button>
+      </div>
+
+      <!-- Onglet Alignement -->
+      <div class="onglet" data-ac-contenu="alignement">
+        <ol class="procedure" id="ac-procedure"></ol>
+        <div class="ligne-boutons">
+          <button type="button" id="ac-consigner" class="btn-secondaire btn-consigner" aria-pressed="false">🔒 Consigner</button>
+          <button type="button" id="ac-exercice" class="btn-principal">🎲 Nouvel exercice</button>
+        </div>
+        <div id="ac-bravo" class="bravo" hidden></div>
+
+        <div class="carte">
+          <h3>1. Mesure au comparateur</h3>
+          <p class="aide">Zéro à 12 h, puis les deux arbres sont tournés ensemble : 3 h (côté opérateur), 6 h, 9 h. Lectures en mm.</p>
+          <table class="table-lectures">
+            <thead><tr><th></th><th>12 h</th><th>3 h</th><th>6 h</th><th>9 h</th></tr></thead>
+            <tbody>
+              <tr id="ac-lig-r"><td>Radial</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+              <tr id="ac-lig-f"><td>Face</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+            </tbody>
+          </table>
+          <p id="ac-validite" class="validite" hidden></p>
+          <button type="button" id="ac-mesurer" class="btn-principal pleine-largeur">📏 Mesurer (tour complet)</button>
+        </div>
+
+        <div class="carte">
+          <h3>2. Résultat</h3>
+          <div class="etat-alignement" id="ac-etat-align">
+            <div id="ac-r-dv"><small>Décalage vertical</small><b>—</b></div>
+            <div id="ac-r-av"><small>Angulaire vertical</small><b>—</b></div>
+            <div id="ac-r-dh"><small>Décalage horizontal</small><b>—</b></div>
+            <div id="ac-r-ah"><small>Angulaire horizontal</small><b>—</b></div>
+          </div>
+          <p class="aide">Tolérances à 1500 tr/min : décalage ≤ 0,10 mm · angulaire ≤ 0,08 mm / 100 mm.</p>
+          <button type="button" id="ac-calculer" class="btn-secondaire pleine-largeur">🧮 Afficher le calcul des corrections</button>
+          <div id="ac-calcul" class="calcul" hidden></div>
+        </div>
+
+        <div class="carte">
+          <h3>3. Réglage du moteur</h3>
+          <div class="lib-groupe"><span>Épaisseur de cale</span></div>
+          <div class="choix-rapport" role="group" aria-label="Épaisseur de cale" id="ac-epaisseurs"></div>
+          <div class="reglage" data-cote="avant" data-type="cale">
+            <span class="nom">Cales pattes avant<small>côté accouplement</small></span>
+            <button type="button" data-signe="-1" aria-label="Retirer une cale avant">−</button>
+            <output>1,50 mm</output>
+            <button type="button" data-signe="1" aria-label="Ajouter une cale avant">+</button>
+          </div>
+          <div class="reglage" data-cote="arriere" data-type="cale">
+            <span class="nom">Cales pattes arrière<small>côté ventilateur</small></span>
+            <button type="button" data-signe="-1" aria-label="Retirer une cale arrière">−</button>
+            <output>1,50 mm</output>
+            <button type="button" data-signe="1" aria-label="Ajouter une cale arrière">+</button>
+          </div>
+          <div class="reglage" data-cote="avant" data-type="lat">
+            <span class="nom">Vis de poussée avant<small>+ = vers l'opérateur</small></span>
+            <button type="button" data-signe="-1" aria-label="Pousser l'avant vers le fond">◀</button>
+            <output>0,00 mm</output>
+            <button type="button" data-signe="1" aria-label="Pousser l'avant vers l'opérateur">▶</button>
+          </div>
+          <div class="reglage" data-cote="arriere" data-type="lat">
+            <span class="nom">Vis de poussée arrière<small>+ = vers l'opérateur</small></span>
+            <button type="button" data-signe="-1" aria-label="Pousser l'arrière vers le fond">◀</button>
+            <output>0,00 mm</output>
+            <button type="button" data-signe="1" aria-label="Pousser l'arrière vers l'opérateur">▶</button>
+          </div>
+          <p class="aide" id="ac-aide-reglage">Consignez la machine pour pouvoir caler et déplacer le moteur.</p>
+        </div>
+      </div>
+
+      <!-- Onglet Pannes -->
+      <div class="onglet" data-ac-contenu="pannes">
+        <p class="aide">Activez une panne puis observez : vibrations, intensité, températures, bruit, comportement de l'accouplement…</p>
+        <div id="ac-liste-pannes" class="liste-pannes"></div>
+        <div id="ac-detail-panne" class="detail-panne" hidden></div>
+        <div class="mystere">
+          <h3>🔍 Panne mystère</h3>
+          <p class="aide">Une panne est activée au hasard, moteur en marche. Observez les mesures et le banc, puis faites votre diagnostic.</p>
+          <button type="button" id="ac-mystere" class="btn-principal">Lancer une panne mystère</button>
+          <div id="ac-mystere-choix" class="choix" hidden></div>
+          <div id="ac-mystere-resultat" class="resultat" hidden></div>
+        </div>
+        <button type="button" id="ac-reparer" class="btn-secondaire pleine-largeur">🔧 Tout réparer</button>
+      </div>
+
+      <!-- Onglet Quiz -->
+      <div class="onglet" data-ac-contenu="quiz">
+        <div id="ac-quiz"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="ac-fiche" class="feuille" role="dialog" aria-modal="true" aria-labelledby="ac-fiche-nom" hidden>
+    <div class="feuille-entete">
+      <h2 id="ac-fiche-nom"></h2>
+      <button type="button" class="btn-rond petit fermer" data-ac-fermer aria-label="Fermer">✕</button>
+    </div>
+    <div class="feuille-corps" id="ac-fiche-corps"></div>
   </div>
 </section>
 
