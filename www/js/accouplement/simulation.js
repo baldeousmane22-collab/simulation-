@@ -88,10 +88,22 @@ function lisser(valeur, cible, tau, dt) {
 }
 const signe = (v) => (v > 0 ? 1 : v < 0 ? -1 : 0);
 
-/* Zones de sévérité vibratoire (ISO 10816-3, petites machines sur socle rigide) */
+/* Conversion linéaire par morceaux 0–1,4–2,8–4,5 → 0–0,71–1,8–4,5 (au-delà : inchangé) */
+function echelleClasseI(v) {
+  if (v <= 1.4) return v * 0.71 / 1.4;
+  if (v <= 2.8) return 0.71 + (v - 1.4) * (1.8 - 0.71) / 1.4;
+  if (v <= 4.5) return 1.8 + (v - 2.8) * (4.5 - 1.8) / 1.7;
+  return v;
+}
+
+/* Zones de sévérité vibratoire (mm/s efficaces) pour un moteur de 1,5 kW :
+   ISO 10816-1 (reprise par l'ISO 20816-1), classe I = petites machines jusqu'à 15 kW.
+   Limites A/B 0,71 · B/C 1,8 · C/D 4,5 mm/s.
+   (Les limites 1,4 / 2,8 / 4,5 de l'ISO 10816-3 concernent les machines de 15 à 300 kW.) */
+export const ZONES_VIB = { AB: 0.71, BC: 1.8, CD: 4.5 };
 export function zoneVibration(v) {
-  if (v <= 1.4) return { zone: 'A', texte: 'Bon', classe: 'zone-a' };
-  if (v <= 2.8) return { zone: 'B', texte: 'Acceptable', classe: 'zone-b' };
+  if (v <= ZONES_VIB.AB) return { zone: 'A', texte: 'Bon', classe: 'zone-a' };
+  if (v <= ZONES_VIB.BC) return { zone: 'B', texte: 'Acceptable', classe: 'zone-b' };
   if (v <= 4.5) return { zone: 'C', texte: 'À surveiller', classe: 'zone-c' };
   return { zone: 'D', texte: 'Dangereux', classe: 'zone-d' };
 }
@@ -376,6 +388,10 @@ export class SimulationAccouplement {
     const avecJeu = elementHS || T.jeu;
     if (avecJeu && Math.abs(accel) > 600) this.choc = Math.max(this.choc, (elementHS ? 1 : 0.5) * (1 - 0.6 * T.amorti));
     this.choc = Math.max(0, this.choc - dt * 3);
+    // Calibrage sur les limites de la classe I : le modèle ci-dessus est réglé en « échelle
+    // machine moyenne » (0 – 1,4 – 2,8 – 4,5) ; on le ramène aux limites 0 – 0,71 – 1,8 – 4,5
+    // pour que chaque défaut reste dans la même zone (A, B, C ou D) qu'avant.
+    v = echelleClasseI(v);
     r.vibration = lisser(r.vibration, v, 0.4, dt);
     r.elementHS = elementHS;
     r.sansGraisse = sansGraisse;

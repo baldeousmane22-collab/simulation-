@@ -238,7 +238,7 @@ function majInterface() {
   $('#ac-m-g').textContent = nAbs > 10 ? `${fr(r.glissement * 100, 1)} %` : '—';
   const z = zoneVibration(r.vibration);
   const vib = $('#ac-m-vib');
-  vib.textContent = nAbs > 5 ? `${fr(r.vibration, 1)} mm/s · ${z.zone}` : '0 mm/s';
+  vib.textContent = nAbs > 5 ? `${fr(r.vibration, r.vibration < 2 ? 2 : 1)} mm/s · ${z.zone}` : '0 mm/s';
   vib.className = nAbs > 5 ? z.classe : '';
   $('#ac-c-vib').classList.toggle('alarme', nAbs > 5 && z.zone === 'D');
   $('#ac-m-tred').textContent = `${Math.round(sim.tReducteur)} °C`;
@@ -349,7 +349,7 @@ const listeProc = $('#ac-procedure');
 PROCEDURE.forEach(t => { const li = document.createElement('li'); li.textContent = t; listeProc.appendChild(li); });
 
 const boiteEp = $('#ac-epaisseurs');
-for (const e of [0.02, 0.05, 0.10, 0.20, 0.50]) {
+for (const e of [0.01, 0.02, 0.05, 0.10, 0.20, 0.50]) {
   const b = document.createElement('button');
   b.type = 'button';
   b.dataset.ep = e;
@@ -374,9 +374,23 @@ $('#ac-consigner').addEventListener('click', () => {
     mesureEnCours = null;
     thetaMesure = 0;
     if (scene) scene.recentrer();
+    if (exerciceEnCours && !mesureFinaleBonne()) {
+      flash(defautsMesures()
+        ? 'Déconsigné, mais la dernière mesure n\'est pas dans les tolérances : l\'exercice n\'est pas validé.'
+        : 'Déconsigné sans mesure de contrôle après le dernier réglage : l\'exercice n\'est pas validé. Consignez et remesurez.');
+    }
   }
   majCommandes();
 });
+
+/* La dernière mesure est-elle complète, valable et dans les tolérances du type monté ? */
+function mesureFinaleBonne() {
+  const d = defautsMesures();
+  if (!d || !d.validiteR || !d.validiteF) return false;
+  const T = TYPES[sim.cmd.type];
+  return Math.abs(d.dv) <= T.tolDec + 1e-9 && Math.abs(d.dh) <= T.tolDec + 1e-9
+      && Math.abs(d.av) <= T.tolAng + 1e-9 && Math.abs(d.ah) <= T.tolAng + 1e-9;
+}
 
 $('#ac-exercice').addEventListener('click', () => {
   sim.nouvelExercice();
@@ -446,7 +460,11 @@ $('#ac-calculer').addEventListener('click', () => {
   const L1 = CARAC.L_AVANT, L2 = CARAC.L_ARRIERE;
   const cav = -(d.dv + d.av / 100 * L1), car = -(d.dv + d.av / 100 * L2);
   const lav = -(d.dh + d.ah / 100 * L1), lar = -(d.dh + d.ah / 100 * L2);
-  const sens = (v, plus, moins) => Math.abs(v) < 0.025 ? 'rien à faire' : (v > 0 ? plus : moins) + ' ' + fr(Math.abs(v)) + ' mm';
+  // « Rien à faire » seulement si la correction est négligeable devant la tolérance du type monté
+  // (rigide : tolérance 0,02 mm → on corrige dès 0,005 mm, au centième près).
+  const T = TYPES[sim.cmd.type];
+  const seuil = Math.min(0.025, T.tolDec / 4);
+  const sens = (v, plus, moins) => Math.abs(v) < seuil ? 'rien à faire' : (v > 0 ? plus : moins) + ' ' + fr(Math.abs(v)) + ' mm';
   c.hidden = false;
   c.innerHTML = `
     <p><b>Décalage vertical</b> = −R(6 h) ÷ 2 = −(${frSigne(d.r[2])}) ÷ 2 = <b>${frSigne(d.dv)} mm</b> (+ = moteur trop haut)</p>
@@ -516,7 +534,7 @@ function majAlignement() {
   }
   const T = TYPES[sim.cmd.type];
   $('#ac-tol').textContent = `Tolérances (${TYPES_ACCOUPLEMENT[sim.cmd.type].court.toLowerCase()}, 1500 tr/min) : décalage ≤ ${fr(T.tolDec)} mm · angulaire ≤ ${fr(T.tolAng)} mm / 100 mm.`
-    + (sim.cmd.type === 'rigide' ? ' Accouplement rigide : alignement au centième, utilisez les cales de 0,02 mm.' : '');
+    + (sim.cmd.type === 'rigide' ? ' Accouplement rigide : alignement au centième, utilisez les cales de 0,01 et 0,02 mm.' : '');
   const res = [['#ac-r-dv', d && d.dv, T.tolDec, 'mm'], ['#ac-r-av', d && d.av, T.tolAng, 'mm/100'],
                ['#ac-r-dh', d && d.dh, T.tolDec, 'mm'], ['#ac-r-ah', d && d.ah, T.tolAng, 'mm/100']];
   let toutBon = !!d;
@@ -528,20 +546,27 @@ function majAlignement() {
     el.classList.toggle('ko', ok === false);
     $('b', el).textContent = d ? `${frSigne(v)} ${u}` : '—';
   }
-  // Avancement de la procédure
+  // Avancement de la procédure.
+  // L'exercice est jugé sur la dernière mesure affichée (les 4 cases vertes, série valable),
+  // exactement comme le mécanicien : chaque réglage efface la mesure, il faut donc remesurer
+  // après le dernier réglage avant de déconsigner.
+  const alignementOk = !!d && toutBon && d.validiteR && d.validiteF;
   const bravo = $('#ac-bravo');
-  if (!consigne && exerciceEnCours && sim.severiteAlignement() < 1 && !sim.pannes.piedBoiteux) {
+  if (!consigne && exerciceEnCours && alignementOk && !sim.pannes.piedBoiteux) {
     exerciceEnCours = false;
     exerciceReussi = true;
     bravo.hidden = false;
     bravo.textContent = '✅ Exercice réussi : machine alignée et déconsignée. Démarrez le moteur et contrôlez le niveau vibratoire (zone A).';
-  } else if (consigne && d && toutBon && exerciceEnCours) {
+  } else if (consigne && alignementOk && exerciceEnCours && sim.pannes.piedBoiteux) {
+    bravo.hidden = false;
+    bravo.textContent = '⚠️ Les lectures sont dans les tolérances, mais une patte ne porte pas (pied boiteux) : corrigez-le d\'abord, puis remesurez.';
+  } else if (consigne && alignementOk && exerciceEnCours) {
     bravo.hidden = false;
     bravo.textContent = '✅ Alignement dans les tolérances ! Resserrez les vis, remontez le carter et déconsignez, puis vérifiez les vibrations en marche.';
   } else if (exerciceEnCours || !d) {
     bravo.hidden = true;
   }
-  const etapes = [consigne, consigne, consigne, !!d, !!d && toutBon, false];
+  const etapes = [consigne, consigne, consigne, !!d, alignementOk, false];
   $$('li', listeProc).forEach((li, k) => li.classList.toggle('faite', exerciceReussi || !!etapes[k]));
 }
 
