@@ -5,8 +5,8 @@
 import { SimulationHydraulique, CARAC } from './simulation.js';
 import { FICHES, ETAPES, PANNES, QUIZ } from './donnees.js';
 import { svgSchema, majSchema } from './schema.js';
+import { VERSION } from './version.js';
 
-const VERSION = '1.0.0';
 const $ = (sel, racine = document) => racine.querySelector(sel);
 const $$ = (sel, racine = document) => [...racine.querySelectorAll(sel)];
 
@@ -39,7 +39,9 @@ async function ouvrirSimulation(onglet = 'commandes', depuisHistorique = false) 
     const ok = await initialiser3D();
     if (!ok) return;
   }
+  majZones();
   scene.redimensionner();
+  majInterface();
   if (onglet === 'schema') { choisirOnglet('commandes'); ouvrirFeuille('schema'); }
   else choisirOnglet(onglet);
   afficherAstuce();
@@ -48,6 +50,7 @@ async function ouvrirSimulation(onglet = 'commandes', depuisHistorique = false) 
 function retourAccueil() {
   fermerFeuilles(true);
   afficherEcran('accueil');
+  if (window.__majEnAttente) location.reload();
 }
 
 // Bouton retour du téléphone / navigateur : ferme d'abord une feuille ouverte
@@ -74,7 +77,7 @@ async function initialiser3D() {
     scene = new Scene3D($('#canvas3d'), (id) => ouvrirFiche(id));
     window.__app.scene3d = scene;
     $('#chargement').hidden = true;
-    new ResizeObserver(() => scene && scene.redimensionner()).observe($('#vue3d'));
+    new ResizeObserver(() => { if (scene) { majZones(); scene.redimensionner(); } }).observe($('#vue3d'));
     return true;
   } catch (err) {
     console.error(err);
@@ -161,6 +164,35 @@ function majCommandes() {
   $('#val-tarage').textContent = `${c.tarage} bar`;
 }
 
+/* Zones de la vue 3D recouvertes par les boutons : la caméra cadre le banc
+   dans l'espace libre, et les étiquettes évitent ces zones. */
+function majZones() {
+  if (!scene) return;
+  const zone = $('#canvas3d').getBoundingClientRect();
+  const rects = [];
+  const ajouter = (el) => {
+    if (!el || el.hidden || el.offsetParent === null) return null;
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0) return null;
+    const o = { x0: r.left - zone.left, y0: r.top - zone.top, x1: r.right - zone.left, y1: r.bottom - zone.top };
+    rects.push(o);
+    return o;
+  };
+  $$('.barre-haut > *').forEach(ajouter);
+  $$('.hud > *').forEach(ajouter);
+  const legende = ajouter($('.legende-3d'));
+  const recentrer = ajouter($('#btn-recentrer'));
+  scene.setObstacles(rects);
+  // Marges pour le cadrage : barre du haut + afficheur de pression, et boutons du bas
+  const barre = $('.hud-pression').getBoundingClientRect();
+  const basObjets = [legende, recentrer].filter(Boolean).map(r => r.y0);
+  scene.setMarges({
+    haut: Math.max(0, barre.bottom - zone.top + 4),
+    bas: basObjets.length ? Math.max(0, zone.height - Math.min(...basObjets) + 4) : 0,
+    gauche: 0, droite: 0
+  });
+}
+
 /* Mesures, message et alerte (appelé ~10 fois/s) */
 function majInterface() {
   const r = sim.res;
@@ -176,7 +208,7 @@ function majInterface() {
   if (msg.textContent !== r.message) msg.textContent = r.message;
   const al = $('#hud-alerte');
   const texteAlerte = r.ouvertureLimiteur > 0.3 && !r.alerte ? 'LIMITEUR OUVERT → retour réservoir' : r.alerte;
-  al.hidden = !texteAlerte;
+  if (al.hidden !== !texteAlerte) { al.hidden = !texteAlerte; majZones(); }
   if (texteAlerte && al.textContent !== texteAlerte) al.textContent = texteAlerte;
   al.classList.toggle('vert', texteAlerte === 'LIMITEUR OUVERT' || texteAlerte.startsWith('LIMITEUR'));
   if (!$('#schema').hidden) majSchema($('#schema-svg'), sim);
@@ -479,8 +511,16 @@ $('#btn-installer').addEventListener('click', async () => {
 });
 // Le service worker n'est utile que dans le navigateur (pas dans l'APK Capacitor)
 const dansApk = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
-if ('serviceWorker' in navigator && !dansApk && location.protocol === 'https:') {
+if ('serviceWorker' in navigator && !dansApk && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW :', err)));
+  // Nouvelle version installée : on recharge (tout de suite sur l'accueil,
+  // sinon au prochain retour à l'accueil) pour l'afficher sans rien faire.
+  const avaitUneVersion = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!avaitUneVersion) return; // première installation : rien à recharger
+    if ($('#accueil').classList.contains('actif')) location.reload();
+    else window.__majEnAttente = true;
+  });
 }
 
 /* APK Android : le bouton « retour » du téléphone suit l'historique de l'appli

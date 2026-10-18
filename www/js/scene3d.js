@@ -41,6 +41,10 @@ const TRACES = {
   retour2:        [V(4.82, 2.55), V(4.2, 2.55), V(4.2, 0.35), V(4.2, 0.35, 0.9), V(-3.6, 0.35, 0.9)]
 };
 
+/* Directions de vue par défaut (depuis le point visé vers la caméra) */
+const DIR_PORTRAIT = new THREE.Vector3(1.6, 0.9, 1).normalize();
+const DIR_PAYSAGE = new THREE.Vector3(0.28, 0.3, 1).normalize();
+
 /* Géométrie du vérin (unités de la scène) */
 const VERIN = {
   y: 6.4, rayon: 0.45, xArriere: 2.0, xAvant: 6.8,
@@ -109,10 +113,25 @@ function geometriePignon(nbDents, rExt, rPied, rAlesage, epaisseur) {
   g.translate(0, 0, -epaisseur / 2);
   return g;
 }
+/* Les 8 coins d'une boîte englobante */
+function coinsBoite(b) {
+  const c = [];
+  for (const x of [b.min.x, b.max.x]) for (const y of [b.min.y, b.max.y]) for (const z of [b.min.z, b.max.z]) c.push(new THREE.Vector3(x, y, z));
+  return c;
+}
+
 /* Texture texte sur un canvas (étiquettes, repères d'orifices) */
 function textureTexte(texte, opts = {}) {
-  const { fond = 'rgba(20,32,48,0.88)', couleur = '#ffffff', taille = 56, largeur = 512, hauteur = 128, rond = false, bord = null } = opts;
+  const { fond = 'rgba(20,32,48,0.88)', couleur = '#ffffff', taille = 56, hauteur = 128, rond = false, bord = null, ajuster = false } = opts;
+  let { largeur = 512 } = opts;
+  const police = `bold ${taille}px system-ui, Roboto, Arial, sans-serif`;
   const c = document.createElement('canvas');
+  if (ajuster) {
+    // Largeur calculée d'après le texte réel : le nom n'est jamais tronqué
+    const mesure = c.getContext('2d');
+    mesure.font = police;
+    largeur = Math.ceil(mesure.measureText(texte).width + hauteur * 0.75);
+  }
   c.width = largeur; c.height = hauteur;
   const ctx = c.getContext('2d');
   ctx.fillStyle = fond;
@@ -128,13 +147,14 @@ function textureTexte(texte, opts = {}) {
     if (bord) { ctx.lineWidth = 6; ctx.strokeStyle = bord; ctx.stroke(); }
   }
   ctx.fillStyle = couleur;
-  ctx.font = `bold ${taille}px system-ui, Roboto, Arial, sans-serif`;
+  ctx.font = police;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(texte, largeur / 2, hauteur / 2 + 3);
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = 4;
+  t.userData.ratio = largeur / hauteur;
   return t;
 }
 
@@ -194,7 +214,8 @@ export class Scene3D {
     this.controls.screenSpacePanning = true;
     // Tactile : 1 doigt = rotation, 2 doigts = zoom (pincer) + déplacement
     this.controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
-    this.controls.addEventListener('start', () => { this.anim = null; });
+    // Dès que l'utilisateur manipule la vue, on ne la recadre plus automatiquement
+    this.controls.addEventListener('start', () => { this.anim = null; this.vueManuelle = true; });
 
     // Lumières
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 0.9));
@@ -780,26 +801,35 @@ export class Scene3D {
     this._echelle = new THREE.Vector3();
   }
 
-  /* ---------------------------- Étiquettes -------------------------- */
+  /* ---------------------------- Étiquettes --------------------------
+     Les étiquettes gardent une taille fixe à l'écran (en pixels).
+     À chaque image, on calcule leur rectangle à l'écran : une étiquette qui
+     en chevauche une plus importante est décalée (au-dessus, en dessous, à
+     gauche ou à droite) ; si aucune place n'est libre, elle est masquée.
+     Elles réapparaissent dès qu'on zoome. Une étiquette qui sortirait de
+     l'écran (ou passerait sous un bouton) est aussi masquée : jamais coupée.
+     ------------------------------------------------------------------ */
   _construireEtiquettes() {
-    const noms = {
-      reservoir: ['Réservoir', V(-5.6, 3.25, 0.9)],
-      crepine: ['Crépine', V(-4.3, 1.25, 1.5)],
-      pompe: ['Pompe à engrenages', V(-2.2, 0.15, 1.2)],
-      moteur: ['Moteur électrique', V(-0.2, 2.35, 0)],
-      limiteur: ['Limiteur de pression', V(-3.4, 4.95, 0)],
-      manometre: ['Manomètre', V(-2.0, 5.95, 0)],
-      clapet: ['Clapet anti-retour', V(0.9, 2.55, 0.5)],
-      regulateur: ['Régulateur de débit', V(2.6, 4.25, 0)],
-      distributeur: ['Distributeur 4/3', V(7.2, 4.2, 0.3)],
-      verin: ['Vérin double effet', V(4.4, 7.35, 0)],
-      filtreRetour: ['Filtre de retour', V(6.65, 1.9, 0.3)]
-    };
-    for (const [id, [texte, pos]] of Object.entries(noms)) {
-      const sp = this._sprite(texte, pos, id, { fond: 'rgba(15,23,42,0.86)', bord: '#38bdf8' }, 0.05, 512);
+    // Ordre = priorité d'affichage quand la place manque
+    const noms = [
+      ['verin', 'Vérin double effet', V(4.4, 7.35, 0)],
+      ['distributeur', 'Distributeur 4/3', V(7.2, 4.2, 0.3)],
+      ['pompe', 'Pompe à engrenages', V(-2.2, 0.15, 1.2)],
+      ['limiteur', 'Limiteur de pression', V(-3.4, 4.95, 0)],
+      ['reservoir', 'Réservoir', V(-5.6, 3.25, 0.9)],
+      ['manometre', 'Manomètre', V(-2.0, 5.95, 0)],
+      ['moteur', 'Moteur électrique', V(-0.2, 2.35, 0)],
+      ['regulateur', 'Régulateur de débit', V(2.6, 4.25, 0)],
+      ['clapet', 'Clapet anti-retour', V(0.9, 2.55, 0.5)],
+      ['filtreRetour', 'Filtre de retour', V(6.65, 1.9, 0.3)],
+      ['crepine', 'Crépine', V(-4.3, 1.25, 1.5)]
+    ];
+    noms.forEach(([id, texte, pos], rang) => {
+      const sp = this._sprite(texte, pos, id, { fond: 'rgba(15,23,42,0.88)', bord: '#38bdf8', ajuster: true }, 1);
+      sp.userData.rang = rang;
       this.etiquettes.push(sp);
-    }
-    // Repères des orifices P, T, A, B
+    });
+    // Repères des orifices P, T, A, B (plus petits, moins prioritaires)
     const reperes = [
       ['P', V(3.95, 3.55, 0.35), '#dc2626'], ['T', V(5.62, 3.55, 0.35), '#16a34a'],
       ['A', V(3.95, 4.9, 0.35), '#2563eb'], ['B', V(5.62, 4.9, 0.35), '#7c3aed'],
@@ -807,19 +837,24 @@ export class Scene3D {
       ['P', V(-1.65, 2.3, 0.35), '#dc2626'], ['T', V(-3.0, 3.0, 0.5), '#16a34a']
     ];
     for (const [l, pos, coul] of reperes) {
-      const sp = this._sprite(l, pos, 'distributeur', { fond: coul, rond: true, taille: 80, bord: '#ffffff' }, 0.035, 128);
+      const sp = this._sprite(l, pos, 'distributeur', { fond: coul, rond: true, taille: 80, bord: '#ffffff', largeur: 128 }, 0.8);
       sp.userData.repere = true;
+      sp.userData.rang = 100;
       this.etiquettes.push(sp);
     }
+    this.etiquettesActives = true;
+    this.obstacles = [];          // zones de l'écran occupées par les boutons (px)
+    this._ndc = new THREE.Vector3();
   }
 
-  _sprite(texte, pos, id, opts, hauteurEcran, largeurPx) {
-    const tex = textureTexte(texte, { ...opts, largeur: largeurPx, hauteur: 128 });
+  /* facteurTaille : 1 pour les noms, plus petit pour les repères P/T/A/B */
+  _sprite(texte, pos, id, opts, facteurTaille) {
+    const tex = textureTexte(texte, { ...opts, hauteur: 128 });
     const m = new THREE.SpriteMaterial({ map: tex, depthTest: false, depthWrite: false, sizeAttenuation: false, transparent: true, toneMapped: false });
     const sp = new THREE.Sprite(m);
     sp.userData.compId = id;
-    sp.userData.ratio = largeurPx / 128;
-    sp.userData.hauteurEcran = hauteurEcran;
+    sp.userData.ratio = tex.userData.ratio;
+    sp.userData.facteurTaille = facteurTaille;
     sp.position.copy(pos);
     sp.renderOrder = 10;
     this.scene.add(sp);
@@ -827,7 +862,76 @@ export class Scene3D {
   }
 
   setEtiquettes(visible) {
-    for (const s of this.etiquettes) s.visible = visible;
+    this.etiquettesActives = visible;
+    if (!visible) for (const s of this.etiquettes) s.visible = false;
+  }
+
+  /* Zones de l'écran recouvertes par l'interface (rectangles en px relatifs au canvas) */
+  setObstacles(rects) { this.obstacles = rects || []; }
+
+  /* Marges (px) de la zone 3D cachées par l'interface, utilisées pour le cadrage */
+  setMarges(m) { this.marges = m; }
+
+  /* Hauteur d'une étiquette à l'écran (px) : plus petite sur téléphone */
+  _hauteurEtiquettePx() {
+    const w = this.canvas.clientWidth || 1, h = this.canvas.clientHeight || 1;
+    return Math.max(20, Math.min(30, Math.min(w, h) * 0.058));
+  }
+
+  /* Placement des étiquettes sans chevauchement (appelé à chaque image) */
+  _majEtiquettes() {
+    if (!this.etiquettesActives) return;
+    const W = this.canvas.clientWidth || 1, H = this.canvas.clientHeight || 1;
+    const hPx = this._hauteurEtiquettePx();
+    const tanV = Math.tan(THREE.MathUtils.degToRad(this.camera.fov) / 2);
+    this.camera.updateMatrixWorld();
+    const pris = this.obstacles.slice();
+    const marge = 3;
+    const libre = (r) => {
+      if (r.x0 < 2 || r.y0 < 2 || r.x1 > W - 2 || r.y1 > H - 2) return false; // jamais coupée par le bord
+      for (const o of pris) {
+        if (r.x0 < o.x1 + marge && r.x1 > o.x0 - marge && r.y0 < o.y1 + marge && r.y1 > o.y0 - marge) return false;
+      }
+      return true;
+    };
+    // Les étiquettes des composants sélectionnés passent en premier
+    const sel = this.idsSelection || [];
+    const ordre = this.etiquettes.slice().sort((a, b) => {
+      const pa = sel.includes(a.userData.compId) && !a.userData.repere ? -1 : a.userData.rang;
+      const pb = sel.includes(b.userData.compId) && !b.userData.repere ? -1 : b.userData.rang;
+      return pa - pb;
+    });
+    // Positions essayées : centrée, au-dessus, en dessous, à droite, à gauche
+    const centres = [[0.5, 0.5], [0.5, -0.6], [0.5, 1.6], [-0.06, 0.5], [1.06, 0.5]];
+    for (const sp of ordre) {
+      const h = hPx * sp.userData.facteurTaille, w = h * sp.userData.ratio;
+      const s = 2 * h * tanV / H; // échelle « sans atténuation » équivalente à h pixels
+      sp.scale.set(s * sp.userData.ratio, s, 1);
+      const p = this._ndc.copy(sp.position).project(this.camera);
+      if (p.z > 1 || p.z < -1) { sp.visible = false; continue; }
+      const cx = (p.x + 1) / 2 * W, cy = (1 - p.y) / 2 * H;
+      let place = null;
+      for (const [ux, uy] of centres) {
+        const x0 = cx - ux * w, y0 = cy - (1 - uy) * h;
+        const r = { x0, y0, x1: x0 + w, y1: y0 + h };
+        if (libre(r)) { place = [ux, uy, r]; break; }
+        if (sp.userData.repere) break; // les repères ne se déplacent pas
+      }
+      const prioritaire = sel.includes(sp.userData.compId) && !sp.userData.repere;
+      if (!place && prioritaire && sp.userData.ratio) {
+        // Composant touché : son nom s'affiche toujours, ramené dans l'écran
+        const x0 = Math.min(Math.max(cx - w / 2, 4), W - w - 4);
+        const y0 = Math.min(Math.max(cy - h / 2, 4), H - h - 4);
+        const r = { x0, y0, x1: x0 + w, y1: y0 + h };
+        // Décalage écran → coordonnées « center » du sprite
+        place = [(cx - x0) / w, 1 - (cy - y0) / h, r];
+      }
+      sp.visible = !!place;
+      if (place) {
+        sp.center.set(place[0], place[1]);
+        pris.push(place[2]);
+      }
+    }
   }
 
   /* ------------------------ Interaction tactile ---------------------- */
@@ -877,6 +981,7 @@ export class Scene3D {
     for (const c of this.cadres || []) { this.scene.remove(c); c.geometry.dispose(); }
     this.cadres = [];
     const liste = Array.isArray(ids) ? ids : [ids];
+    this.idsSelection = liste.filter(Boolean);
     for (const id of liste) {
       if (!id || !this.composants[id] || id === 'tuyaux') continue;
       const boite = new THREE.Box3().setFromObject(this.composants[id]);
@@ -895,20 +1000,25 @@ export class Scene3D {
      On projette les 8 coins de la boîte à l'écran et on ajuste, en
      quelques itérations, la distance et le point visé pour que la boîte
      remplisse l'écran sans déborder (quelle que soit l'orientation). */
-  _cadrer(boite, immediat = false) {
+  _cadrer(boite, immediat = false, points = null) {
     const cam = this.camera.clone();
     cam.aspect = this.camera.aspect;
     cam.updateProjectionMatrix();
-    const dir = cam.aspect < 1
-      ? new THREE.Vector3(0.5, 0.32, 1).normalize()
-      : new THREE.Vector3(0.28, 0.3, 1).normalize();
+    // En portrait, vue plus de biais : le banc (très large) paraît moins long
+    // et remplit mieux la hauteur de l'écran.
+    const dir = (cam.aspect < 1 ? (this.dirPortrait || DIR_PORTRAIT) : DIR_PAYSAGE).clone();
     const centre = boite.getCenter(new THREE.Vector3());
-    const coins = [];
-    for (const x of [boite.min.x, boite.max.x]) for (const y of [boite.min.y, boite.max.y]) for (const z of [boite.min.z, boite.max.z]) coins.push(new THREE.Vector3(x, y, z));
+    // Points à faire tenir à l'écran : ceux fournis, sinon les 8 coins de la boîte
+    const coins = points || coinsBoite(boite);
+    // Zone utile de l'écran (sans les boutons posés sur la 3D), en coordonnées -1..1
+    const W = this.canvas.clientWidth || 1, H = this.canvas.clientHeight || 1;
+    const m = this.marges || { haut: 0, bas: 0, gauche: 0, droite: 0 };
+    const xg = -1 + 2 * m.gauche / W, xd = 1 - 2 * m.droite / W;
+    const yb = -1 + 2 * m.bas / H, yh = 1 - 2 * m.haut / H;
     let dist = boite.getSize(new THREE.Vector3()).length();
     const tanV = Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2);
-    const marge = 0.9; // la boîte occupe 90 % de l'écran
-    for (let i = 0; i < 6; i++) {
+    const remplissage = 0.97; // la boîte occupe 97 % de la zone utile
+    for (let i = 0; i < 16; i++) {
       cam.position.copy(centre).addScaledVector(dir, dist);
       cam.lookAt(centre);
       cam.updateMatrixWorld();
@@ -918,13 +1028,14 @@ export class Scene3D {
         x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x);
         y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y);
       }
-      // Recentrage : décalage du point visé dans le plan de l'écran
+      // Recentrage : le milieu de la boîte doit tomber au milieu de la zone utile
       const droite = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 0);
       const haut = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 1);
       const demiH = dist * tanV, demiL = demiH * cam.aspect;
-      centre.addScaledVector(droite, ((x0 + x1) / 2) * demiL).addScaledVector(haut, ((y0 + y1) / 2) * demiH);
+      centre.addScaledVector(droite, ((x0 + x1) / 2 - (xg + xd) / 2) * demiL)
+            .addScaledVector(haut, ((y0 + y1) / 2 - (yb + yh) / 2) * demiH);
       // Ajustement de la distance selon le côté le plus contraint
-      const ech = Math.max((x1 - x0) / 2, (y1 - y0) / 2) / marge;
+      const ech = Math.max((x1 - x0) / (xd - xg), (y1 - y0) / (yh - yb)) / remplissage;
       dist *= Math.max(0.5, Math.min(2, ech));
     }
     dist = Math.max(dist, 4);
@@ -944,8 +1055,45 @@ export class Scene3D {
   }
 
   recentrer(immediat = false) {
-    const b = new THREE.Box3(new THREE.Vector3(-7.1, 0, -1.0), new THREE.Vector3(12.7, 7.4, 1.3));
-    this._cadrer(b, immediat);
+    this.vueManuelle = false;
+    // Volume du banc calculé une seule fois, au repos : cadrage toujours identique
+    if (!this.volumeBanc) this.volumeBanc = this._boiteBanc();
+    const { boite, points } = this.volumeBanc;
+    this._cadrer(boite, immediat, points);
+  }
+
+  /* Volume occupé par le banc : boîtes de chaque composant (et de la charge du
+     vérin à sa position actuelle), sans le grand panneau de fond. On garde les
+     coins de chaque boîte : le cadrage suit la forme réelle du banc au lieu
+     d'une grande boîte qui laisserait du vide à l'écran. */
+  _boiteBanc() {
+    const boite = new THREE.Box3(), points = [];
+    const objets = Object.values(this.composants).filter(g => g.userData.compId !== 'tuyaux');
+    // Les tuyaux sont pris segment par segment (pas une seule grande boîte)
+    for (const l of Object.values(this.lignes)) {
+      const e = l.echantillons;
+      for (let i = 0; i < e.length; i += 6) { points.push(e[i].clone()); boite.expandByPoint(e[i]); }
+    }
+    for (const g of objets) {
+      const b = new THREE.Box3().setFromObject(g);
+      boite.union(b);
+      points.push(...coinsBoite(b));
+    }
+    // Charge du vérin comptée tige rentrée (position de départ) : le cadrage
+    // est toujours identique, quelle que soit la position actuelle de la tige.
+    if (this.charge) {
+      const x = this.charge.position.x;
+      for (const pos of [VERIN.pistonMin]) {
+        this.charge.position.x = pos + VERIN.longTige + 0.75;
+        this.charge.updateMatrixWorld(true);
+        const b = new THREE.Box3().setFromObject(this.charge);
+        boite.union(b);
+        points.push(...coinsBoite(b));
+      }
+      this.charge.position.x = x;
+      this.charge.updateMatrixWorld(true);
+    }
+    return { boite, points };
   }
 
   /* Focalise la vue sur un ou plusieurs composants (mode pas à pas) */
@@ -958,6 +1106,7 @@ export class Scene3D {
     }
     if (b.isEmpty()) return;
     b.expandByScalar(0.6);
+    this.vueManuelle = true;
     this._cadrer(b);
   }
 
@@ -966,12 +1115,9 @@ export class Scene3D {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
-    // Taille des étiquettes : un peu plus grandes en portrait (écran étroit)
-    const facteur = this.camera.aspect < 1 ? 0.72 : 0.9;
-    for (const s of this.etiquettes) {
-      const hs = s.userData.hauteurEcran * facteur;
-      s.scale.set(hs * s.userData.ratio, hs, 1);
-    }
+    // Si l'utilisateur n'a pas déplacé la vue, on garde le cadrage optimal
+    // (rotation du téléphone, ouverture/fermeture du panneau…)
+    if (!this.vueManuelle && !this.anim) this.recentrer(true);
   }
 
   /* ---------------------- Mise à jour par image ---------------------- */
@@ -1063,6 +1209,7 @@ export class Scene3D {
     this._majFuite(sim, dt);
 
     this.controls.update();
+    this._majEtiquettes();
   }
 
   _majParticules(sim, dt) {

@@ -19,7 +19,7 @@ name: Construire l'app iPhone
 on:
   push:
     branches: [main, 'claude/**']
-    paths: ['www/**', 'ios/**', 'package.json', 'package-lock.json', 'capacitor.config.json', '.github/workflows/ios.yml']
+    paths: ['www/**', 'ios/**', 'scripts/**', 'package.json', 'package-lock.json', 'capacitor.config.json', '.github/workflows/ios.yml']
   workflow_dispatch:
 
 permissions:
@@ -33,12 +33,15 @@ jobs:
   ios:
     runs-on: macos-latest
     env:
-      BUILD_NUMBER: ${{ github.run_number }}
-      VERSION_NAME: 1.0.${{ github.run_number }}
       HAS_APPLE: ${{ secrets.APPSTORE_PRIVATE_KEY != '' && secrets.APPLE_TEAM_ID != '' }}
     steps:
-      - name: Récupérer le code
+      - name: Récupérer le code (avec l'historique pour le numéro de version)
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Appliquer le numéro de version (site, cache, application)
+        run: bash scripts/version.sh
 
       - name: Installer Node.js 22
         uses: actions/setup-node@v5
@@ -58,7 +61,7 @@ jobs:
             -configuration Release -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO \
-            MARKETING_VERSION="$VERSION_NAME" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            MARKETING_VERSION="$VERSION_NAME" CURRENT_PROJECT_VERSION="$VERSION_CODE" \
             build | tail -n 30
           test "${PIPESTATUS[0]}" -eq 0
 
@@ -88,7 +91,7 @@ jobs:
             -authenticationKeyPath "$RUNNER_TEMP/apple/AuthKey.p8" \
             -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER" \
             DEVELOPMENT_TEAM="$TEAM" CODE_SIGN_STYLE=Automatic \
-            MARKETING_VERSION="$VERSION_NAME" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            MARKETING_VERSION="$VERSION_NAME" CURRENT_PROJECT_VERSION="$VERSION_CODE" \
             archive | tail -n 40
           test "${PIPESTATUS[0]}" -eq 0
 
