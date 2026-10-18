@@ -53,19 +53,30 @@ Pour obtenir une app installable, Apple impose un compte **Apple Developer (99 $
 L'APK est reconstruit et signé automatiquement par GitHub Actions à chaque modification
 (onglet **Actions** du dépôt → « Construire l'APK Android »).
 
-### Garder la même signature d'une version à l'autre (facultatif mais conseillé)
+### Signature permanente (mises à jour sans désinstaller)
 
-Sans configuration, chaque construction utilise une clé temporaire : pour installer une
-nouvelle version il faut alors d'abord **désinstaller** l'ancienne. Pour une clé permanente :
+Quand les 4 secrets ci-dessous existent dans **Settings → Secrets and variables → Actions**,
+chaque APK est signé avec la **même clé** : les nouvelles versions s'installent par-dessus
+l'ancienne. Sans eux, une clé temporaire est utilisée (il faut alors désinstaller avant).
 
-1. Sur un PC avec Java : `keytool -genkeypair -keystore hydraulique.jks -alias hydraulique -keyalg RSA -keysize 2048 -validity 10000`
-2. Convertir en texte : `base64 -w0 hydraulique.jks > cle.txt`
-3. Sur GitHub : **Settings → Secrets and variables → Actions → New repository secret**, créer :
-   `ANDROID_KEYSTORE_BASE64` (contenu de cle.txt), `ANDROID_KEYSTORE_PASSWORD`,
-   `ANDROID_KEY_ALIAS` (`hydraulique`) et `ANDROID_KEY_PASSWORD`.
-4. Relancer le workflow (Actions → « Construire l'APK Android » → Run workflow).
+| Secret | Contenu |
+|---|---|
+| `ANDROID_KEYSTORE_BASE64` | le fichier de clé (.jks) converti en texte base64 |
+| `ANDROID_KEYSTORE_PASSWORD` | mot de passe du fichier de clé |
+| `ANDROID_KEY_ALIAS` | `hydraulique` |
+| `ANDROID_KEY_PASSWORD` | même mot de passe que ci-dessus |
 
-Conservez précieusement le fichier `.jks` et son mot de passe.
+Pour créer une nouvelle clé (seulement si on en change) :
+`keytool -genkeypair -keystore hydraulique.jks -storetype PKCS12 -alias hydraulique -keyalg EC -groupname secp256r1 -validity 10950`
+puis `base64 -w0 hydraulique.jks`. Conservez précieusement la clé et son mot de passe :
+si on la perd, les téléphones devront désinstaller l'appli une fois.
+
+## Numéro de version
+
+La version (`1.0.N`, N = nombre de commits) est calculée automatiquement à chaque
+construction par `scripts/version.sh`. Le même numéro apparaît sur l'accueil de l'appli, dans
+le cache hors connexion (`VERSION_CACHE` de `www/sw.js`) et dans l'APK. Comme `sw.js` change
+à chaque livraison, les téléphones téléchargent tout seuls la nouvelle version.
 
 ## 3. Utilisation
 
@@ -99,6 +110,7 @@ www/                    Application web (c'est elle qui est publiée et embarqu�
   js/scene3d.js         Scène 3D Three.js (composants, tuyaux, particules, tactile)
   js/schema.js          Schéma ISO 1219 en SVG, coloré en direct
   js/donnees.js         Textes pédagogiques (fiches, étapes, pannes, quiz)
+  js/version.js         Numéro de version (rempli automatiquement)
   vendor/three.min.js   Three.js r186 (embarqué pour le hors-connexion)
   sw.js, manifest.webmanifest, icons/   PWA
 android/                Projet Android Capacitor 8
@@ -108,5 +120,5 @@ android/                Projet Android Capacitor 8
 Tester sur un PC : `npx http-server www -p 8080` puis ouvrir http://localhost:8080.
 
 Les textes destinés aux élèves sont tous dans `www/js/donnees.js` : le formateur peut
-les modifier sans toucher au reste. Après une modification, changer `VERSION_CACHE`
-dans `www/sw.js` pour que les téléphones récupèrent la nouvelle version.
+les modifier sans toucher au reste. Le numéro de version et le cache hors connexion sont
+mis à jour automatiquement à chaque publication.

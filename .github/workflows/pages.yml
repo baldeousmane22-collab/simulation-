@@ -11,7 +11,7 @@ name: Publier sur GitHub Pages
 on:
   push:
     branches: [main, 'claude/**']
-    paths: ['www/**', '.github/workflows/pages.yml']
+    paths: ['www/**', 'scripts/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:
@@ -27,8 +27,13 @@ jobs:
   branche-gh-pages:
     runs-on: ubuntu-latest
     steps:
-      - name: Récupérer le code
+      - name: Récupérer le code (avec l'historique pour le numéro de version)
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Appliquer le numéro de version (site, cache, application)
+        run: bash scripts/version.sh
 
       - name: Vérifier la présence des fichiers essentiels
         run: |
@@ -55,8 +60,13 @@ jobs:
       name: github-pages
       url: ${{ steps.deploiement.outputs.page_url }}
     steps:
-      - name: Récupérer le code
+      - name: Récupérer le code (avec l'historique pour le numéro de version)
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Appliquer le numéro de version (site, cache, application)
+        run: bash scripts/version.sh
 
       - name: Préparer le site
         run: touch www/.nojekyll

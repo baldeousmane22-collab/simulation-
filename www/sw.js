@@ -2,10 +2,11 @@
    sw.js — Service worker : mise en cache pour l'utilisation hors connexion
    ---------------------------------------------------------------------
    Stratégie : on met tous les fichiers en cache à l'installation, puis
-   « cache d'abord, réseau en secours ». Changer VERSION_CACHE à chaque
-   nouvelle livraison pour forcer la mise à jour chez les élèves.
+   « cache d'abord, réseau en secours ». VERSION_CACHE est remplacé
+   automatiquement par GitHub Actions à chaque livraison (scripts/version.sh) :
+   le fichier change, le téléphone installe donc la nouvelle version.
    ===================================================================== */
-const VERSION_CACHE = 'hydraulique-3d-v1.0.1';
+const VERSION_CACHE = 'hydraulique-3d-v1.0.0-dev';
 const FICHIERS = [
   './',
   './index.html',
@@ -16,6 +17,7 @@ const FICHIERS = [
   './js/simulation.js',
   './js/scene3d.js',
   './js/schema.js',
+  './js/version.js',
   './vendor/three.min.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
