@@ -55,9 +55,14 @@ L'APK est reconstruit et signé automatiquement par GitHub Actions à chaque mod
 
 ### Signature permanente (mises à jour sans désinstaller)
 
-Quand les 4 secrets ci-dessous existent dans **Settings → Secrets and variables → Actions**,
-chaque APK est signé avec la **même clé** : les nouvelles versions s'installent par-dessus
-l'ancienne. Sans eux, une clé temporaire est utilisée (il faut alors désinstaller avant).
+**Rien à configurer** : à la première construction, GitHub crée une clé de signature
+permanente et la garde dans le cache privé des constructions (elle n'est jamais publiée
+dans le dépôt). Chaque APK est ensuite signé avec cette **même clé** : les nouvelles versions
+s'installent par-dessus l'ancienne. Une tâche hebdomadaire réutilise la clé pour que GitHub
+ne l'efface pas (un cache inutilisé 7 jours est supprimé).
+
+Option plus sûre à long terme : si les 4 secrets ci-dessous sont créés dans
+**Settings → Secrets and variables → Actions**, ils sont utilisés en priorité.
 
 | Secret | Contenu |
 |---|---|

@@ -4,11 +4,12 @@
 # - L'APK est publié dans « Releases » du dépôt :
 #   https://github.com/<compte>/<dépôt>/releases/latest
 #
-# Signature : si les secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
-# ANDROID_KEY_ALIAS et ANDROID_KEY_PASSWORD existent, ils sont utilisés
-# (signature identique d'une version à l'autre). Sinon une clé temporaire
-# est créée à chaque construction (il faut alors désinstaller l'ancienne
-# version avant d'installer la nouvelle).
+# Signature (toujours la même clé, pour installer les mises à jour par-dessus) :
+#  1) si les secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
+#     ANDROID_KEY_ALIAS et ANDROID_KEY_PASSWORD existent, ils sont utilisés ;
+#  2) sinon, une clé permanente créée automatiquement par GitHub et gardée
+#     dans le cache privé des constructions (rien à configurer) ;
+#  3) en dernier recours seulement, une clé temporaire.
 # ===================================================================
 name: Construire l'APK Android
 
@@ -17,16 +18,32 @@ on:
     branches: [main, 'claude/**']
     paths: ['www/**', 'android/**', 'scripts/**', 'package.json', 'package-lock.json', 'capacitor.config.json', '.github/workflows/android.yml']
   workflow_dispatch:
+  # Chaque lundi : entretien de la clé permanente (voir job « entretien »)
+  schedule:
+    - cron: '17 3 * * 1'
 
 permissions:
   contents: write
 
 concurrency:
-  group: apk-${{ github.ref }}
+  group: apk-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
+  # Réutilise la clé chaque semaine : GitHub efface un cache inutilisé 7 jours.
+  entretien:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Relire la clé permanente (la garde en vie)
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cle-signature-apk
+          key: cle-signature-apk-v1
+          lookup-only: false
+
   apk:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - name: Récupérer le code (avec l'historique pour le numéro de version)
@@ -61,6 +78,36 @@ jobs:
       - name: Copier l'application web dans le projet Android
         run: npx cap sync android
 
+      # Clé permanente sans aucune configuration : elle est créée une seule fois
+      # par GitHub puis conservée dans le cache privé des constructions (jamais
+      # publiée dans le dépôt). Le job « entretien » ci-dessous la réutilise
+      # chaque semaine pour que GitHub ne l'efface pas.
+      - name: Récupérer la clé permanente (cache privé GitHub)
+        id: cle
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cle-signature-apk
+          key: cle-signature-apk-v1
+
+      - name: Créer la clé permanente (première fois seulement)
+        if: steps.cle.outputs.cache-hit != 'true' && github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p ~/.cle-signature-apk
+          PASS="$(openssl rand -hex 16)"
+          keytool -genkeypair -keystore ~/.cle-signature-apk/signature.jks -storetype PKCS12 \
+            -alias hydraulique -keyalg EC -groupname secp256r1 -validity 10950 \
+            -storepass "$PASS" -keypass "$PASS" \
+            -dname "CN=Simulateur hydraulique 3D, OU=Formation, O=Formation mecanique, C=FR"
+          printf '%s' "$PASS" > ~/.cle-signature-apk/mot-de-passe
+          echo "::notice::Clé de signature permanente créée et conservée par GitHub."
+
+      - name: Conserver la clé permanente (première fois seulement)
+        if: steps.cle.outputs.cache-hit != 'true' && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cle-signature-apk
+          key: cle-signature-apk-v1
+
       - name: Préparer la clé de signature
         env:
           KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -82,8 +129,17 @@ jobs:
             echo "KEYSTORE_PASSWORD=$KS_PASS" >> "$GITHUB_ENV"
             echo "KEY_ALIAS=$KS_ALIAS" >> "$GITHUB_ENV"
             echo "KEY_PASSWORD=$KS_KEY_PASS" >> "$GITHUB_ENV"
+          elif [ -f ~/.cle-signature-apk/signature.jks ]; then
+            echo "Utilisation de la clé permanente conservée par GitHub."
+            cp ~/.cle-signature-apk/signature.jks "$KS"
+            PASS="$(cat ~/.cle-signature-apk/mot-de-passe)"
+            echo "::add-mask::$PASS"
+            keytool -list -keystore "$KS" -storepass "$PASS" -alias hydraulique | grep -i "SHA-256"
+            echo "KEYSTORE_PASSWORD=$PASS" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=hydraulique" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=$PASS" >> "$GITHUB_ENV"
           else
-            echo "::warning::Aucun secret de signature : création d'une clé temporaire."
+            echo "::warning::Aucune clé permanente disponible : création d'une clé temporaire."
             PASS="$(openssl rand -hex 16)"
             echo "::add-mask::$PASS"
             keytool -genkeypair -v -keystore "$KS" -alias hydraulique \
