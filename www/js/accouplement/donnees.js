@@ -31,6 +31,7 @@ export const FICHES = {
     ]
   },
   accouplement: {
+    // Fiche remplacée par celle du type choisi (TYPES_ACCOUPLEMENT) dans l'interface
     nom: 'Accouplement élastique à crabots',
     plaque: 'Deux moyeux à crabots en acier, étoile en élastomère (polyuréthane 92 Sh A) · alésages avec clavette et vis de pression',
     role: 'Transmet le couple du moteur au réducteur tout en absorbant les chocs et les vibrations, et en compensant de petits défauts d\'alignement.',
@@ -115,12 +116,21 @@ export const PANNES = {
     causes: ['Moteur remonté sans alignement', 'Cales retirées ou tassées', 'Dilatation du socle', 'Vis de fixation desserrées'],
     solutions: ['Consigner, mesurer au comparateur (onglet Alignement)', 'Caler et déplacer le moteur jusqu\'aux tolérances', 'Remplacer l\'étoile si elle est abîmée']
   },
-  elastomere: {
-    nom: 'Étoile élastomère usée',
+  element: {
+    // Nom, symptômes, causes et solutions précisés selon le type (TYPES_ACCOUPLEMENT[type].panneElement)
+    nom: 'Élément de liaison usé',
     composant: 'accouplement',
-    symptomes: ['Claquement au démarrage et à l\'inversion du sens', 'Jeu angulaire entre les deux moyeux', 'Vibrations', 'Débris d\'élastomère'],
-    causes: ['Désalignement prolongé', 'Démarrages trop brutaux (rampe trop courte)', 'Surcharges répétées', 'Vieillissement (chaleur, huile)'],
-    solutions: ['Consigner et remplacer l\'étoile', 'Contrôler l\'alignement', 'Vérifier les rampes du variateur']
+    symptomes: ['Claquement au démarrage et à l\'inversion du sens', 'Jeu entre les deux moyeux', 'Vibrations'],
+    causes: ['Désalignement prolongé', 'Démarrages brutaux', 'Surcharges répétées', 'Vieillissement'],
+    solutions: ['Consigner et remplacer la pièce d\'usure', 'Contrôler l\'alignement']
+  },
+  graisse: {
+    nom: 'Manque de graisse dans l\'accouplement',
+    composant: 'accouplement',
+    lubrifie: true,   // n'existe que pour les accouplements graissés
+    symptomes: ['Accouplement très chaud (contrôle au thermomètre infrarouge, jamais à la main)', 'Bruit de frottement, grincement', 'Usure rapide, poussière de rouille rouge (« fretting »)', 'Vibrations en hausse'],
+    causes: ['Graissage périodique oublié', 'Joints du manchon ou du capot abîmés : la graisse s\'échappe', 'Graisse inadaptée (pas de graisse spéciale accouplement)'],
+    solutions: ['Consigner, nettoyer, contrôler l\'usure', 'Regarnir avec la graisse préconisée (quantité constructeur)', 'Remplacer les joints', 'Respecter la périodicité (souvent tous les 6 mois)']
   },
   roulement: {
     nom: 'Roulement moteur défectueux',
@@ -156,6 +166,149 @@ export const PANNES = {
     symptomes: ['Le moteur ne démarre pas ou cale', 'Intensité très élevée (limitée par le variateur)', 'Déclenchement du relais thermique'],
     causes: ['Corps étranger dans la machine', 'Grippage d\'un palier', 'Frein serré'],
     solutions: ['Consigner', 'Rechercher et supprimer le blocage', 'Contrôler la clavette et l\'étoile avant de redémarrer', 'Réarmer le relais thermique']
+  }
+};
+
+/* =====================================================================
+   TYPES D'ACCOUPLEMENT : fiche, comparatif et panne de la pièce d'usure
+   (le comportement mécanique est dans simulation.js → TYPES)
+   ===================================================================== */
+export const TYPES_ACCOUPLEMENT = {
+  crabots: {
+    nom: 'Accouplement élastique à crabots', court: 'À crabots (étoile)',
+    plaque: 'Deux moyeux à 3 crabots + étoile en polyuréthane (92 Sh A jaune, 98 Sh A rouge)',
+    role: 'Transmet le couple en amortissant chocs et vibrations ; tolère un petit désalignement.',
+    fonctionnement: 'Les crabots des deux moyeux s\'imbriquent dans les branches de l\'étoile : le couple passe par la compression de l\'élastomère, sans contact métal sur métal. C\'est l\'accouplement « à tout faire » des petits et moyens moteurs.',
+    avantages: ['Simple, compact, bon marché', 'Amortit les chocs', 'Pas de lubrification', 'Isole électriquement les deux arbres'],
+    limites: ['Étoile sensible à la chaleur, aux huiles et au désalignement', 'Remplacement de l\'étoile : il faut écarter le moteur'],
+    entretien: 'Contrôler l\'état de l\'étoile (fissures, poussière), le jeu entre crabots et l\'écartement entre moyeux.',
+    emploi: 'Pompes, ventilateurs, réducteurs, convoyeurs (jusqu\'à quelques centaines de kW).',
+    comparatif: { amorti: '★★☆', desal: '★★☆', graissage: 'Non', jeu: 'Non (si étoile bonne)' },
+    panneElement: {
+      nom: 'Étoile élastomère usée',
+      symptomes: ['Claquement au démarrage et à l\'inversion du sens', 'Jeu angulaire entre les deux moyeux', 'Poussière d\'élastomère sous l\'accouplement', 'Vibrations'],
+      causes: ['Désalignement prolongé', 'Démarrages brutaux (rampe trop courte)', 'Surcharges répétées', 'Chaleur, huile'],
+      solutions: ['Consigner, écarter le moteur et remplacer l\'étoile', 'Contrôler l\'alignement', 'Vérifier les rampes du variateur']
+    }
+  },
+  rigide: {
+    nom: 'Accouplement rigide à plateaux', court: 'Rigide à plateaux',
+    plaque: 'Deux plateaux en acier boulonnés (6 boulons ajustés) · aucune souplesse',
+    role: 'Lie les deux arbres comme s\'ils n\'en faisaient qu\'un : transmission intégrale du couple, sans jeu.',
+    fonctionnement: 'Les plateaux sont centrés l\'un dans l\'autre et serrés par des boulons : le couple passe par le frottement des faces et le cisaillement des boulons. Il ne compense AUCUN défaut : le moindre désalignement fait fléchir les arbres et charge énormément les roulements.',
+    avantages: ['Très simple et robuste', 'Aucun jeu, aucune pièce d\'usure', 'Transmet de très gros couples'],
+    limites: ['Alignement quasi parfait obligatoire (≤ 0,02 mm)', 'Transmet chocs et vibrations', 'Roulements et arbres fatiguent vite au moindre défaut'],
+    entretien: 'Contrôler le serrage des boulons (couple de serrage), l\'alignement et l\'état des roulements.',
+    emploi: 'Arbres longs en ligne soutenus par leurs propres paliers, lignes d\'arbres de machines lentes.',
+    comparatif: { amorti: 'Aucun', desal: 'Aucun', graissage: 'Non', jeu: 'Non' },
+    panneElement: {
+      nom: 'Boulons d\'accouplement desserrés / roulements fatigués',
+      symptomes: ['Vibrations fortes', 'Choc à chaque inversion', 'Palier moteur chaud', 'Traces de frottement (rouille rouge) entre les plateaux'],
+      causes: ['Désalignement : les arbres fléchissent à chaque tour', 'Couple de serrage non respecté', 'Chocs de charge'],
+      solutions: ['Consigner, contrôler les boulons et l\'alésage des trous', 'Remplacer les boulons, serrer au couple', 'Contrôler les roulements', 'Réaligner au centième']
+    }
+  },
+  pneu: {
+    nom: 'Accouplement à pneu (bandage élastique)', court: 'À pneu',
+    plaque: 'Deux moyeux à flasques + pneu en caoutchouc renforcé (fendu) serré par des brides',
+    role: 'Transmet le couple avec une très grande souplesse : amortit fortement chocs et vibrations, encaisse de gros désalignements.',
+    fonctionnement: 'Le pneu (souvent fendu radialement) est pincé entre deux flasques. Il se déforme en torsion pour transmettre le couple et absorbe les défauts. Comme il est fendu, on le change sans déplacer le moteur.',
+    avantages: ['Le meilleur amortissement', 'Tolère de gros défauts (jusqu\'à ~1 mm, 1 à 4°)', 'Remplacement du pneu sans déplacer les machines', 'Pas de lubrification'],
+    limites: ['Encombrant', 'Le caoutchouc vieillit (ozone, chaleur, huile)', 'Exerce un effort axial quand il tourne vite', 'Même s\'il tolère, on aligne quand même selon la table : sinon roulements et pneu souffrent'],
+    entretien: 'Contrôler les craquelures du pneu et le serrage des vis de brides.',
+    emploi: 'Machines à chocs : concasseurs, compresseurs à pistons, broyeurs, pompes.',
+    comparatif: { amorti: '★★★', desal: '★★★', graissage: 'Non', jeu: 'Non' },
+    panneElement: {
+      nom: 'Pneu fissuré / déchiré',
+      symptomes: ['Craquelures, morceaux de caoutchouc', 'Battement visible du pneu en rotation', 'Vibrations', 'Claquement si le pneu est déchiré'],
+      causes: ['Vieillissement (ozone, chaleur)', 'Contact avec de l\'huile', 'Surcharge ou chocs répétés'],
+      solutions: ['Consigner, desserrer les brides et remplacer le pneu (sans déplacer le moteur)', 'Serrer les vis de brides au couple', 'Protéger des projections d\'huile']
+    }
+  },
+  broches: {
+    nom: 'Accouplement à broches et douilles élastiques', court: 'À broches',
+    plaque: 'Plateau à broches acier côté moteur + plateau à douilles caoutchouc côté réducteur',
+    role: 'Transmet le couple par des broches entourées de douilles élastiques ; amortit et tolère un défaut moyen.',
+    fonctionnement: 'Les broches fixées sur un plateau entrent dans des douilles en caoutchouc logées dans l\'autre plateau. Le couple passe par l\'écrasement des douilles.',
+    avantages: ['Robuste, gros couples', 'Douilles faciles à remplacer', 'Pas de lubrification', 'Amortissement correct'],
+    limites: ['Usure des douilles → jeu et claquements', 'Encombrement radial'],
+    entretien: 'Contrôler le jeu angulaire (douilles écrasées), le serrage des écrous de broches.',
+    emploi: 'Pompes et compresseurs de moyenne puissance, machines de levage.',
+    comparatif: { amorti: '★★☆', desal: '★★☆', graissage: 'Non', jeu: 'Oui si douilles usées' },
+    panneElement: {
+      nom: 'Douilles élastiques usées',
+      symptomes: ['Claquement à l\'inversion et au démarrage', 'Jeu angulaire important', 'Poussière de caoutchouc noire', 'Vibrations'],
+      causes: ['Désalignement', 'Surcharges, démarrages brutaux', 'Vieillissement du caoutchouc'],
+      solutions: ['Consigner, remplacer TOUTES les douilles', 'Contrôler les broches (usure, serrage)', 'Contrôler l\'alignement']
+    }
+  },
+  lames: {
+    nom: 'Accouplement à lames (disques flexibles)', court: 'À lames',
+    plaque: 'Moyeux + paquets de lames inox + entretoise · boulons alternés',
+    role: 'Transmet le couple sans jeu ni lubrification, tout en acceptant un défaut angulaire par la flexion des lames.',
+    fonctionnement: 'Des paquets de fines lames d\'acier sont boulonnés alternativement à un moyeu et à l\'entretoise. Les lames fléchissent pour compenser l\'angle ; avec deux paquets et une entretoise, on compense aussi le décalage. Aucun frottement : pas d\'usure tant que les lames ne sont pas surchargées.',
+    avantages: ['Aucun jeu, transmission précise', 'Aucune lubrification, aucune usure', 'Hautes vitesses, hautes températures'],
+    limites: ['Aucun amortissement des chocs', 'Lames qui cassent par fatigue si le désalignement est trop grand', 'Compense mal le décalage sans entretoise'],
+    entretien: 'Contrôler visuellement les lames (fissures, ondulations) et le serrage des boulons. Respecter la longueur d\'entretoise.',
+    emploi: 'Pompes process (API 610), turbines, compresseurs, servomoteurs.',
+    comparatif: { amorti: 'Aucun', desal: '★★☆ angulaire', graissage: 'Non', jeu: 'Non' },
+    panneElement: {
+      nom: 'Lames fissurées ou rompues',
+      symptomes: ['Lames ondulées ou cassées visibles', 'Claquement, à-coups', 'Vibrations', 'Boulons desserrés'],
+      causes: ['Désalignement au-delà de la capacité des lames (fatigue)', 'Écartement entre moyeux incorrect (lames tendues ou flambées)', 'Surcharge'],
+      solutions: ['Consigner, remplacer les paquets de lames complets', 'Respecter la cote d\'écartement', 'Réaligner']
+    }
+  },
+  denture: {
+    nom: 'Accouplement à denture (double denture bombée)', court: 'À denture',
+    plaque: 'Deux moyeux à denture extérieure bombée + manchon à denture intérieure · graissé',
+    role: 'Transmet de très gros couples sous un faible encombrement ; compense angle, décalage et dilatation axiale.',
+    fonctionnement: 'Les dents bombées des moyeux engrènent dans le manchon : elles peuvent basculer légèrement, ce qui compense l\'angle (et le décalage, avec deux dentures). Les dents glissent à chaque tour : la graisse est indispensable.',
+    avantages: ['Très gros couples, compact', 'Compense les défauts et la dilatation axiale', 'Grande vitesse possible'],
+    limites: ['Graissage périodique obligatoire', 'Petit jeu entre dents (claquement à l\'inversion)', 'Aucun amortissement', 'Usure rapide si désaligné ou sans graisse'],
+    entretien: 'Regraisser selon le constructeur (vidange de la graisse usée), contrôler l\'étanchéité des joints du manchon.',
+    emploi: 'Laminoirs, gros réducteurs, pompes et ventilateurs de forte puissance, levage.',
+    comparatif: { amorti: 'Aucun', desal: '★★☆', graissage: 'Oui', jeu: 'Petit jeu' },
+    panneElement: {
+      nom: 'Dentures usées',
+      symptomes: ['Jeu important, claquement à l\'inversion', 'Dents pointues ou marquées', 'Poussière rouge mêlée à la graisse', 'Vibrations'],
+      causes: ['Manque de graisse', 'Désalignement trop important', 'Surcharges'],
+      solutions: ['Consigner, remplacer moyeux et manchon (par paire)', 'Graisser correctement', 'Réaligner']
+    }
+  },
+  chaine: {
+    nom: 'Accouplement à chaîne double', court: 'À chaîne',
+    plaque: 'Deux pignons identiques + chaîne à rouleaux duplex + capot étanche · graissé',
+    role: 'Transmet le couple avec un montage et un démontage très rapides (on retire la chaîne).',
+    fonctionnement: 'Les deux pignons, côte à côte, sont enveloppés par une même chaîne double. Le jeu entre chaîne et dents permet un petit désalignement. Pour désaccoupler, il suffit d\'ouvrir le maillon d\'attache.',
+    avantages: ['Simple, bon marché, démontage rapide', 'Gros couples', 'Tolère un petit défaut'],
+    limites: ['Jeu : claquement à chaque inversion', 'Graissage obligatoire (capot)', 'Pas d\'amortissement, vitesse limitée'],
+    entretien: 'Graisser la chaîne, contrôler l\'allongement, l\'état des dents et du capot.',
+    emploi: 'Convoyeurs, agitateurs, machines lentes et peu précises.',
+    comparatif: { amorti: 'Aucun', desal: '★★☆', graissage: 'Oui', jeu: 'Oui' },
+    panneElement: {
+      nom: 'Chaîne allongée / pignons usés',
+      symptomes: ['Claquement important à l\'inversion et au démarrage', 'Chaîne qui « flotte » sur les pignons', 'Dents en crochet', 'Vibrations'],
+      causes: ['Manque de graisse', 'Désalignement', 'À-coups de charge'],
+      solutions: ['Consigner, remplacer la chaîne (et les pignons s\'ils sont crochus)', 'Graisser et refermer le capot', 'Réaligner']
+    }
+  },
+  grille: {
+    nom: 'Accouplement à grille (ressort serpentin)', court: 'À grille',
+    plaque: 'Deux moyeux à rainures + grille en acier à ressort en serpentin + couvercle étanche · graissé',
+    role: 'Transmet de gros couples avec une certaine élasticité : amortit les chocs et tolère un défaut moyen.',
+    fonctionnement: 'Une grille en acier à ressort, pliée en serpentin, passe dans les rainures des deux moyeux. Les rainures sont évasées : plus le couple augmente, plus la grille s\'appuie loin et se raidit. Le couvercle garde la graisse.',
+    avantages: ['Gros couples, bon amortissement des chocs', 'Grille remplaçable sans déplacer les machines', 'Tolère un défaut moyen'],
+    limites: ['Graissage obligatoire', 'Joints du couvercle à surveiller', 'Grille qui casse si manque de graisse'],
+    entretien: 'Regraisser périodiquement, contrôler l\'étanchéité, l\'usure de la grille et des rainures.',
+    emploi: 'Concasseurs, convoyeurs à bande, broyeurs, pompes de forte puissance.',
+    comparatif: { amorti: '★★☆', desal: '★★☆', graissage: 'Oui', jeu: 'Non' },
+    panneElement: {
+      nom: 'Grille usée ou cassée',
+      symptomes: ['Claquement, à-coups', 'Morceaux de grille dans le couvercle', 'Graisse noire et chaude', 'Vibrations'],
+      causes: ['Manque de graisse', 'Chocs de surcharge', 'Désalignement'],
+      solutions: ['Consigner, ouvrir le couvercle, remplacer la grille', 'Contrôler les rainures des moyeux', 'Regraisser, changer les joints']
+    }
   }
 };
 
@@ -219,5 +372,41 @@ export const QUIZ = [
     choix: ['La moitié (≈ 725 tr/min)', 'Le double', 'Inchangée, seul le couple diminue', 'Nulle'],
     bonne: 0,
     expl: 'La vitesse de synchronisme est proportionnelle à la fréquence : ns = 60 × f / p = 750 tr/min à 25 Hz (4 pôles).'
+  },
+  {
+    q: 'Quel accouplement exige l\'alignement le plus précis ?',
+    choix: ['L\'accouplement rigide à plateaux', 'L\'accouplement à pneu', 'L\'accouplement à grille', 'L\'accouplement à crabots'],
+    bonne: 0,
+    expl: 'Un accouplement rigide ne compense rien : le moindre défaut fait fléchir les arbres et détruit les roulements. On vise quelques centièmes de mm.'
+  },
+  {
+    q: 'Quels accouplements doivent être graissés périodiquement ?',
+    choix: ['À denture, à chaîne et à grille', 'À crabots et à pneu', 'À lames et rigide', 'Tous les accouplements'],
+    bonne: 0,
+    expl: 'Leurs pièces glissent les unes sur les autres à chaque tour : sans graisse, elles chauffent et s\'usent très vite. Crabots, pneu, broches, lames et rigide n\'ont pas de graissage.'
+  },
+  {
+    q: 'Pour une machine à chocs (concasseur), quel accouplement amortit le mieux ?',
+    choix: ['À pneu', 'Rigide', 'À lames', 'À denture'],
+    bonne: 0,
+    expl: 'Le pneu en caoutchouc absorbe fortement les chocs et tolère de gros défauts. Rigide, lames et denture transmettent les chocs sans les amortir.'
+  },
+  {
+    q: 'Principal avantage d\'un accouplement à lames ?',
+    choix: ['Aucun jeu et aucune lubrification', 'Il amortit très bien les chocs', 'Il accepte de très gros décalages', 'Il est le moins cher'],
+    bonne: 0,
+    expl: 'Les lames fléchissent sans frotter : pas de jeu, pas de graisse, pas d\'usure… tant que le désalignement reste dans leur capacité, sinon elles cassent par fatigue.'
+  },
+  {
+    q: 'Accouplement à chaîne : il claque à chaque inversion de sens, même neuf. Pourquoi ?',
+    choix: ['À cause du jeu normal entre la chaîne et les dents', 'Le moteur est surchargé', 'Le réducteur manque d\'huile', 'Le variateur est mal réglé'],
+    bonne: 0,
+    expl: 'La chaîne a besoin d\'un jeu pour s\'enrouler et compenser les défauts : à l\'inversion du couple, ce jeu se rattrape d\'un coup. Il augmente fortement quand la chaîne s\'allonge.'
+  },
+  {
+    q: 'Un accouplement souple (pneu, crabots) tolère le désalignement. Faut-il quand même aligner ?',
+    choix: ['Oui : sinon vibrations, échauffement et usure des roulements et de l\'accouplement', 'Non, c\'est son rôle', 'Seulement au-dessus de 3000 tr/min', 'Seulement si le moteur dépasse 50 kW'],
+    bonne: 0,
+    expl: 'La capacité de l\'accouplement n\'est pas une tolérance d\'alignement : on aligne toujours selon la table de vitesse (ici 0,10 mm et 0,08 mm/100 mm).'
   }
 ];

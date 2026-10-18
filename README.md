@@ -9,9 +9,13 @@ schéma ISO 1219 et quiz.
 ### Banc « Moteur + réducteur » (accouplement)
 
 Depuis l'accueil, le bouton bleu **⚙️ Moteur + réducteur** ouvre un second banc 3D :
-moteur asynchrone 1,5 kW piloté par variateur de fréquence, **accouplement élastique à crabots**
-(étoile en élastomère), **réducteur à engrenages hélicoïdaux** (i = 5, 10, 20 ou 40, carter
-transparent) et frein de charge.
+moteur asynchrone 1,5 kW piloté par variateur de fréquence, **accouplement au choix**,
+**réducteur à engrenages hélicoïdaux** (i = 5, 10, 20 ou 40, carter transparent) et frein de charge.
+
+**8 types d'accouplement**, chacun avec son modèle 3D, son comportement (amortissement, jeu,
+graissage, sensibilité au désalignement), ses tolérances, sa pièce d'usure, sa panne et sa fiche :
+à crabots (étoile), rigide à plateaux, à pneu, à broches et douilles, à lames, à denture,
+à chaîne double et à grille. Le bouton **📊 Comparer les types** affiche un tableau comparatif.
 
 - **Commandes** : marche / arrêt, sens, fréquence (5 à 60 Hz), rapport de réduction, couple
   résistant ; mesures en direct (vitesses, couples, intensité, puissance, glissement, rendement,
@@ -19,9 +23,10 @@ transparent) et frein de charge.
 - **Alignement** : consignation, carter déposé, comparateurs radial et de face, lecture à
   12 h / 3 h / 6 h / 9 h avec règle de validité, calcul des cales et des déplacements,
   réglage des cales sous les pattes et des vis de poussée, tolérances à 1500 tr/min.
-- **Pannes** : désalignement, étoile usée, roulement, manque d'huile, pied boiteux,
-  clavette cisaillée, machine bloquée + panne mystère.
-- **Quiz** : 10 questions sur la transmission et l'alignement.
+- **Pannes** : désalignement, pièce d'usure de l'accouplement (étoile, pneu, douilles, lames,
+  dentures, chaîne, grille, boulons), manque de graisse (accouplements graissés), roulement,
+  manque d'huile, pied boiteux, clavette cisaillée, machine bloquée + panne mystère.
+- **Quiz** : 16 questions sur la transmission, les types d'accouplement et l'alignement.
 
 ## 1. Ouvrir l'application web (aucune installation)
 

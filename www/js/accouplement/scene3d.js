@@ -256,42 +256,34 @@ export class SceneAccouplement {
 
   /* ------------------------ Accouplement ---------------------------- */
   _construireAccouplement() {
-    const M = this._mat;
-    const acierMoyeu = mat(0x9ca3af, 0.9, 0.28);
-    // Moyeu moteur (suit le moteur) : corps + 3 crabots
+    // Conteneur côté moteur (tourne avec l'arbre moteur et suit son désalignement)
     const hm = new THREE.Group();
     hm.userData.compId = 'accouplement';
-    ajout(hm, cylX(0.5, -0.6, -0.14, 40), acierMoyeu);
-    for (let k = 0; k < 3; k++) {
-      const a = k * (Math.PI * 2 / 3);
-      ajout(hm, secteur(0.2, 0.5, a, a + THREE.MathUtils.degToRad(50), -0.14, 0.12), acierMoyeu);
-    }
-    ajout(hm, new THREE.BoxGeometry(0.42, 0.04, 0.04), mat(0xffffff, 0.2, 0.5), -0.37, 0.5, 0, false);  // repère
     this.rotorMoteur.add(hm);
     this.moyeuMoteur = hm;
-
-    // Moyeu réducteur, étoile et protection (fixes, sur l'axe du réducteur)
+    // Conteneur côté réducteur (sur l'axe du réducteur)
     const g = this._groupe('accouplement');
     g.position.set(0, Y0, 0);
     const hr = new THREE.Group();
     g.add(hr);
-    ajout(hr, cylX(0.5, 0.14, 0.6, 40), acierMoyeu);
-    for (let k = 0; k < 3; k++) {
-      const a = k * (Math.PI * 2 / 3) + Math.PI / 3;
-      ajout(hr, secteur(0.2, 0.5, a, a + THREE.MathUtils.degToRad(50), -0.12, 0.14), acierMoyeu);
-    }
-    ajout(hr, new THREE.BoxGeometry(0.42, 0.04, 0.04), mat(0xffffff, 0.2, 0.5), 0.37, 0.5, 0, false);
     this.moyeuReducteur = hr;
-    // Étoile élastomère : 6 branches entre les crabots + anneau central
-    const etoile = new THREE.Group();
-    this.matEtoile = mat(0xf59e0b, 0.05, 0.75);
-    for (let k = 0; k < 6; k++) {
-      const a = THREE.MathUtils.degToRad(50) + k * Math.PI / 3;
-      ajout(etoile, secteur(0.17, 0.47, a, a + THREE.MathUtils.degToRad(10), -0.12, 0.12), this.matEtoile, 0, 0, 0, false);
+    // Un modèle par type : partie moteur, partie réducteur et élément de liaison
+    this.modeles = {};
+    const constructeurs = {
+      crabots: this._accCrabots, rigide: this._accRigide, pneu: this._accPneu, broches: this._accBroches,
+      lames: this._accLames, denture: this._accDenture, chaine: this._accChaine, grille: this._accGrille
+    };
+    for (const [type, f] of Object.entries(constructeurs)) {
+      const m = { moteur: new THREE.Group(), reducteur: new THREE.Group(), liaison: new THREE.Group(), retirable: false };
+      hm.add(m.moteur); hr.add(m.reducteur); hr.add(m.liaison);
+      f.call(this, m);
+      m.couleurElement = m.matElement ? m.matElement.color.getHex() : 0;
+      // Repères blancs sur chaque moyeu : on voit si les deux côtés tournent ensemble
+      ajout(m.moteur, new THREE.BoxGeometry(0.2, 0.04, 0.04), mat(0xffffff, 0.2, 0.5), -0.5, m.rRepere || 0.3, 0, false);
+      ajout(m.reducteur, new THREE.BoxGeometry(0.2, 0.04, 0.04), mat(0xffffff, 0.2, 0.5), 0.5, m.rRepere || 0.3, 0, false);
+      this.modeles[type] = m;
     }
-    ajout(etoile, cylX(0.2, -0.12, 0.12, 24), this.matEtoile, 0, 0, 0, false);
-    hr.add(etoile);
-    this.etoile = etoile;
+    this.setType('crabots');
     // Carter de protection (demi-cylindre ajouré), déposé quand la machine est consignée
     const carter = this._groupe('carter');
     carter.position.set(0, Y0, 0);
@@ -306,6 +298,183 @@ export class SceneAccouplement {
       for (const z of [-0.76, 0.76]) ajout(carter, new THREE.BoxGeometry(0.06, Y0 - SOCLE, 0.06), mat(0xea580c, 0.3, 0.5), x, -(Y0 - SOCLE) / 2, z * 1.1);
     }
     this.carter = carter;
+  }
+
+  /* ------------------ Modèles des types d'accouplement --------------- */
+  /* Chaque modèle reçoit m = { moteur, reducteur, liaison } (groupes d'axe X,
+     plan de l'accouplement en x = 0) et définit m.matElement (pièce d'usure)
+     et m.retirable (élément déposé pour l'alignement). */
+  _accCrabots(m) {
+    const acier = mat(0x9ca3af, 0.9, 0.28);
+    ajout(m.moteur, cylX(0.5, -0.6, -0.14, 40), acier);
+    ajout(m.reducteur, cylX(0.5, 0.14, 0.6, 40), acier);
+    for (let k = 0; k < 3; k++) {
+      const a = k * (Math.PI * 2 / 3);
+      ajout(m.moteur, secteur(0.2, 0.5, a, a + THREE.MathUtils.degToRad(50), -0.14, 0.12), acier);
+      ajout(m.reducteur, secteur(0.2, 0.5, a + Math.PI / 3, a + Math.PI / 3 + THREE.MathUtils.degToRad(50), -0.12, 0.14), acier);
+    }
+    m.matElement = mat(0xf59e0b, 0.05, 0.75);
+    for (let k = 0; k < 6; k++) {
+      const a = THREE.MathUtils.degToRad(50) + k * Math.PI / 3;
+      ajout(m.liaison, secteur(0.17, 0.47, a, a + THREE.MathUtils.degToRad(10), -0.12, 0.12), m.matElement, 0, 0, 0, false);
+    }
+    ajout(m.liaison, cylX(0.2, -0.12, 0.12, 24), m.matElement, 0, 0, 0, false);
+    m.rRepere = 0.5;
+  }
+
+  _accRigide(m) {
+    const acier = mat(0x8b949e, 0.9, 0.3);
+    ajout(m.moteur, cylX(0.3, -0.6, -0.12, 32), acier);
+    ajout(m.moteur, cylX(0.56, -0.13, -0.005, 48), acier);
+    ajout(m.reducteur, cylX(0.56, 0.005, 0.13, 48), acier);
+    ajout(m.reducteur, cylX(0.3, 0.12, 0.6, 32), acier);
+    m.matElement = mat(0x4b5563, 0.8, 0.35);   // boulons
+    for (let k = 0; k < 6; k++) {
+      const a = k * Math.PI / 3 + 0.3, y = Math.cos(a) * 0.44, z = Math.sin(a) * 0.44;
+      ajout(m.moteur, cylX(0.065, -0.19, -0.13, 6), m.matElement, 0, y, z);
+      ajout(m.moteur, cylX(0.035, -0.13, 0.2, 8), m.matElement, 0, y, z);
+      ajout(m.reducteur, cylX(0.065, 0.13, 0.19, 6), m.matElement, 0, y, z);
+    }
+    m.rRepere = 0.3;
+  }
+
+  _accPneu(m) {
+    const acier = mat(0x9ca3af, 0.85, 0.3);
+    ajout(m.moteur, cylX(0.28, -0.6, -0.27, 32), acier);
+    ajout(m.moteur, cylX(0.52, -0.33, -0.25, 48), acier);
+    ajout(m.reducteur, cylX(0.52, 0.25, 0.33, 48), acier);
+    ajout(m.reducteur, cylX(0.28, 0.27, 0.6, 32), acier);
+    m.matElement = mat(0x1f2937, 0.05, 0.85);
+    const pneu = new THREE.TorusGeometry(0.4, 0.17, 18, 48);
+    pneu.rotateY(Math.PI / 2);
+    pneu.scale(1.35, 1, 1);
+    ajout(m.liaison, pneu, m.matElement, 0, 0, 0, false);
+    for (const x of [-0.24, 0.24]) ajout(m.liaison, new THREE.TorusGeometry(0.33, 0.03, 8, 40).rotateY(Math.PI / 2), acier, x, 0, 0, false);
+    m.retirable = true;
+    m.rRepere = 0.28;
+  }
+
+  _accBroches(m) {
+    const fonte = mat(0x6b7280, 0.7, 0.4), acier = mat(0xc0c7ce, 0.9, 0.25);
+    ajout(m.moteur, cylX(0.28, -0.6, -0.2, 32), fonte);
+    ajout(m.moteur, cylX(0.56, -0.22, -0.08, 48), fonte);
+    ajout(m.reducteur, cylX(0.56, 0.06, 0.2, 48), fonte);
+    ajout(m.reducteur, cylX(0.28, 0.18, 0.6, 32), fonte);
+    m.matElement = mat(0x111827, 0.05, 0.85);
+    for (let k = 0; k < 6; k++) {
+      const a = k * Math.PI / 3, y = Math.cos(a) * 0.4, z = Math.sin(a) * 0.4;
+      ajout(m.moteur, cylX(0.045, -0.08, 0.16, 10), acier, 0, y, z);
+      ajout(m.moteur, cylX(0.07, -0.26, -0.22, 6), acier, 0, y, z);         // écrous
+      ajout(m.liaison, cylX(0.08, -0.06, 0.07, 14), m.matElement, 0, y, z, false);   // douilles
+    }
+    m.rRepere = 0.28;
+  }
+
+  _accLames(m) {
+    const acier = mat(0x9ca3af, 0.9, 0.28);
+    m.matElement = mat(0xe5e7eb, 0.95, 0.15);
+    const paquet = (x0, x1) => new THREE.CylinderGeometry(0.5, 0.5, x1 - x0, 6).rotateZ(-Math.PI / 2).translate((x0 + x1) / 2, 0, 0);
+    ajout(m.moteur, cylX(0.3, -0.6, -0.3, 32), acier);
+    ajout(m.moteur, cylX(0.48, -0.32, -0.26, 6), acier);
+    ajout(m.moteur, paquet(-0.26, -0.21), m.matElement);
+    ajout(m.reducteur, cylX(0.46, -0.21, -0.16, 6), acier);              // entretoise
+    ajout(m.reducteur, cylX(0.2, -0.16, 0.16, 24), acier);
+    ajout(m.reducteur, cylX(0.46, 0.16, 0.21, 6), acier);
+    ajout(m.reducteur, paquet(0.21, 0.26), m.matElement);
+    ajout(m.reducteur, cylX(0.48, 0.26, 0.32, 6), acier);
+    ajout(m.reducteur, cylX(0.3, 0.3, 0.6, 32), acier);
+    // Boulons alternés (moyeu / entretoise)
+    for (let k = 0; k < 6; k++) {
+      const a = k * Math.PI / 3, y = Math.cos(a) * 0.42, z = Math.sin(a) * 0.42;
+      ajout(k % 2 ? m.moteur : m.reducteur, cylX(0.045, -0.36, -0.12, 8), mat(0x374151, 0.7, 0.4), 0, y, z);
+      ajout(m.reducteur, cylX(0.045, 0.12, 0.36, 8), mat(0x374151, 0.7, 0.4), 0, y, z);
+    }
+    m.rRepere = 0.3;
+  }
+
+  _accDenture(m) {
+    const acier = mat(0x9ca3af, 0.9, 0.28);
+    m.matElement = mat(0xd1d5db, 0.95, 0.22);
+    ajout(m.moteur, cylX(0.3, -0.6, -0.3, 32), acier);
+    ajout(m.moteur, engrenage(30, 0.42, 0.37, 0.2, -0.2), m.matElement);
+    ajout(m.reducteur, engrenage(30, 0.42, 0.37, 0.2, 0.2), m.matElement);
+    ajout(m.reducteur, cylX(0.3, 0.3, 0.6, 32), acier);
+    // Manchon à denture intérieure (transparent pour voir les dents) + bride boulonnée
+    const manchon = mat(0x64748b, 0.8, 0.3, { transparent: true, opacity: 0.35, depthWrite: false });
+    const c = ajout(m.liaison, new THREE.CylinderGeometry(0.54, 0.54, 0.76, 40, 1, true).rotateZ(-Math.PI / 2), manchon, 0, 0, 0, false);
+    c.renderOrder = 3;
+    ajout(m.liaison, cylX(0.66, -0.045, 0.045, 48), mat(0x475569, 0.8, 0.35), 0, 0, 0, false);
+    for (const x of [-0.39, 0.39]) ajout(m.liaison, new THREE.TorusGeometry(0.44, 0.1, 8, 40).rotateY(Math.PI / 2), mat(0x475569, 0.8, 0.35), x, 0, 0, false);
+    for (let k = 0; k < 8; k++) {
+      const a = k * Math.PI / 4;
+      ajout(m.liaison, cylX(0.035, -0.08, 0.08, 6), mat(0x1f2937, 0.6, 0.4), 0, Math.cos(a) * 0.6, Math.sin(a) * 0.6, false);
+    }
+    ajout(m.liaison, new THREE.CylinderGeometry(0.03, 0.03, 0.1, 8), mat(0xfacc15, 0.6, 0.4), 0.2, 0.58, 0, false); // graisseur
+    m.retirable = true;
+    m.rRepere = 0.3;
+  }
+
+  _accChaine(m) {
+    const acier = mat(0x9ca3af, 0.9, 0.28);
+    ajout(m.moteur, cylX(0.25, -0.6, -0.16, 32), acier);
+    ajout(m.moteur, engrenage(18, 0.45, 0.37, 0.12, -0.1), acier);
+    ajout(m.reducteur, engrenage(18, 0.45, 0.37, 0.12, 0.1), acier);
+    ajout(m.reducteur, cylX(0.25, 0.16, 0.6, 32), acier);
+    // Chaîne duplex : rouleaux sur toute la largeur + flasques
+    m.matElement = mat(0x52525b, 0.8, 0.4);
+    for (let k = 0; k < 36; k++) {
+      const a = k * Math.PI * 2 / 36;
+      ajout(m.liaison, cylX(0.04, -0.17, 0.17, 8), m.matElement, 0, Math.cos(a) * 0.43, Math.sin(a) * 0.43, false);
+    }
+    for (const x of [-0.17, 0, 0.17]) {
+      ajout(m.liaison, new THREE.TorusGeometry(0.43, 0.035, 6, 48).rotateY(Math.PI / 2).scale(0.5, 1, 1), m.matElement, x, 0, 0, false);
+    }
+    // Capot de graissage (transparent)
+    const capot = ajout(m.liaison, new THREE.CylinderGeometry(0.58, 0.58, 0.5, 40, 1, true).rotateZ(-Math.PI / 2), mat(0xcbd5e1, 0.6, 0.3, { transparent: true, opacity: 0.25, depthWrite: false, side: THREE.DoubleSide }), 0, 0, 0, false);
+    capot.renderOrder = 3;
+    m.retirable = true;
+    m.rRepere = 0.25;
+  }
+
+  _accGrille(m) {
+    const acier = mat(0x9ca3af, 0.9, 0.28);
+    ajout(m.moteur, cylX(0.3, -0.6, -0.2, 32), acier);
+    ajout(m.moteur, engrenage(24, 0.48, 0.4, 0.18, -0.11), acier);     // moyeu à rainures
+    ajout(m.reducteur, engrenage(24, 0.48, 0.4, 0.18, 0.11), acier);
+    ajout(m.reducteur, cylX(0.3, 0.2, 0.6, 32), acier);
+    // Grille en serpentin passant d'un moyeu à l'autre
+    m.matElement = mat(0x3b82f6, 0.8, 0.3);
+    const pts = [];
+    for (let i = 0; i <= 480; i++) {
+      const t = i / 480 * Math.PI * 2;
+      const x = 0.19 * Math.max(-1, Math.min(1, 1.8 * Math.sin(24 * t)));
+      pts.push(new THREE.Vector3(x, Math.cos(t) * 0.45, Math.sin(t) * 0.45));
+    }
+    ajout(m.liaison, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, true), 480, 0.018, 5, true), m.matElement, 0, 0, 0, false);
+    // Couvercle en deux demi-coquilles (transparent)
+    const couv = ajout(m.liaison, new THREE.CylinderGeometry(0.6, 0.6, 0.56, 40, 1, true).rotateZ(-Math.PI / 2), mat(0x94a3b8, 0.7, 0.3, { transparent: true, opacity: 0.3, depthWrite: false, side: THREE.DoubleSide }), 0, 0, 0, false);
+    couv.renderOrder = 3;
+    ajout(m.liaison, cylX(0.66, -0.02, 0.02, 40), mat(0x475569, 0.7, 0.35), 0, 0, 0, false);
+    m.retirable = true;
+    m.rRepere = 0.3;
+  }
+
+  /* Affiche le modèle du type choisi et met à jour l'étiquette */
+  setType(type, nomEtiquette) {
+    if (!this.modeles[type]) return;
+    this.type = type;
+    for (const [t, m] of Object.entries(this.modeles)) {
+      m.moteur.visible = m.reducteur.visible = m.liaison.visible = t === type;
+    }
+    const sp = this.etiquettes && this.etiquettes.find(e => e.userData.compId === 'accouplement');
+    if (sp && nomEtiquette) {
+      const tex = textureTexte(nomEtiquette);
+      sp.material.map.dispose();
+      sp.material.map = tex;
+      sp.material.needsUpdate = true;
+      sp.userData.ratio = tex.userData.ratio;
+    }
+    if (this.idsSelection && this.idsSelection.length) this.selectionner(this.idsSelection);
   }
 
   /* --------------------------- Réducteur ---------------------------- */
@@ -730,12 +899,23 @@ export class SceneAccouplement {
     const aM = consigne ? this.thetaMesure : this.aMoteur;
     const aS = consigne ? this.thetaMesure / sim.cmd.rapport : this.aSortie;
     this.rotorMoteur.rotation.x = aM;
-    // Étoile usée : jeu entre les crabots (le moyeu réducteur « bat »)
+    // Pièce usée ou jeu de l'accouplement : le moyeu réducteur « bat » par rapport au moteur
+    if (this.type !== sim.cmd.type) this.setType(sim.cmd.type);
+    const mod = this.modeles[this.type];
     let jeu = 0;
-    if (r.elastoHS && Math.abs(sim.n) > 5) jeu = 0.12 * Math.sin(sim.temps * 9) + 0.25 * sim.choc;
+    if (Math.abs(sim.n) > 5) jeu = (r.elementHS ? 0.12 * Math.sin(sim.temps * 9) : 0) + 0.25 * sim.choc;
     this.moyeuReducteur.rotation.x = aM - jeu;
-    this.matEtoile.color.setHex(r.elastoHS ? 0x57381c : sim.usure > 0.5 ? 0xb45309 : 0xf59e0b);
-    this.etoile.scale.set(1, r.elastoHS ? 0.82 : 1, r.elastoHS ? 0.82 : 1);
+    // Couleur de la pièce d'usure (assombrie si usée) et rougeoiement si l'accouplement chauffe
+    const c = this._couleur || (this._couleur = new THREE.Color());
+    c.setHex(mod.couleurElement);
+    if (r.elementHS) c.lerp(new THREE.Color(0x5b3a1a), 0.7);
+    else if (sim.usure > 0.4) c.lerp(new THREE.Color(0x7c4a1e), (sim.usure - 0.4));
+    mod.matElement.color.copy(c);
+    const chauffe = Math.max(0, Math.min(1, (sim.tAccouplement - 45) / 50));
+    mod.matElement.emissive.setRGB(0.55 * chauffe, 0.08 * chauffe, 0);
+    mod.liaison.scale.set(1, r.elementHS && this.type === 'crabots' ? 0.82 : 1, r.elementHS && this.type === 'crabots' ? 0.82 : 1);
+    // Pour aligner, on dépose le manchon, la chaîne, la grille ou le pneu
+    mod.liaison.visible = !(sim.consigne && mod.retirable);
     // Arbres du réducteur (la clavette cisaillée découple le moyeu de l'arbre d'entrée)
     const i = sim.cmd.rapport;
     const aEntree = sim.pannes.clavette ? aS * i : aM;

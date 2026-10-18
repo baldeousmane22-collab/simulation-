@@ -252,6 +252,8 @@
         </label>
         <div class="lib-groupe"><span>Rapport de réduction i</span><b id="ac-val-i">i = 10 · η = 0,94</b></div>
         <div class="choix-rapport" role="group" aria-label="Rapport de réduction" id="ac-rapports"></div>
+        <div class="lib-groupe"><span>Type d'accouplement</span><button type="button" id="ac-comparer" class="btn-lien">📊 Comparer les types</button></div>
+        <div class="grille-types" role="group" aria-label="Type d'accouplement" id="ac-types"></div>
         <label class="curseur">
           <span class="lib">Charge : couple résistant en sortie <b id="ac-val-c">50 N·m</b></span>
           <input type="range" id="ac-curseur-c" min="0" max="400" step="5" value="50">
@@ -269,7 +271,7 @@
           <div><small>Glissement</small><b id="ac-m-g">—</b></div>
           <div id="ac-c-vib"><small>Vibrations</small><b id="ac-m-vib">0 mm/s</b></div>
           <div id="ac-c-tred"><small>Huile réducteur</small><b id="ac-m-tred">20 °C</b></div>
-          <div><small>Accouplement</small><b id="ac-m-tacc">20 °C</b></div>
+          <div id="ac-c-tacc"><small>Accouplement</small><b id="ac-m-tacc">20 °C</b></div>
           <div id="ac-c-usure"><small>Usure étoile</small><b id="ac-m-usure">0 %</b></div>
         </div>
         <button type="button" id="ac-reinit" class="btn-secondaire pleine-largeur">↺ Réinitialiser le banc</button>
@@ -306,7 +308,7 @@
             <div id="ac-r-dh"><small>Décalage horizontal</small><b>—</b></div>
             <div id="ac-r-ah"><small>Angulaire horizontal</small><b>—</b></div>
           </div>
-          <p class="aide">Tolérances à 1500 tr/min : décalage ≤ 0,10 mm · angulaire ≤ 0,08 mm / 100 mm.</p>
+          <p class="aide" id="ac-tol">Tolérances à 1500 tr/min : décalage ≤ 0,10 mm · angulaire ≤ 0,08 mm / 100 mm.</p>
           <button type="button" id="ac-calculer" class="btn-secondaire pleine-largeur">🧮 Afficher le calcul des corrections</button>
           <div id="ac-calcul" class="calcul" hidden></div>
         </div>

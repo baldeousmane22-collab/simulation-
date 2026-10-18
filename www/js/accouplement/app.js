@@ -6,8 +6,8 @@
    retour) est partagée avec l'application principale (../app.js).
    ===================================================================== */
 
-import { SimulationAccouplement, CARAC, rendementReducteur, zoneVibration } from './simulation.js';
-import { FICHES, PANNES, QUIZ, PROCEDURE } from './donnees.js';
+import { SimulationAccouplement, CARAC, TYPES, rendementReducteur, zoneVibration } from './simulation.js';
+import { FICHES, PANNES, QUIZ, PROCEDURE, TYPES_ACCOUPLEMENT } from './donnees.js';
 
 const $ = (sel, racine = document) => racine.querySelector(sel);
 const $$ = (sel, racine = document) => [...racine.querySelectorAll(sel)];
@@ -54,6 +54,7 @@ async function initialiser3D() {
     if (!(essai.getContext('webgl2') || essai.getContext('webgl'))) throw new Error('WebGL indisponible');
     const { SceneAccouplement } = await import('./scene3d.js');
     scene = new SceneAccouplement($('#ac-canvas'), (id) => ouvrirFiche(id));
+    scene.setType(sim.cmd.type, nomEtiquette(sim.cmd.type));
     $('#ac-chargement').hidden = true;
     new ResizeObserver(() => { if (scene) { majZones(); scene.redimensionner(); } }).observe($('#ac-vue3d'));
     return true;
@@ -156,6 +157,30 @@ for (const i of CARAC.RAPPORTS) {
   boiteRapports.appendChild(b);
 }
 
+/* Choix du type d'accouplement (machine arrêtée : on change l'accouplement) */
+const boiteTypes = $('#ac-types');
+for (const [t, f] of Object.entries(TYPES_ACCOUPLEMENT)) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.dataset.type = t;
+  b.textContent = f.court;
+  b.addEventListener('click', () => {
+    if (sim.cmd.type === t) { ouvrirFiche('accouplement'); return; }
+    if (Math.abs(sim.n) > 1 || sim.cmd.marche) { flash('Arrêtez le moteur (et consignez) avant de changer d\'accouplement.'); return; }
+    if (panneMystere) { flash('Terminez d\'abord le diagnostic de la panne mystère.'); return; }
+    sim.changerType(t);
+    if (scene) scene.setType(t, nomEtiquette(t));
+    flash(TYPES_ACCOUPLEMENT[t].nom + ' monté. ' + TYPES_ACCOUPLEMENT[t].role + ' (Touchez à nouveau le bouton pour sa fiche.)');
+    construirePannes();
+    majTout();
+  });
+  boiteTypes.appendChild(b);
+}
+function nomEtiquette(t) {
+  const c = TYPES_ACCOUPLEMENT[t].court;
+  return 'Accouplement ' + c.charAt(0).toLowerCase() + c.slice(1);
+}
+
 $('#ac-rearmer').addEventListener('click', () => {
   if (!sim.rearmer()) flash('Le relais est encore chaud : attendez quelques secondes avant de réarmer.');
   majCommandes();
@@ -192,6 +217,7 @@ function majCommandes() {
   const etages = CARAC.ETAGES[c.rapport];
   $('#ac-val-i').textContent = `i = ${c.rapport} · ${etages} étage${etages > 1 ? 's' : ''} · η = ${fr(eta)}`;
   $('#ac-rearmer').hidden = !sim.declenche;
+  $$('#ac-types button').forEach(x => x.classList.toggle('actif', x.dataset.type === c.type));
   majAlignement();
 }
 
@@ -218,8 +244,9 @@ function majInterface() {
   $('#ac-m-tred').textContent = `${Math.round(sim.tReducteur)} °C`;
   $('#ac-c-tred').classList.toggle('alarme', sim.tReducteur > 80);
   $('#ac-m-tacc').textContent = `${Math.round(sim.tAccouplement)} °C`;
-  $('#ac-m-usure').textContent = r.elastoHS ? 'HS' : `${Math.round(sim.usure * 100)} %`;
-  $('#ac-c-usure').classList.toggle('alarme', r.elastoHS);
+  $('#ac-m-usure').textContent = r.elementHS ? 'HS' : `${Math.round(sim.usure * 100)} %`;
+  $('#ac-c-usure').classList.toggle('alarme', r.elementHS);
+  $('#ac-c-tacc').classList.toggle('alarme', sim.tAccouplement > 60);
   if (performance.now() > finFlash) {
     const m = $('#ac-message');
     if (m.textContent !== r.message) m.textContent = r.message;
@@ -259,20 +286,57 @@ function choisirOnglet(nom) {
    FICHES DES COMPOSANTS
    ===================================================================== */
 function ouvrirFiche(id) {
+  if (id === 'accouplement') { ouvrirFeuille(TYPES_ACCOUPLEMENT[sim.cmd.type].nom, htmlFicheType(sim.cmd.type)); if (scene) scene.selectionner(id); return; }
   const f = FICHES[id];
   if (!f) return;
-  $('#ac-fiche-nom').textContent = f.nom;
-  $('#ac-fiche-corps').innerHTML = `
+  ouvrirFeuille(f.nom, `
     <p class="symbole">${f.plaque}</p>
     <h3>Rôle</h3><p>${f.role}</p>
     <h3>Fonctionnement</h3><p>${f.fonctionnement}</p>
-    <h3>Pannes courantes</h3><ul>${f.pannes.map(p => `<li>${p}</li>`).join('')}</ul>`;
+    <h3>Pannes courantes</h3><ul>${f.pannes.map(p => `<li>${p}</li>`).join('')}</ul>`);
+  if (scene) scene.selectionner(id);
+}
+
+const liste = (t) => `<ul>${t.map(x => `<li>${x}</li>`).join('')}</ul>`;
+
+/* Fiche d'un type d'accouplement (avec ses tolérances et sa capacité) */
+function htmlFicheType(type) {
+  const f = TYPES_ACCOUPLEMENT[type], T = TYPES[type];
+  return `
+    <p class="symbole">${f.plaque}</p>
+    <h3>Rôle</h3><p>${f.role}</p>
+    <h3>Fonctionnement</h3><p>${f.fonctionnement}</p>
+    <h3>Avantages</h3>${liste(f.avantages)}
+    <h3>Limites</h3>${liste(f.limites)}
+    <h3>Alignement</h3><p>Tolérance à respecter : décalage ≤ ${fr(T.tolDec)} mm, angulaire ≤ ${fr(T.tolAng)} mm/100 mm.
+      Capacité de l'accouplement (au-delà, il s'abîme) : ≈ ${fr(T.capDec)} mm et ${fr(T.capAng)} mm/100 mm.</p>
+    <h3>Entretien</h3><p>${f.entretien}</p>
+    <h3>Emplois typiques</h3><p>${f.emploi}</p>
+    <h3>Pannes courantes</h3>${liste([f.panneElement.nom + ' : ' + f.panneElement.symptomes.join(', ').toLowerCase() + '.'].concat(T.lubrifie ? ['Manque de graisse : échauffement, usure rapide.'] : []).concat(['Désalignement : vibrations, échauffement, usure.']))}`;
+}
+
+/* Tableau comparatif de tous les types */
+function htmlComparatif() {
+  const lignes = Object.entries(TYPES_ACCOUPLEMENT).map(([t, f]) => {
+    const T = TYPES[t], c = f.comparatif;
+    return `<tr class="${t === sim.cmd.type ? 'actif' : ''}"><td><b>${f.court}</b></td><td>${c.amorti}</td><td>${c.desal}</td><td>${c.graissage}</td><td>${c.jeu}</td><td>${fr(T.tolDec)} / ${fr(T.tolAng)}</td></tr>`;
+  }).join('');
+  return `<div class="defile-x"><table class="table-comparatif">
+    <thead><tr><th>Type</th><th>Amortit les chocs</th><th>Désalignement admis</th><th>Graissage</th><th>Jeu</th><th>Tolérance d'alignement (mm · mm/100)</th></tr></thead>
+    <tbody>${lignes}</tbody></table></div>
+    <p class="aide">Souple ne veut pas dire « pas besoin d'aligner » : quelle que soit la capacité de l'accouplement, on aligne selon la table de vitesse (et plus finement encore pour un accouplement rigide).</p>
+    <h3>Emplois typiques</h3>${liste(Object.values(TYPES_ACCOUPLEMENT).map(f => `<b>${f.court}</b> : ${f.emploi}`))}`;
+}
+
+function ouvrirFeuille(titre, html) {
+  $('#ac-fiche-nom').textContent = titre;
+  $('#ac-fiche-corps').innerHTML = html;
   $('#ac-fiche-corps').scrollTop = 0;
   const dejaOuverte = $$('.feuille').some(x => !x.hidden);
   $$('.feuille').forEach(x => { x.hidden = x.id !== 'ac-fiche'; });
   if (!dejaOuverte) history.pushState({ ecran: 'accoup', feuille: 'ac-fiche' }, '');
-  if (scene) scene.selectionner(id);
 }
+$('#ac-comparer').addEventListener('click', () => ouvrirFeuille('Comparatif des accouplements', htmlComparatif()));
 $('[data-ac-fermer]').addEventListener('click', () => { if (!$('#ac-fiche').hidden) history.back(); });
 
 /* Appelé par l'application principale quand les feuilles sont fermées */
@@ -285,7 +349,7 @@ const listeProc = $('#ac-procedure');
 PROCEDURE.forEach(t => { const li = document.createElement('li'); li.textContent = t; listeProc.appendChild(li); });
 
 const boiteEp = $('#ac-epaisseurs');
-for (const e of [0.05, 0.10, 0.20, 0.50]) {
+for (const e of [0.02, 0.05, 0.10, 0.20, 0.50]) {
   const b = document.createElement('button');
   b.type = 'button';
   b.dataset.ep = e;
@@ -450,8 +514,11 @@ function majAlignement() {
       ? `✔ Mesure valable : R(3 h) + R(9 h) = ${frSigne(d.r[1] + d.r[3])} = R(12 h) + R(6 h).`
       : '✖ 3 h + 9 h ≠ 12 h + 6 h : mesure douteuse, recommencez.';
   }
-  const res = [['#ac-r-dv', d && d.dv, CARAC.TOL_DECALAGE, 'mm'], ['#ac-r-av', d && d.av, CARAC.TOL_ANGLE, 'mm/100'],
-               ['#ac-r-dh', d && d.dh, CARAC.TOL_DECALAGE, 'mm'], ['#ac-r-ah', d && d.ah, CARAC.TOL_ANGLE, 'mm/100']];
+  const T = TYPES[sim.cmd.type];
+  $('#ac-tol').textContent = `Tolérances (${TYPES_ACCOUPLEMENT[sim.cmd.type].court.toLowerCase()}, 1500 tr/min) : décalage ≤ ${fr(T.tolDec)} mm · angulaire ≤ ${fr(T.tolAng)} mm / 100 mm.`
+    + (sim.cmd.type === 'rigide' ? ' Accouplement rigide : alignement au centième, utilisez les cales de 0,02 mm.' : '');
+  const res = [['#ac-r-dv', d && d.dv, T.tolDec, 'mm'], ['#ac-r-av', d && d.av, T.tolAng, 'mm/100'],
+               ['#ac-r-dh', d && d.dh, T.tolDec, 'mm'], ['#ac-r-ah', d && d.ah, T.tolAng, 'mm/100']];
   let toutBon = !!d;
   for (const [sel, v, tol, u] of res) {
     const el = $(sel);
@@ -482,42 +549,58 @@ function majAlignement() {
    PANNES
    ===================================================================== */
 const listePannes = $('#ac-liste-pannes');
-for (const [cle, p] of Object.entries(PANNES)) {
-  const ligne = document.createElement('div');
-  ligne.className = 'panne-ligne';
-  ligne.dataset.panne = cle;
-  ligne.innerHTML = `
-    <label class="interrupteur" title="Activer la panne">
-      <input type="checkbox" aria-label="${p.nom}"><span></span>
-    </label>
-    <span class="nom">${p.nom}</span>
-    <button type="button" class="btn-info">Détails</button>`;
-  const cb = $('input', ligne);
-  cb.addEventListener('change', () => {
-    if (panneMystere) { cb.checked = !cb.checked; return; }
-    activerPanne(cle, cb.checked);
-    if (cb.checked) {
-      if (!sim.consigne && !sim.declenche) sim.cmd.marche = true;   // on démarre pour voir les symptômes
-      afficherDetailPanne(cle);
-      if (scene) scene.selectionner(p.composant);
-    }
-    majTout();
-  });
-  $('.btn-info', ligne).addEventListener('click', () => afficherDetailPanne(cle));
-  listePannes.appendChild(ligne);
+
+/* Panne vue pour le type d'accouplement monté (nom et textes de la pièce d'usure) */
+function panne(cle) {
+  const p = PANNES[cle];
+  return cle === 'element' ? { ...p, ...TYPES_ACCOUPLEMENT[sim.cmd.type].panneElement } : p;
 }
+/* Pannes possibles : « manque de graisse » seulement pour les accouplements graissés */
+function pannesPossibles() {
+  return Object.keys(PANNES).filter(k => !PANNES[k].lubrifie || TYPES[sim.cmd.type].lubrifie);
+}
+
+function construirePannes() {
+  listePannes.innerHTML = '';
+  for (const cle of pannesPossibles()) {
+    const p = panne(cle);
+    const ligne = document.createElement('div');
+    ligne.className = 'panne-ligne';
+    ligne.dataset.panne = cle;
+    ligne.innerHTML = `
+      <label class="interrupteur" title="Activer la panne">
+        <input type="checkbox" aria-label="${p.nom}"><span></span>
+      </label>
+      <span class="nom">${p.nom}</span>
+      <button type="button" class="btn-info">Détails</button>`;
+    const cb = $('input', ligne);
+    cb.addEventListener('change', () => {
+      if (panneMystere) { cb.checked = !cb.checked; return; }
+      activerPanne(cle, cb.checked);
+      if (cb.checked) {
+        if (!sim.consigne && !sim.declenche) sim.cmd.marche = true;   // on démarre pour voir les symptômes
+        afficherDetailPanne(cle);
+        if (scene) scene.selectionner(p.composant);
+      }
+      majTout();
+    });
+    $('.btn-info', ligne).addEventListener('click', () => afficherDetailPanne(cle));
+    listePannes.appendChild(ligne);
+  }
+  $('#ac-detail-panne').hidden = true;
+}
+construirePannes();
 
 function activerPanne(cle, actif) {
   sim.pannes[cle] = actif;
   if (cle === 'desalignement') { if (actif) sim.nouvelExercice(true); else sim.alignerParfaitement(); }
-  if (cle === 'elastomere' && !actif) sim.usure = 0;
+  if (cle === 'element' && !actif) sim.usure = 0;
 }
 
 function afficherDetailPanne(cle) {
-  const p = PANNES[cle];
+  const p = panne(cle);
   const d = $('#ac-detail-panne');
   d.hidden = false;
-  const liste = (t) => `<ul>${t.map(x => `<li>${x}</li>`).join('')}</ul>`;
   d.innerHTML = `<h3>${p.nom}</h3>
     <h4>Symptômes</h4>${liste(p.symptomes)}
     <h4>Causes possibles</h4>${liste(p.causes)}
@@ -552,7 +635,7 @@ $('#ac-reparer').addEventListener('click', () => {
 });
 
 $('#ac-mystere').addEventListener('click', () => {
-  const cles = Object.keys(PANNES);
+  const cles = pannesPossibles();
   const precedente = panneMystere;
   do { panneMystere = cles[Math.floor(Math.random() * cles.length)]; } while (cles.length > 1 && panneMystere === precedente);
   toutReparer();
@@ -566,10 +649,10 @@ $('#ac-mystere').addEventListener('click', () => {
   const choix = $('#ac-mystere-choix');
   choix.hidden = false;
   choix.innerHTML = '<p class="aide">Regardez les mesures (onglet Commandes), l\'accouplement, le réducteur et l\'arbre de sortie… Quelle est la panne ?</p>';
-  for (const [cle, p] of Object.entries(PANNES)) {
+  for (const cle of cles) {
     const b = document.createElement('button');
     b.type = 'button';
-    b.textContent = p.nom;
+    b.textContent = panne(cle).nom;
     b.addEventListener('click', () => repondreMystere(cle, b));
     choix.appendChild(b);
   }
@@ -585,12 +668,12 @@ function repondreMystere(cle, bouton) {
   const res = $('#ac-mystere-resultat');
   res.hidden = false;
   res.className = 'resultat ' + (bonne ? 'bon' : 'faux');
-  res.innerHTML = (bonne ? '✅ Bon diagnostic ! ' : '❌ Ce n\'est pas ça. ') + `La panne était : <b>${PANNES[panneMystere].nom}</b>.`;
+  res.innerHTML = (bonne ? '✅ Bon diagnostic ! ' : '❌ Ce n\'est pas ça. ') + `La panne était : <b>${panne(panneMystere).nom}</b>.`;
   const vraie = panneMystere;
   panneMystere = null;
   majPannes();
   afficherDetailPanne(vraie);
-  scene && scene.selectionner(PANNES[vraie].composant);
+  scene && scene.selectionner(panne(vraie).composant);
 }
 
 /* =====================================================================
@@ -641,7 +724,8 @@ function afficherQuestion() {
 
 function afficherCorrection() {
   const score = QUIZ.reduce((s, q, i) => s + (quiz.reponses[i] === q.bonne ? 1 : 0), 0);
-  const appreciation = score >= 9 ? 'Excellent ! 🏆' : score >= 7 ? 'Très bien 👍' : score >= 5 ? 'Peut mieux faire : relisez les fiches des composants.' : 'À retravailler : refaites l\'alignement puis le quiz.';
+  const ratio = score / QUIZ.length;
+  const appreciation = ratio >= 0.9 ? 'Excellent ! 🏆' : ratio >= 0.7 ? 'Très bien 👍' : ratio >= 0.5 ? 'Peut mieux faire : relisez les fiches des composants.' : 'À retravailler : refaites l\'alignement puis le quiz.';
   $('#ac-quiz').innerHTML = `
     <div class="score"><span>Votre note</span><b>${score} / ${QUIZ.length}</b><span>${appreciation}</span></div>
     <h3>Correction</h3>

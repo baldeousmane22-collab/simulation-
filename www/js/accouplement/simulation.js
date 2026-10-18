@@ -42,6 +42,26 @@ export const CARAC = {
   TOL_ANGLE: 0.08       // tolérance angulaire (mm / 100 mm)
 };
 
+/* ---------------------------------------------------------------------
+   Types d'accouplement : comportement mécanique (les textes sont dans donnees.js)
+   tolDec / tolAng : tolérances d'alignement à respecter (mm, mm/100 mm) =
+     la plus sévère entre la table 1500 tr/min (0,10 / 0,08) et le constructeur ;
+   capDec / capAng : désalignement que l'accouplement encaisse sans s'abîmer ;
+   kVib : transmission des efforts de désalignement aux paliers (vibrations) ;
+   amorti : absorbe les à-coups ; jeu : jeu à l'inversion du couple ;
+   lubrifie : doit être graissé ; element : pièce d'usure ; etaAcc : rendement.
+   --------------------------------------------------------------------- */
+export const TYPES = {
+  crabots:  { tolDec: 0.10, tolAng: 0.08, capDec: 0.20, capAng: 0.15, kVib: 1.0, amorti: 0.6, jeu: false, lubrifie: false, etaAcc: 0.995 },
+  rigide:   { tolDec: 0.02, tolAng: 0.02, capDec: 0.03, capAng: 0.03, kVib: 2.4, amorti: 0,   jeu: false, lubrifie: false, etaAcc: 1.0 },
+  pneu:     { tolDec: 0.10, tolAng: 0.08, capDec: 1.00, capAng: 0.60, kVib: 0.45, amorti: 1,  jeu: false, lubrifie: false, etaAcc: 0.99 },
+  broches:  { tolDec: 0.10, tolAng: 0.08, capDec: 0.30, capAng: 0.20, kVib: 0.9, amorti: 0.5, jeu: false, lubrifie: false, etaAcc: 0.995 },
+  lames:    { tolDec: 0.10, tolAng: 0.08, capDec: 0.15, capAng: 0.30, kVib: 1.0, amorti: 0,   jeu: false, lubrifie: false, etaAcc: 0.999 },
+  denture:  { tolDec: 0.10, tolAng: 0.08, capDec: 0.30, capAng: 0.25, kVib: 1.1, amorti: 0,   jeu: true,  lubrifie: true,  etaAcc: 0.99 },
+  chaine:   { tolDec: 0.10, tolAng: 0.08, capDec: 0.25, capAng: 0.20, kVib: 1.0, amorti: 0.1, jeu: true,  lubrifie: true,  etaAcc: 0.985 },
+  grille:   { tolDec: 0.10, tolAng: 0.08, capDec: 0.30, capAng: 0.20, kVib: 0.8, amorti: 0.4, jeu: false, lubrifie: true,  etaAcc: 0.99 }
+};
+
 const CN = CARAC.P_NOM / (CARAC.N_NOM * Math.PI / 30);            // ≈ 9,9 N·m
 const C_MAX = CARAC.C_MAX_SUR_CN * CN;
 const SN = (CARAC.N_SYNC - CARAC.N_NOM) / CARAC.N_SYNC;           // glissement nominal
@@ -86,10 +106,11 @@ export class SimulationAccouplement {
       sens: 1,            // +1 = sens avant, -1 = sens inverse
       frequence: 50,      // consigne du variateur (Hz)
       rapport: 10,        // rapport de réduction i
-      charge: 50          // couple résistant en sortie (N·m)
+      charge: 50,         // couple résistant en sortie (N·m)
+      type: 'crabots'     // type d'accouplement (voir TYPES)
     };
     this.pannes = {
-      desalignement: false, elastomere: false, roulement: false,
+      desalignement: false, element: false, graisse: false, roulement: false,
       huile: false, piedBoiteux: false, clavette: false, bloquee: false
     };
     this.consigne = false;     // consignation (cadenas) : interdit la marche
@@ -113,12 +134,12 @@ export class SimulationAccouplement {
     this.thermique = 0;        // état du relais thermique (1 = échauffement nominal)
     this.declenche = false;    // relais thermique déclenché
     this.tMoteur = 20; this.tReducteur = 20; this.tAccouplement = 20;
-    this.usure = 0;            // usure de l'élastomère (0 à 1)
+    this.usure = 0;            // usure de l'élément de liaison (0 à 1)
     this.temps = 0;
     this.choc = 0;             // intensité d'un choc (élastomère usé) pour la 3D
     // Alignement : erreur de montage + cales et vis de poussée
     this.align = {
-      dv0: 0.02, av0: -0.01, dh0: -0.01, ah0: 0.01,     // erreurs « d'origine » (mm, mm/100 mm)
+      dv0: 0.01, av0: -0.008, dh0: -0.006, ah0: 0.005, // erreurs « d'origine » (mm, mm/100 mm)
       caleAvant: CARAC.CALE_INITIALE, caleArriere: CARAC.CALE_INITIALE,
       latAvant: 0, latArriere: 0                        // déplacement latéral des pattes (mm)
     };
@@ -150,11 +171,24 @@ export class SimulationAccouplement {
   }
 
   /* Sévérité globale du désalignement : 1 = à la limite de la tolérance */
-  severiteAlignement() {
+  severiteAlignement(tolDec = this.typeAcc().tolDec, tolAng = this.typeAcc().tolAng) {
     const d = this.defauts();
-    const dec = Math.hypot(d.dv, d.dh) / CARAC.TOL_DECALAGE;
-    const ang = Math.hypot(d.av, d.ah) / CARAC.TOL_ANGLE;
+    const dec = Math.hypot(d.dv, d.dh) / tolDec;
+    const ang = Math.hypot(d.av, d.ah) / tolAng;
     return Math.hypot(dec, ang) / Math.SQRT2;
+  }
+
+  typeAcc() { return TYPES[this.cmd.type] || TYPES.crabots; }
+
+  /* Changement d'accouplement (machine arrêtée) : pièce neuve, pannes liées remises à zéro */
+  changerType(type) {
+    if (!TYPES[type]) return false;
+    this.cmd.type = type;
+    this.usure = 0;
+    this.pannes.element = false;
+    this.pannes.graisse = false;
+    this.tAccouplement = Math.min(this.tAccouplement, 30);
+    return true;
   }
 
   /* Corrections à apporter (mm) : cales à ajouter (+) ou retirer (−) sous les pattes,
@@ -196,7 +230,7 @@ export class SimulationAccouplement {
   /* Alignement parfait (bouton « Tout réparer ») */
   alignerParfaitement() {
     const a = this.align;
-    a.dv0 = 0.02; a.av0 = -0.01; a.dh0 = -0.01; a.ah0 = 0.01;
+    a.dv0 = 0.01; a.av0 = -0.008; a.dh0 = -0.006; a.ah0 = 0.005;
     a.caleAvant = CARAC.CALE_INITIALE; a.caleArriere = CARAC.CALE_INITIALE;
     a.latAvant = 0; a.latArriere = 0;
     this.mesure = null;
@@ -245,6 +279,7 @@ export class SimulationAccouplement {
     let eta = rendementReducteur(i);
     if (pn.huile) eta -= 0.12;                       // frottements sans lubrification
     if (pn.roulement) eta -= 0.02;
+    eta *= this.typeAcc().etaAcc;                    // pertes dans l'accouplement
     const couplee = !pn.clavette;                    // la clavette transmet-elle le couple ?
     const cFrotMoteur = 0.12 + (pn.roulement ? 0.35 : 0);         // N·m côté moteur
     const cChargeSortie = pn.bloquee ? 2000 : c.charge;           // N·m côté sortie
@@ -310,34 +345,48 @@ export class SimulationAccouplement {
     const rthRed = pn.huile ? 0.55 : 0.28;                        // °C par W perdu
     this.tReducteur = lisser(this.tReducteur, 20 + pertesRed * rthRed, 25, dt);
     this.tMoteur = lisser(this.tMoteur, 20 + 55 * this.thermique + (pn.roulement && nAbs > 50 ? 15 : 0), 30, dt);
-    const sev = this.severiteAlignement();
+    const T = this.typeAcc();
+    const sevTable = this.severiteAlignement(CARAC.TOL_DECALAGE, CARAC.TOL_ANGLE); // effort sur les paliers
+    const sevCap = this.severiteAlignement(T.capDec, T.capAng);                    // fatigue de l'accouplement
+    const sansGraisse = T.lubrifie && pn.graisse;
     const vRel = nAbs / CARAC.N_NOM;
-    this.tAccouplement = lisser(this.tAccouplement, 20 + vRel * (4 + 14 * sev * sev), 20, dt);
+    // Échauffement : frottement des pièces qui glissent (dentures, chaîne, grille) ou hystérésis du caoutchouc
+    // (un accouplement rigide ne glisse pas : ce sont les roulements du moteur qui chauffent)
+    const rigide = this.cmd.type === 'rigide';
+    const echauf = 4 + (rigide ? 0 : 10 * Math.min(3, sevCap) ** 2) + (sansGraisse ? 45 : 0) + (this.cmd.type === 'pneu' ? 6 : 0);
+    this.tAccouplement = lisser(this.tAccouplement, 20 + vRel * echauf, 20, dt);
+    if (rigide) this.tMoteur += (vRel * 12 * Math.min(3, sevCap) ** 2 * 0.5) * (1 - Math.exp(-dt / 30));
 
-    // 7) Usure de l'élastomère : rapide si le désalignement dépasse la tolérance
-    this.usure = Math.min(1, this.usure + 0.004 * Math.max(0, sev - 0.8) ** 2 * vRel * dt);
-    const elastoHS = pn.elastomere || this.usure >= 1;
+    // 7) Usure de l'élément de liaison : rapide au-delà de sa capacité ou sans graisse
+    const vitesseUsure = 0.012 * Math.max(0, Math.min(3, sevCap) - 0.6) ** 2 + (sansGraisse ? 0.02 : 0);
+    this.usure = Math.min(1, this.usure + vitesseUsure * vRel * dt);
+    const elementHS = pn.element || this.usure >= 1;
 
     // 8) Vibrations (mm/s efficaces) mesurées sur le palier avant du moteur
     let v = 0;
     if (nAbs > 5) {
-      v = vRel * (0.55 + 1.5 * sev + (elastoHS ? 1.3 : 0) + (pn.piedBoiteux ? 1.6 : 0) + (pn.roulement ? 2.6 : 0))
+      v = vRel * (0.55 + 1.5 * T.kVib * sevTable + (elementHS ? 1.3 : 0) + (sansGraisse ? 0.9 : 0)
+        + (pn.piedBoiteux ? 1.6 : 0) + (pn.roulement ? 2.6 : 0))
         + (pn.huile ? 0.9 * vRel : 0) + 0.6 * this.usure * vRel;
     }
-    // Choc à l'inversion de couple quand l'étoile est usée (jeu entre les crabots)
+    // Choc à l'inversion du couple : jeu de l'accouplement (chaîne, denture) ou pièce usée,
+    // atténué par un accouplement qui amortit
     const accel = (n - (this._nPrec ?? n)) / Math.max(dt, 1e-3);
     this._nPrec = n;
-    if (elastoHS && Math.abs(accel) > 600) this.choc = 1;
+    const avecJeu = elementHS || T.jeu;
+    if (avecJeu && Math.abs(accel) > 600) this.choc = Math.max(this.choc, (elementHS ? 1 : 0.5) * (1 - 0.6 * T.amorti));
     this.choc = Math.max(0, this.choc - dt * 3);
     r.vibration = lisser(r.vibration, v, 0.4, dt);
-    r.elastoHS = elastoHS;
-    r.severite = sev;
+    r.elementHS = elementHS;
+    r.sansGraisse = sansGraisse;
+    r.severite = sevTable;
+    r.severiteCapacite = sevCap;
 
-    this._messages(nAbs, ns, i, eta, elastoHS);
+    this._messages(nAbs, ns, i, eta, elementHS);
     return r;
   }
 
-  _messages(nAbs, ns, i, eta, elastoHS) {
+  _messages(nAbs, ns, i, eta, elementHS) {
     const r = this.res, c = this.cmd, pn = this.pannes;
     let m = '', a = '', vert = false;
     const z = zoneVibration(r.vibration);
@@ -366,7 +415,9 @@ export class SimulationAccouplement {
     if (!a && c.marche) {
       if (this.tReducteur > 80) a = 'Réducteur trop chaud (' + Math.round(this.tReducteur) + ' °C)';
       else if (z.zone === 'D') a = 'Vibrations dangereuses (' + r.vibration.toFixed(1).replace('.', ',') + ' mm/s)';
-      else if (elastoHS && this.usure >= 1) a = 'Élastomère détruit : remplacez l\'étoile';
+      else if (elementHS && this.usure >= 1) a = 'Accouplement détruit : remplacez l\'élément de liaison';
+      else if (r.sansGraisse && this.tAccouplement > 60) a = 'Accouplement chaud : manque de graisse';
+      else if (this.cmd.type === 'rigide' && r.severiteCapacite > 2) a = 'Accouplement rigide désaligné : paliers surchargés !';
       else if (this.thermique > 1.05) a = 'Surcharge : I = ' + r.intensite.toFixed(1).replace('.', ',') + ' A > In';
     }
     r.message = m; r.alerte = a; r.alerteVerte = vert;
