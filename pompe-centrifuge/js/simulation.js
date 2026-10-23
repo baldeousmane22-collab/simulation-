@@ -200,7 +200,7 @@ export class SimulationPompe {
     const renouvellement = Q / 3600 * 1000 * 4180;                  // W/K emportés par le débit
     const tEq = c.temperature + (renouvellement > 1 ? chaleur / renouvellement : chaleur / 25);
     this.tCorps = lisser(this.tCorps, Math.min(this.amorcee ? 110 : 140, tEq), renouvellement > 200 ? 4 : 60, dt);
-    const tPalierEq = 25 + 20 * this.n + (pn.roulement ? 45 * this.n : 0) + (!this.amorcee && pn.garniture ? 0 : 0);
+    const tPalierEq = 25 + 20 * this.n + (pn.roulement ? 45 * this.n : 0);
     this.tPalier = lisser(this.tPalier, tPalierEq, 25, dt);
 
     // Vibrations (mm/s)

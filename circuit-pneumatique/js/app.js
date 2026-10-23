@@ -52,7 +52,7 @@ function demarrerBoucle() {
   dernierTemps = performance.now();
   requestAnimationFrame(image);
 }
-function arreterBoucle() { enCours = false; sim.cmd.bouton = false; sons.pause(); }
+function arreterBoucle() { enCours = false; appuyer(false); sons.pause(); }
 
 function image(t) {
   if (!enCours) return;
@@ -128,12 +128,11 @@ $('#pneu').addEventListener('pointerdown', (e) => {
 
 /* Bouton poussoir 2V1 : actif tant qu'on le maintient (doigt, souris ou clavier) */
 const bouton2v1 = $('#pn-bouton2v1');
-const appuyer = (oui) => {
-  if (sim.cmd.bouton === oui) return;
+function appuyer(oui) {
   sim.cmd.bouton = oui;
   bouton2v1.classList.toggle('enfonce', oui);
   bouton2v1.textContent = oui ? '🟢 Bouton 2V1 enfoncé… relâchez' : '🟢 Maintenir le bouton 2V1';
-};
+}
 bouton2v1.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   appuyer(true);
