@@ -21,7 +21,8 @@ comprime, gouttes de purge, bouffées d'air. Sons synthétisés (bouton 🔊).
 
 - **Commandes** : compresseur, Sortie / Rentrée / Auto, vanne 3/2, pression, vitesses, charge,
   purge, bouton 2V1 à maintenir ; mesures en direct et calcul de l'effort F = p × S.
-- **Schéma** : ISO 1219 coloré en direct (repérage 1A, 1V1, 1V2, 1V3, 1S1, 1S2, 0V1, 2V1, 2V2, 2A).
+- **Schéma** : ISO 1219 coloré en direct (repérage 1A, 1V1, 1V2, 1V3, 1S1, 1S2, 0V1, 2V1, 2V2, 2A),
+  dans l'onglet Schéma et imprimé sur le panneau du banc 3D (le toucher ouvre l'onglet).
 - **Pannes** : 9 pannes + panne mystère. **Quiz** : 20 questions. Fiche pour chaque composant.
 
 ## Ouvrir l'application

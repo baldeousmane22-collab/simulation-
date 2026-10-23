@@ -391,3 +391,13 @@ input[type=range] { width: 100%; height: 40px; margin: 2px 0; accent-color: var(
 #pneu .btn-maintenir { margin: 4px 0 10px; touch-action: none; user-select: none; -webkit-user-select: none; }
 #pneu .btn-maintenir.enfonce { background: #15803d; color: #fff; transform: scale(.98); }
 #pneu .carte .mesures { margin-bottom: 0; }
+
+/* Écrans étroits (320 px) et téléphones couchés : textes des onglets et des boutons plus compacts */
+@media (max-width: 360px) {
+  .segmente button, .segmente button b { font-size: .7rem; }
+  .onglets button { font-size: .78rem; }
+  .btn-pompe { padding: 0 6px; gap: 6px; }
+}
+@media (orientation: landscape) and (max-width: 760px) {
+  .onglets button { font-size: .74rem; padding: 0 5px; }
+}
