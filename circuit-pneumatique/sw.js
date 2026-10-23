@@ -4,7 +4,7 @@
    « Cache d'abord, réseau en secours ». Changer VERSION_CACHE à chaque
    livraison pour que les téléphones téléchargent la nouvelle version.
    ===================================================================== */
-const VERSION_CACHE = 'circuit-pneumatique-v4';
+const VERSION_CACHE = 'circuit-pneumatique-v5';
 const FICHIERS = [
   './', './index.html', './manifest.webmanifest', './css/style.css',
   './js/app.js', './js/simulation.js', './js/scene3d.js', './js/schema.js', './js/donnees.js', './js/sons.js',

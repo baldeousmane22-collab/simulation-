@@ -57,7 +57,8 @@ function arreterBoucle() { enCours = false; appuyer(false); sons.pause(); }
 function image(t) {
   if (!enCours) return;
   requestAnimationFrame(image);
-  const dt = Math.min(0.05, Math.max(0, (t - dernierTemps) / 1000));
+  // Jusqu'à 0,1 s par image : le banc reste en temps réel même si le téléphone affiche peu d'images
+  const dt = Math.min(0.1, Math.max(0, (t - dernierTemps) / 1000));
   dernierTemps = t;
   if (!scene) return;
   sim.calculer(dt);
@@ -128,7 +129,10 @@ $('#pneu').addEventListener('pointerdown', (e) => {
 
 /* Bouton poussoir 2V1 : actif tant qu'on le maintient (doigt, souris ou clavier) */
 const bouton2v1 = $('#pn-bouton2v1');
+let debutAppui = 0, minuterieRelache = 0;
 function appuyer(oui) {
+  clearTimeout(minuterieRelache);
+  if (oui) debutAppui = performance.now();
   sim.cmd.bouton = oui;
   bouton2v1.classList.toggle('enfonce', oui);
   bouton2v1.textContent = oui ? '🟢 Bouton 2V1 enfoncé… relâchez' : '🟢 Maintenir le bouton 2V1';
@@ -136,20 +140,44 @@ function appuyer(oui) {
 bouton2v1.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   appuyer(true);
+  expliquerSiBloque();
   try { bouton2v1.setPointerCapture(e.pointerId); } catch (err) { /* doigt déjà relâché */ }
 });
-for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) bouton2v1.addEventListener(ev, () => appuyer(false));
+// Un toucher très bref est prolongé jusqu'à 0,5 s pour que le petit vérin ait le temps de sortir
+function relacher() {
+  if (!sim.cmd.bouton) return;
+  const reste = 500 - (performance.now() - debutAppui);
+  if (reste > 0) { clearTimeout(minuterieRelache); minuterieRelache = setTimeout(() => appuyer(false), reste); } else appuyer(false);
+}
+for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) bouton2v1.addEventListener(ev, relacher);
 bouton2v1.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); appuyer(true); } });
-bouton2v1.addEventListener('keyup', (e) => { if (e.key === ' ' || e.key === 'Enter') appuyer(false); });
+bouton2v1.addEventListener('keyup', (e) => { if (e.key === ' ' || e.key === 'Enter') relacher(); });
 bouton2v1.addEventListener('contextmenu', (e) => e.preventDefault());
 
-$('#pn-compresseur').addEventListener('click', () => { sim.cmd.compresseur = !sim.cmd.compresseur; majCommandes(); });
+$('#pn-compresseur').addEventListener('click', () => {
+  sim.cmd.compresseur = !sim.cmd.compresseur;
+  flash(sim.cmd.compresseur
+    ? 'Compresseur démarré : il gonfle la cuve jusqu\'à ' + CARAC.P_COUPURE + ' bar puis s\'arrête seul (pressostat) et redémarre à ' + CARAC.P_ENCLENCHE + ' bar. Commandez maintenant « Sortie » ou « Auto ».'
+    : 'Compresseur arrêté : le banc fonctionne encore sur la réserve d\'air de la cuve, jusqu\'à ce qu\'elle se vide.');
+  majCommandes();
+});
+
+/* Si le vérin ne peut pas bouger, on dit pourquoi au lieu de ne rien faire */
+function expliquerSiBloque() {
+  const pr = sim.pReseau - P_ATM, pc = sim.pCuve - P_ATM;
+  if (!sim.cmd.vanne) flash('Le vérin ne peut pas bouger : la vanne d\'arrivée 3/2 est fermée (circuit à l\'échappement). Rouvrez-la dans l\'onglet Commandes.');
+  else if (pc < 1.5 && !sim.compresseurTourne) flash('Le vérin ne peut pas bouger : la cuve est vide. Appuyez sur « Compresseur » pour la gonfler.');
+  else if (pr < CARAC.P_PILOTAGE) flash('Pression réseau trop basse (' + fr(Math.max(0, pr)) + ' bar) : montez le régulateur de pression (onglet Commandes).');
+  else return false;
+  return true;
+}
 
 $$('#pneu [data-pn-cmd]').forEach(b => b.addEventListener('click', () => {
   const cmd = b.dataset.pnCmd;
+  expliquerSiBloque();
   if (cmd === 'auto') {
     sim.cmd.auto = !sim.cmd.auto;
-    if (sim.cmd.auto) flash('Sélecteur 0V1 sur « Auto » : les capteurs sont alimentés, le distributeur est piloté par 1S1 (tige rentrée → sortie) et 1S2 (tige sortie → rentrée).');
+    if (sim.cmd.auto && !expliquerSiBloque()) flash('Sélecteur 0V1 sur « Auto » : les capteurs sont alimentés, le distributeur est piloté par 1S1 (tige rentrée → sortie) et 1S2 (tige sortie → rentrée).');
   } else {
     if (sim.cmd.auto) { sim.cmd.auto = false; flash('Cycle automatique arrêté : commande manuelle.'); }
     sim.impulsionManuelle(cmd === 'sortie' ? 14 : 12);
