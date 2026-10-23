@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Plan Maison</string>
+    <string name="title_activity_main">Plan Maison</string>
+    <string name="package_name">fr.plan.maison</string>
+    <string name="custom_url_scheme">fr.plan.maison</string>
+</resources>

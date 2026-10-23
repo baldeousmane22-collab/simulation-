@@ -1,0 +1,22 @@
+{
+  "name": "plan-maison-apk",
+  "version": "1.0.0",
+  "description": "APK Android (Capacitor) de l'application Plan de maison (www/plan-maison).",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "preparer": "bash scripts/preparer-web.sh",
+    "cap:sync": "bash scripts/preparer-web.sh && npx cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/filesystem": "8.1.5",
+    "@capacitor/share": "8.0.3",
+    "three": "0.170.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3"
+  }
+}
