@@ -10,7 +10,7 @@ name: Publier sur GitHub Pages
 
 on:
   push:
-    branches: [main, 'claude/**']
+    branches: [main, 'claude/**', 'ccr-*']
     paths: ['www/**', 'scripts/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 
@@ -37,7 +37,7 @@ jobs:
 
       - name: Vérifier la présence des fichiers essentiels
         run: |
-          for f in index.html manifest.webmanifest sw.js js/app.js js/scene3d.js vendor/three.min.js; do
+          for f in index.html manifest.webmanifest sw.js js/app.js js/scene3d.js vendor/three.min.js plan-maison/index.html; do
             test -f "www/$f" || { echo "Fichier manquant : www/$f"; exit 1; }
           done
 

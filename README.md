@@ -155,3 +155,23 @@ Les textes destinés aux élèves sont dans `www/js/donnees.js` (hydraulique) et
 `www/js/accouplement/donnees.js` (moteur + réducteur) : le formateur peut
 les modifier sans toucher au reste. Le numéro de version et le cache hors connexion sont
 mis à jour automatiquement à chaque publication.
+
+---
+
+# Plan de maison (plain-pied, 3 chambres)
+
+Application de plan d'architecte : terrain 20,00 × 25,00 m, maison 15,00 × 12,00 m + terrasse
+couverte, abri voiture, annexe, clôture, portail et portillon.
+
+- **Lien web (aucune autorisation demandée)** : https://baldeousmane22-collab.github.io/simulation-/plan-maison/
+- **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/plan-maison/PlanMaison.apk
+
+Onglets **Plan 2D** (cotes complètes, portes avec arcs, fenêtres, flèche du nord, échelle graphique,
+cartouche, tableau des surfaces, export PNG A3 au 1/100), **Vue 3D** (toit amovible, étiquettes,
+voiture, rotation / pincement / déplacement à deux doigts) et **Surfaces** (détail des pièces,
+emprise bâtie, % du terrain, vérification automatique que toutes les cotes s'additionnent).
+
+Toute l'appli tient dans `www/plan-maison/index.html` ; toutes les dimensions sont dans l'objet
+`CONFIG` en tête du script. Le projet Android est dans `plan-maison/` (Capacitor 8, Three.js
+embarqué pour fonctionner hors connexion) et l'APK est construit par le workflow
+« Construire l'APK Plan de maison ».

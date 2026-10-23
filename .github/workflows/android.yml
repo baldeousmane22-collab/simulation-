@@ -16,7 +16,7 @@ name: Construire l'APK Android
 on:
   push:
     branches: [main, 'claude/**']
-    paths: ['www/**', 'android/**', 'scripts/**', 'package.json', 'package-lock.json', 'capacitor.config.json', '.github/workflows/android.yml']
+    paths: ['www/**', '!www/plan-maison/**', 'android/**', 'scripts/**', 'package.json', 'package-lock.json', 'capacitor.config.json', '.github/workflows/android.yml']
   workflow_dispatch:
   # Chaque lundi : entretien de la clé permanente (voir job « entretien »)
   schedule:
