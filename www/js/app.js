@@ -7,7 +7,6 @@ import { FICHES, ETAPES, PANNES, QUIZ } from './donnees.js';
 import { svgSchema, majSchema } from './schema.js';
 import { VERSION } from './version.js';
 import { initBanc } from './accouplement/app.js';
-import { initPneu } from './pneumatique/app.js';
 
 const $ = (sel, racine = document) => racine.querySelector(sel);
 const $$ = (sel, racine = document) => [...racine.querySelectorAll(sel)];
@@ -33,13 +32,10 @@ function afficherEcran(id) {
   $$('.ecran').forEach(e => e.classList.toggle('actif', e.id === id));
   if (id === 'sim') demarrerBoucle(); else arreterBoucle();
   if (id === 'accoup') banc.demarrerBoucle(); else banc.arreterBoucle();
-  if (id === 'pneu') pneu.demarrerBoucle(); else pneu.arreterBoucle();
 }
 // Banc « moteur + accouplement + réducteur » (écran #accoup, module séparé)
 const banc = initBanc(afficherEcran);
-// Banc pneumatique (écran #pneu, module séparé)
-const pneu = initPneu(afficherEcran);
-const ECRANS_3D = ['sim', 'accoup', 'pneu'];
+const ECRANS_3D = ['sim', 'accoup'];
 
 async function ouvrirSimulation(onglet = 'commandes', depuisHistorique = false) {
   if (!depuisHistorique) history.pushState({ ecran: 'sim' }, '');
@@ -122,10 +118,9 @@ function image(t) {
 
 // Pause automatique quand l'application passe en arrière-plan
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) { arreterBoucle(); banc.arreterBoucle(); pneu.arreterBoucle(); }
+  if (document.hidden) { arreterBoucle(); banc.arreterBoucle(); }
   else if ($('#sim').classList.contains('actif')) demarrerBoucle();
   else if ($('#accoup').classList.contains('actif')) banc.demarrerBoucle();
-  else if ($('#pneu').classList.contains('actif')) pneu.demarrerBoucle();
 });
 
 /* =====================================================================
@@ -279,7 +274,6 @@ function fermerFeuilles(depuisHistorique = false) {
   $$('.feuille').forEach(f => { f.hidden = true; });
   if (scene && ongletActif !== 'pas') scene.selectionner(null);
   banc.surFermetureFeuilles();
-  pneu.surFermetureFeuilles();
   if (!depuisHistorique) history.back();
 }
 $$('[data-fermer]').forEach(b => b.addEventListener('click', () => fermerFeuilles()));

@@ -374,20 +374,3 @@ input[type=range] { width: 100%; height: 40px; margin: 2px 0; accent-color: var(
 .table-comparatif tr.actif td { background: #422006; }
 .defile-x { overflow-x: auto; }
 @media (orientation: landscape) and (min-width: 900px) { .grille-types { grid-template-columns: repeat(4, 1fr); } }
-
-/* =====================================================================
-   Banc pneumatique
-   ===================================================================== */
-.btn-geant.cyan {
-  min-height: 72px; font-size: 1.45rem; color: #fff;
-  background: linear-gradient(180deg, #06b6d4, #0e7490);
-  box-shadow: 0 10px 30px rgba(8,145,178,.35), inset 0 -4px 0 rgba(0,0,0,.18);
-}
-.btn-geant.cyan small { display: block; font-size: .78rem; font-weight: 600; opacity: .85; letter-spacing: 0; }
-#pneu .ligne-boutons .btn-consigner { font-size: .9rem; }
-#pneu .calcul .ok { color: var(--ok); font-weight: 700; }
-#pneu .calcul .ko { color: #fca5a5; font-weight: 700; }
-#pneu .schema-svg svg { max-height: none; }
-#pneu .btn-maintenir { margin: 4px 0 10px; touch-action: none; user-select: none; -webkit-user-select: none; }
-#pneu .btn-maintenir.enfonce { background: #15803d; color: #fff; transform: scale(.98); }
-#pneu .carte .mesures { margin-bottom: 0; }
