@@ -36,7 +36,16 @@ sûreté 10 bar), **vanne d'arrivée 3/2** (consignation : coupe et met le circu
 **FRL** (filtre à purge, régulateur avec manomètre, lubrificateur), **distributeur 5/2 bistable**
 piloté en 14 / 12, **silencieux**, **régleurs de débit unidirectionnels** montés au refoulement,
 **vérin double effet Ø32 × 200** vertical à tube transparent qui soulève une charge (0 à 40 kg) et
-**capteurs à galet 1S1 / 1S2** pour le cycle automatique (va-et-vient).
+**capteurs à galet 1S1 / 1S2** alimentés par le **sélecteur de cycle 0V1** pour le cycle automatique
+(va-et-vient), **bloc de distribution**, **manomètres des chambres A et B** et amortissements de
+fin de course. Un second circuit montre le **bouton poussoir 3/2 NF (2V1)**, la **soupape
+d'échappement rapide (2V2)** et un **vérin simple effet à ressort (2A)** à tube transparent.
+
+Animation réaliste : piston, bielle et vilebrequin visibles dans le compresseur transparent,
+aiguille de la cuve qui bat, galets des capteurs enfoncés par la came, ralentissement et
+léger rebond en fin de course, ressort qui se comprime, gouttes de la purge, bouffées d'air aux
+échappements. **Sons** synthétisés (bouton 🔊) : compresseur, souffle des échappements, fuite,
+soupape, claquements du distributeur et des fins de course.
 
 - **Commandes** : compresseur, Sortie / Rentrée (commandes manuelles des pilotes), cycle Auto,
   vanne 3/2, pression du régulateur, vitesse de sortie et de rentrée (régleurs), charge, purge ;
@@ -45,8 +54,10 @@ piloté en 14 / 12, **silencieux**, **régleurs de débit unidirectionnels** mon
 - **Schéma** : schéma ISO 1219 (repérage 1A, 1V1, 1V2, 1V3, 1S1, 1S2, orifices ISO 5599) coloré
   en direct : bleu = air comprimé, vert = échappement, gris = atmosphère.
 - **Pannes** : fuite à un raccord, joint de piston usé, filtre colmaté, silencieux colmatés,
-  purge oubliée (eau, distributeur qui colle), pressostat bloqué, capteur 1S2 déréglé + panne mystère.
-- **Quiz** : 16 questions (FRL, F = p × S, 5/2, réglage au refoulement, consignation, diagnostic).
+  purge oubliée (eau, distributeur qui colle), pressostat bloqué, capteur 1S2 déréglé, ressort du
+  vérin simple effet cassé, échappement rapide bloqué + panne mystère.
+- **Quiz** : 20 questions (FRL, F = p × S, 5/2, monostable / bistable, réglage au refoulement,
+  échappement rapide, amortissements, consignation, diagnostic).
 
 ## 1. Ouvrir l'application web (aucune installation)
 
@@ -169,6 +180,7 @@ www/                    Application web (c'est elle qui est publiée et embarqu�
     scene3d.js          scène 3D (compresseur, FRL, distributeur, vérin transparent, tubes animés)
     schema.js           schéma ISO 1219 en SVG, coloré en direct
     donnees.js          textes pédagogiques (fiches, pannes, quiz)
+    sons.js             bruitages synthétisés (Web Audio)
   vendor/three.min.js   Three.js r186 (embarqué pour le hors-connexion)
   sw.js, manifest.webmanifest, icons/   PWA
 android/                Projet Android Capacitor 8

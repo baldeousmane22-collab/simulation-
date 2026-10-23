@@ -389,6 +389,7 @@
     <div class="barre-haut">
       <button type="button" class="btn-rond" id="pn-retour" title="Retour à l'accueil" aria-label="Retour à l'accueil">←</button>
       <div class="titre-sim" id="pn-titre">Banc pneumatique</div>
+      <button type="button" class="btn-rond" id="pn-son" title="Sons du banc" aria-label="Sons" aria-pressed="false">🔇</button>
       <button type="button" class="btn-rond" id="pn-etiquettes" title="Afficher / masquer les étiquettes" aria-label="Étiquettes" aria-pressed="true">🏷️</button>
     </div>
 
@@ -417,7 +418,7 @@
       <div class="segmente" role="group" aria-label="Commande du distributeur">
         <button type="button" data-pn-cmd="rentree" title="Rentrée de tige (pilote 12)"><b>▼</b><span>Rentrée</span></button>
         <button type="button" data-pn-cmd="sortie" title="Sortie de tige (pilote 14)"><b>▲</b><span>Sortie</span></button>
-        <button type="button" data-pn-cmd="auto" title="Cycle automatique (va-et-vient)"><b>↻</b><span>Auto</span></button>
+        <button type="button" data-pn-cmd="auto" title="Sélecteur 0V1 : cycle automatique (va-et-vient)"><b>↻</b><span>Auto</span></button>
       </div>
       <button type="button" id="pn-replier" class="btn-rond petit btn-replier" aria-label="Replier le panneau" title="Replier / déplier">▾</button>
     </div>
@@ -473,6 +474,16 @@
           <div><small>Air par cycle</small><b id="pn-m-conso">—</b></div>
           <div><small>Cycles</small><b id="pn-m-n">0</b></div>
           <div><small>Capteurs</small><b id="pn-m-capt">—</b></div>
+        </div>
+
+        <div class="carte">
+          <h3>Circuit 2 : vérin simple effet</h3>
+          <p class="aide">Bouton poussoir 3/2 NF (2V1) → soupape d'échappement rapide (2V2) → vérin simple effet à ressort (2A). Maintenez le bouton enfoncé, puis relâchez.</p>
+          <button type="button" id="pn-bouton2v1" class="btn-principal pleine-largeur btn-maintenir">🟢 Maintenir le bouton 2V1</button>
+          <div class="mesures">
+            <div><small>Pression vérin 2A</small><b id="pn-m-p2">0 bar</b></div>
+            <div><small>Sortie de tige 2A</small><b id="pn-m-x2">0 mm</b></div>
+          </div>
         </div>
 
         <div class="carte">

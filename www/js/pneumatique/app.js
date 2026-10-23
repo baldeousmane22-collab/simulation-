@@ -9,12 +9,14 @@
 import { SimulationPneumatique, CARAC, P_ATM, S_PISTON, S_ANNULAIRE } from './simulation.js';
 import { FICHES, PANNES, QUIZ } from './donnees.js';
 import { svgSchema, majSchema } from './schema.js';
+import { SonsPneumatiques } from './sons.js';
 
 const $ = (sel, racine = document) => racine.querySelector(sel);
 const $$ = (sel, racine = document) => [...racine.querySelectorAll(sel)];
 const fr = (v, d = 1) => v.toFixed(d).replace('.', ',').replace(/^-(0,0*)$/, '$1');
 
 const sim = new SimulationPneumatique();
+const sons = new SonsPneumatiques();
 let scene = null;
 let enCours = false, dernierTemps = 0, compteurUI = 0;
 let ongletActif = 'commandes';
@@ -62,10 +64,11 @@ async function initialiser3D() {
 function demarrerBoucle() {
   if (enCours) return;
   enCours = true;
+  sons.reprendre();
   dernierTemps = performance.now();
   requestAnimationFrame(image);
 }
-function arreterBoucle() { enCours = false; }
+function arreterBoucle() { enCours = false; sim.cmd.bouton = false; sons.pause(); }
 
 function image(t) {
   if (!enCours) return;
@@ -74,6 +77,7 @@ function image(t) {
   dernierTemps = t;
   if (!scene) return;
   sim.calculer(dt);
+  sons.maj(sim);
   scene.maj(sim, dt);
   scene.rendre(dt);
   if (++compteurUI % 6 === 0) majInterface();
@@ -121,13 +125,45 @@ $('#pn-etiquettes').addEventListener('click', (e) => {
 });
 $('#pn-replier').addEventListener('click', () => $('#pn-panneau').classList.toggle('replie'));
 
+/* Sons : choix mémorisé ; le navigateur exige un geste de l'utilisateur pour démarrer l'audio */
+let sonVoulu = true;
+try { sonVoulu = localStorage.getItem('pneu-son') !== 'non'; } catch (e) { /* stockage indisponible */ }
+function majBoutonSon() {
+  const b = $('#pn-son');
+  b.setAttribute('aria-pressed', String(sons.actif));
+  b.textContent = sons.actif ? '🔊' : '🔇';
+}
+$('#pn-son').addEventListener('click', () => {
+  sonVoulu = !sons.actif;
+  sons.activer(sonVoulu);
+  try { localStorage.setItem('pneu-son', sonVoulu ? 'oui' : 'non'); } catch (e) { /* stockage indisponible */ }
+  majBoutonSon();
+});
+$('#pneu').addEventListener('pointerdown', (e) => {
+  if (sonVoulu && !sons.actif && e.target.id !== 'pn-son') { sons.activer(true); majBoutonSon(); }
+}, true);
+
+/* Bouton poussoir 2V1 : actif tant qu'on le maintient (doigt, souris ou clavier) */
+const bouton2v1 = $('#pn-bouton2v1');
+const appuyer = (oui) => {
+  if (sim.cmd.bouton === oui) return;
+  sim.cmd.bouton = oui;
+  bouton2v1.classList.toggle('enfonce', oui);
+  bouton2v1.textContent = oui ? '🟢 Bouton 2V1 enfoncé… relâchez' : '🟢 Maintenir le bouton 2V1';
+};
+bouton2v1.addEventListener('pointerdown', (e) => { e.preventDefault(); bouton2v1.setPointerCapture?.(e.pointerId); appuyer(true); });
+for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) bouton2v1.addEventListener(ev, () => appuyer(false));
+bouton2v1.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); appuyer(true); } });
+bouton2v1.addEventListener('keyup', (e) => { if (e.key === ' ' || e.key === 'Enter') appuyer(false); });
+bouton2v1.addEventListener('contextmenu', (e) => e.preventDefault());
+
 $('#pn-compresseur').addEventListener('click', () => { sim.cmd.compresseur = !sim.cmd.compresseur; majCommandes(); });
 
 $$('#pneu [data-pn-cmd]').forEach(b => b.addEventListener('click', () => {
   const cmd = b.dataset.pnCmd;
   if (cmd === 'auto') {
     sim.cmd.auto = !sim.cmd.auto;
-    if (sim.cmd.auto) flash('Cycle automatique : le distributeur est piloté par les capteurs 1S1 (tige rentrée → sortie) et 1S2 (tige sortie → rentrée).');
+    if (sim.cmd.auto) flash('Sélecteur 0V1 sur « Auto » : les capteurs sont alimentés, le distributeur est piloté par 1S1 (tige rentrée → sortie) et 1S2 (tige sortie → rentrée).');
   } else {
     if (sim.cmd.auto) { sim.cmd.auto = false; flash('Cycle automatique arrêté : commande manuelle.'); }
     sim.impulsionManuelle(cmd === 'sortie' ? 14 : 12);
@@ -143,6 +179,7 @@ $('#pn-vanne').addEventListener('click', () => {
 $('#pn-purger').addEventListener('click', () => {
   const avait = sim.eau > 0.3;
   sim.purger();
+  if (scene) scene.purger();
   flash(avait ? 'Purge : l\'eau accumulée dans la cuve du filtre (et du compresseur) est évacuée. À faire chaque jour !' : 'Purge faite : presque pas d\'eau, le filtre est entretenu.');
   majTout();
 });
@@ -213,6 +250,8 @@ function majInterface() {
   $('#pn-m-cycle').textContent = sim.cycles ? `${fr(sim.dureeCycle)} s` : '—';
   $('#pn-m-conso').textContent = sim.cycles ? `${fr(sim.conso, 2)} NL` : '—';
   $('#pn-m-n').textContent = String(sim.cycles);
+  $('#pn-m-p2').textContent = `${fr(bar(sim.p2))} bar`;
+  $('#pn-m-x2').textContent = `${Math.round(sim.position2 * CARAC.COURSE2)} mm`;
   $('#pn-m-capt').textContent = `1S1 ${r.capteur1 ? '●' : '○'} · 1S2 ${r.capteur2 ? '●' : '○'}`;
   // Calcul de l'effort (F = p × S)
   $('#pn-calcul').innerHTML = `
@@ -324,7 +363,8 @@ function activerPanne(cle, actif) {
   if (actif) {
     sim.cmd.vanne = true;
     sim.cmd.compresseur = true;
-    if (cle !== 'fuite' && cle !== 'pressostat') sim.cmd.auto = true;
+    if (cle === 'ressort' || cle === 'echapRapide') flash('Panne sur le circuit 2 : maintenez puis relâchez le bouton 2V1 et observez le vérin simple effet.');
+    else if (cle !== 'fuite' && cle !== 'pressostat') sim.cmd.auto = true;
   }
 }
 
@@ -375,7 +415,7 @@ $('#pn-mystere').addEventListener('click', () => {
   if (scene) { scene.selectionner(null); scene.recentrer(); }
   const choix = $('#pn-mystere-choix');
   choix.hidden = false;
-  choix.innerHTML = '<p class="aide">Le banc tourne en cycle automatique. Regardez les manomètres, la vitesse du vérin, le compresseur, les échappements, le filtre… Vous pouvez arrêter le cycle et commander à la main. Quelle est la panne ?</p>';
+  choix.innerHTML = '<p class="aide">Le banc tourne en cycle automatique. Regardez les manomètres, la vitesse du vérin, le compresseur, les échappements, le filtre… Vous pouvez arrêter le cycle, commander à la main et essayer le bouton 2V1. Quelle est la panne ?</p>';
   for (const cle of cles) {
     const b = document.createElement('button');
     b.type = 'button';

@@ -138,6 +138,48 @@ export const FICHES = {
       'Tube pincé ou plié : débit réduit.',
       'Tube arraché sous pression : coup de fouet dangereux.'
     ]
+  },
+  nourrice: {
+    nom: 'Bloc de distribution (nourrice)',
+    plaque: '1 entrée G1/4 · 3 sorties à raccords instantanés',
+    role: 'Distribue l\'air conditionné par le FRL vers les différents circuits du poste : distributeur 1V1, bouton 2V1, sélecteur 0V1.',
+    fonctionnement: 'Toutes les sorties sont à la même pression (celle du régulateur). Un circuit qui consomme beaucoup peut faire baisser la pression des autres si le FRL est trop petit.',
+    pannes: ['Bouchon ou raccord desserré : fuite.', 'Sortie inutilisée non bouchée : perte d\'air permanente.']
+  },
+  bouton: {
+    nom: 'Distributeur 3/2 NF à bouton poussoir (2V1)',
+    plaque: '3 orifices, 2 positions · normalement fermé · bouton champignon · rappel par ressort (monostable)',
+    role: 'Commande le vérin simple effet 2A : tant qu\'on appuie, l\'air passe ; quand on relâche, le circuit se vide.',
+    fonctionnement: 'Au repos (ressort), 1 est bouché et 2 est relié à l\'échappement 3. Bouton enfoncé : 1 → 2, le vérin est alimenté. Monostable : il revient seul en position de repos dès qu\'on relâche (contrairement au 5/2 bistable).',
+    pannes: ['Ressort cassé : le distributeur reste en position travail.', 'Joint usé : fuite permanente à l\'échappement 3.', 'Petit débit : le vérin se remplit lentement.']
+  },
+  echapRapide: {
+    nom: 'Soupape d\'échappement rapide (2V2)',
+    plaque: 'Corps laiton G1/8 · clapet à membrane · silencieux intégré',
+    role: 'Accélère le retour du vérin simple effet en vidant sa chambre directement à l\'atmosphère, sans faire revenir l\'air par le tube et le distributeur.',
+    fonctionnement: 'Quand le bouton alimente, la pression pousse la membrane qui ferme l\'échappement : l\'air va vers le vérin. Quand on relâche, la pression chute côté bouton : la membrane bascule et ouvre un gros passage du vérin vers l\'atmosphère. On la monte au plus près du vérin.',
+    pannes: ['Membrane collée ou bloquée : l\'air repasse par le petit échappement du bouton, le retour est lent.', 'Silencieux colmaté : retour lent.']
+  },
+  verinSE: {
+    nom: 'Vérin simple effet à rappel par ressort (2A)',
+    plaque: 'Ø20 mm · course 50 mm · ressort de rappel 20 → 40 N',
+    role: 'Fait un mouvement simple (serrage, éjection, blocage) avec un seul orifice d\'alimentation.',
+    fonctionnement: 'L\'air pousse le piston et comprime le ressort : la tige sort. À l\'échappement, c\'est le ressort qui ramène la tige. La force utile en sortie = p × S − force du ressort : à 6 bar, 0,6 × 314 = 188 N moins 20 à 40 N. Il consomme deux fois moins d\'air qu\'un double effet, mais sa course est courte et son retour sans force.',
+    pannes: ['Ressort cassé : la tige reste sortie après la mise à l\'échappement.', 'Joint usé : perte de force, air qui souffle par l\'évent.', 'Évent bouché : le vérin freine (la chambre du ressort se comprime).']
+  },
+  selecteur: {
+    nom: 'Sélecteur de cycle 0V1 (3/2 à accrochage)',
+    plaque: 'Distributeur 3/2 NF à commande manuelle tournante, à accrochage (reste dans la position choisie)',
+    role: 'Met en service le cycle automatique : il alimente les capteurs 1S1 et 1S2.',
+    fonctionnement: 'Position « Auto » : 1 → 2, les capteurs reçoivent l\'air et peuvent piloter le distributeur 1V1. Position « Arrêt » : les capteurs sont à l\'échappement, le cycle s\'arrête à la fin du mouvement en cours (le 5/2 bistable garde sa position).',
+    pannes: ['Sélecteur qui fuit : cycle qui repart seul.', 'Accrochage usé : le sélecteur revient seul en position arrêt.']
+  },
+  manometres: {
+    nom: 'Manomètres des chambres A et B',
+    plaque: 'Ø40 mm · 0 à 10 bar · montés sur des tés près des orifices du vérin',
+    role: 'Montrent la pression dans chaque chambre du vérin double effet : indispensables pour comprendre le réglage de vitesse et diagnostiquer une fuite interne.',
+    fonctionnement: 'En sortie de tige, A est presque à la pression du réseau et B garde une contre-pression (c\'est le régleur qui la freine) : la tige est tenue entre deux coussins d\'air. En fin de course, l\'amortissement fait remonter la pression de la chambre qui s\'échappe. Avec un joint de piston usé, les deux pressions se rapprochent.',
+    pannes: ['Aiguille bloquée : manomètre à changer.', 'Lecture qui chute à l\'arrêt : fuite sur la chambre.']
   }
 };
 
@@ -190,6 +232,20 @@ export const PANNES = {
     symptomes: ['En cycle automatique, la tige sort puis reste sortie', 'Le voyant du capteur 1S2 reste éteint, tige sortie', 'En commande manuelle, tout fonctionne'],
     causes: ['Capteur desserré, déplacé par les vibrations ou un choc', 'Came du plateau déréglée', 'Galet cassé'],
     solutions: ['Mettre à l\'échappement et cadenasser', 'Replacer le capteur pour que la came écrase le galet en fin de course (sans le mettre en butée)', 'Serrer les vis et tester en cycle']
+  },
+  ressort: {
+    nom: 'Ressort du vérin simple effet cassé',
+    composant: 'verinSE',
+    symptomes: ['Le vérin 2A sort quand on appuie sur le bouton', 'Il reste sorti quand on relâche, alors que sa chambre est à l\'échappement (manomètre à 0)', 'On peut repousser la tige à la main'],
+    causes: ['Fatigue du ressort (nombre de cycles)', 'Corrosion (air humide)', 'Surcharge en bout de tige'],
+    solutions: ['Mettre à l\'échappement et cadenasser', 'Remplacer le ressort ou le vérin', 'Contrôler la qualité de l\'air (purge, filtre)']
+  },
+  echapRapide: {
+    nom: 'Échappement rapide bloqué',
+    composant: 'echapRapide',
+    symptomes: ['Le vérin 2A sort normalement', 'Mais il revient lentement quand on relâche le bouton', 'L\'air sort par le petit échappement du bouton 2V1 au lieu de la soupape'],
+    causes: ['Membrane collée (huile, poussière)', 'Silencieux de la soupape colmaté', 'Soupape montée à l\'envers'],
+    solutions: ['Nettoyer ou remplacer la soupape d\'échappement rapide', 'Vérifier le sens de montage (P côté bouton, A côté vérin)', 'Remplacer le silencieux']
   }
 };
 
@@ -289,5 +345,29 @@ export const QUIZ = [
     choix: ['Augmenter la pression au régulateur (dans la limite autorisée) ou réduire la charge', 'Ouvrir les silencieux', 'Fermer le régleur de sortie', 'Purger le filtre'],
     bonne: 0,
     expl: 'F = 0,2 N/mm² × 804 mm² ≈ 161 N < poids 42 kg × 9,81 ≈ 412 N. À 6 bar, F ≈ 482 N : le vérin passe (de justesse, avec les frottements).'
+  },
+  {
+    q: 'Quelle est la différence entre un distributeur monostable et un bistable ?',
+    choix: ['Le monostable revient seul en position de repos (ressort), le bistable garde sa position', 'Le monostable a 5 orifices, le bistable 3', 'Le bistable ne peut pas être piloté', 'Aucune différence'],
+    bonne: 0,
+    expl: 'Le bouton 2V1 est monostable : on relâche, il revient. Le 5/2 1V1 est bistable : il garde la dernière commande reçue (mémoire).'
+  },
+  {
+    q: 'À quoi sert la soupape d\'échappement rapide 2V2 ?',
+    choix: ['À vider le vérin directement à l\'atmosphère pour un retour rapide', 'À augmenter la pression du vérin', 'À ralentir la sortie de tige', 'À filtrer l\'air'],
+    bonne: 0,
+    expl: 'Sans elle, l\'air du vérin repasse par le tube et le petit échappement du bouton : retour lent. Montée sur le vérin, elle ouvre un gros passage direct.'
+  },
+  {
+    q: 'Vérin simple effet Ø20 (S = 314 mm²) à 6 bar, ressort de 40 N en fin de course. Force utile en fin de sortie ?',
+    choix: ['≈ 148 N', '≈ 188 N', '≈ 228 N', '≈ 40 N'],
+    bonne: 0,
+    expl: 'F = p × S − F ressort = 0,6 × 314 − 40 ≈ 188 − 40 = 148 N : le ressort « mange » une partie de l\'effort.'
+  },
+  {
+    q: 'Pourquoi le vérin double effet ralentit-il juste avant la fin de course ?',
+    choix: ['Les amortissements pneumatiques : l\'air qui s\'échappe ne sort plus que par la vis d\'amortissement', 'Le compresseur s\'arrête', 'Le distributeur se ferme à moitié', 'La charge devient plus lourde'],
+    bonne: 0,
+    expl: 'Sur les 15 derniers millimètres, un piston d\'amortissement bouche le gros passage : l\'air est comprimé et ne sort que par une petite vis réglable. Le choc en butée est évité.'
   }
 ];

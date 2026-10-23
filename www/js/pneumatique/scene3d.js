@@ -8,6 +8,11 @@
    voir le piston et la pression dans chaque chambre.
    Les tubes sont transparents : des particules montrent l'air qui circule
    (bleu = air comprimé, vert = échappement, gris = atmosphère).
+   En haut à gauche, le circuit 2 : bouton poussoir 3/2 (2V1), soupape
+   d'échappement rapide (2V2) et vérin simple effet à ressort (2A), à tube
+   transparent pour voir le ressort se comprimer. Le carter et le cylindre
+   du compresseur sont transparents : on voit le piston, la bielle et le
+   vilebrequin tourner (rotation ralentie).
    ===================================================================== */
 
 import * as THREE from '../../vendor/three.min.js';
@@ -24,6 +29,10 @@ const EP_PISTON = 0.25;
 const Y_PLATEAU0 = 5.65;          // dessous du plateau, tige rentrée
 const Y_DIST = 2.6, X_DIST = 2.4; // distributeur
 const Y_FRL = 3.6;
+const XB = -1.4, Y_BOUTON = 5.0;   // bouton poussoir 2V1
+const Y_SE = 6.55, X_SE0 = -1.2;   // vérin simple effet : axe, début du tube
+const COURSE2 = 0.5;              // 50 mm
+const X_NOURRICE = 0.9;
 const DIR_PORTRAIT = new THREE.Vector3(0.35, 0.3, 1).normalize();
 const DIR_PAYSAGE = new THREE.Vector3(0.3, 0.28, 1).normalize();
 const COULEURS = { pression: 0x1e88ff, echap: 0x19c24a, repos: 0x9aa4ae };
@@ -33,13 +42,17 @@ const v = (x, y, z = Z) => new THREE.Vector3(x, y, z);
 const TRACES = {
   cuve: [v(-5.7, 4.45), v(-5.7, 4.75), v(-4.9, 4.75), v(-4.9, 3.1)],
   alim: [v(-3.9, 3.5), v(-3.9, 4.3), v(-2.85, 4.3), v(-2.85, Y_FRL), v(-2.5, Y_FRL)],
-  reseau: [v(0.5, Y_FRL), v(1.3, Y_FRL), v(1.3, 1.75), v(X_DIST, 1.75), v(X_DIST, Y_DIST - 0.225)],
+  reseau: [v(X_NOURRICE + 0.17, Y_FRL), v(1.3, Y_FRL), v(1.3, 1.75), v(X_DIST, 1.75), v(X_DIST, Y_DIST - 0.225)],
   ligneA: [v(2.2, Y_DIST + 0.225), v(2.2, 3.15), v(2.2, 3.15, Z + 0.32), v(3.9, 3.15, Z + 0.32), v(3.9, Y_FOND, Z + 0.32), v(4.2, Y_FOND), v(4.62, Y_FOND)],
   ligneB: [v(2.6, Y_DIST + 0.225), v(2.6, Y_TETE), v(4.62, Y_TETE)],
   pilote14: [v(6.62, Y_PLATEAU0 + 0.06), v(6.85, Y_PLATEAU0 + 0.06, 0.2), v(6.85, 1.3, 0.2), v(1.5, 1.3, 0.2), v(1.5, Y_DIST, 0.2), v(1.68, Y_DIST)],
+  alim2: [v(X_NOURRICE, Y_FRL + 0.15), v(X_NOURRICE, 4.6), v(XB, 4.6), v(XB, Y_BOUTON - 0.25)],
+  ligne2: [v(XB, Y_BOUTON + 0.25), v(XB, Y_SE - 0.42)],
+  alimSel: [v(X_NOURRICE, Y_FRL - 0.15), v(X_NOURRICE, 0.95), v(6.0, 0.95), v(6.0, 1.55)],
+  alimCapteurs: [v(6.0, 1.95), v(6.0, 2.2), v(6.3, 2.2, 0.15), v(6.3, Y_PLATEAU0 + COURSE - 0.15, 0.15)],
   pilote12: [v(6.62, Y_PLATEAU0 + COURSE + 0.06), v(7.0, Y_PLATEAU0 + COURSE + 0.06, 0.2), v(7.0, 1.12, 0.2), v(3.3, 1.12, 0.2), v(3.3, Y_DIST, 0.2), v(3.12, Y_DIST)]
 };
-const FINS = { pilote14: true, pilote12: true };
+const FINS = { pilote14: true, pilote12: true, alimCapteurs: true };
 
 /* ---------------------------- Outils -------------------------------- */
 function mat(couleur, metal = 0.3, rugo = 0.5, extra = {}) {
@@ -131,6 +144,7 @@ export class ScenePneumatique {
     this._construireDistributeur();
     this._construireVerin();
     this._construireCapteurs();
+    this._construireCircuit2();
     this._construireTubes();
     this._construireJets();
     this._construireEtiquettes();
@@ -269,9 +283,22 @@ export class ScenePneumatique {
     tete.position.set(-5.7, 0, Z);
     g.add(tete);
     this.teteCompresseur = tete;
-    ajout(tete, new THREE.BoxGeometry(0.75, 0.5, 0.75), M.alu, 0, 3.45, 0);
-    ajout(tete, cylY(0.34, 0.9, 24), M.alu, 0, 4.0, 0);
-    for (let i = 0; i < 6; i++) ajout(tete, cylY(0.46, 0.05, 24), M.alu, 0, 3.65 + i * 0.13, 0);
+    const carterVerre = ajout(tete, new THREE.BoxGeometry(0.75, 0.5, 0.75), verre(0xe2e8f0, 0.3), 0, 3.45, 0, false);
+    carterVerre.userData.vitre = true;
+    const chemise = ajout(tete, cylY(0.34, 0.9, 24), verre(0xe2e8f0, 0.28), 0, 4.0, 0, false);
+    chemise.userData.vitre = true;
+    const ailettes = mat(0xc3c9d0, 0.8, 0.35, { transparent: true, opacity: 0.55 });
+    for (let i = 0; i < 6; i++) ajout(tete, new THREE.TorusGeometry(0.4, 0.035, 6, 28).rotateX(Math.PI / 2), ailettes, 0, 3.65 + i * 0.13, 0, false);
+    // Équipage mobile visible : vilebrequin (disque + maneton), bielle, piston
+    const vilo = new THREE.Group();
+    vilo.position.set(0, 3.42, 0);
+    tete.add(vilo);
+    this.vilebrequin = vilo;
+    ajout(vilo, cylZ(0.17, 0.08, 24), M.acierFonce, 0, 0, -0.06);
+    ajout(vilo, cylZ(0.04, 0.2, 10), M.acier, 0.12, 0, 0);
+    this.piston = ajout(tete, cylY(0.31, 0.16, 24), mat(0x6b7280, 0.7, 0.35), 0, 3.95, 0);
+    this.bielle = ajout(tete, new THREE.BoxGeometry(0.06, 1, 0.05), M.acier, 0, 3.7, 0.02);
+    this.positionManeton = 0.12;
     ajout(tete, new THREE.BoxGeometry(0.7, 0.14, 0.7), M.aluFonce, 0, 4.5, 0);
     ajout(tete, cylY(0.15, 0.3), M.noir, 0.42, 4.25, 0.15);   // filtre d'aspiration
     // Pressostat, manomètre de cuve, soupape de sûreté, robinet de sortie
@@ -285,6 +312,9 @@ export class ScenePneumatique {
     ajout(soupape, new THREE.SphereGeometry(0.06, 10, 8), M.laiton, 0, 0.4, 0);
     this.positionSoupape = new THREE.Vector3(-4.05, 3.75, Z - 0.1);
     ajout(g, cylY(0.07, 0.4), M.laiton, -3.9, 3.3, Z);
+    // Clapet anti-retour sur le tube de refoulement du compresseur
+    ajout(g, cylY(0.1, 0.25, 12), M.laiton, -4.9, 3.6, Z);
+    this.positionPurgeCuve = new THREE.Vector3(-5.6, 0.28, Z);
     const poignee = ajout(g, new THREE.BoxGeometry(0.35, 0.05, 0.08), M.rouge, -3.78, 3.45, Z);
     poignee.rotation.y = 0.4;
     // Voyant de marche
@@ -332,6 +362,12 @@ export class ScenePneumatique {
     ajout(lub, cylY(0.17, 0.95, 24, 0.2), verre(0xfef3c7, 0.3), 0.2, Y_FRL - 0.74, Z, false).userData.vitre = true;
     ajout(lub, cylY(0.165, 0.45, 20), new THREE.MeshStandardMaterial({ color: 0xd97706, transparent: true, opacity: 0.7, roughness: 0.1 }), 0.2, Y_FRL - 0.98, Z, false);
     ajout(lub, new THREE.CylinderGeometry(0.08, 0.1, 0.15, 12), verre(0xffffff, 0.4), 0.2, Y_FRL + 0.35, Z, false);
+    // Bloc de distribution (nourrice) : un départ par utilisation
+    const nou = this._groupe('nourrice');
+    ajout(nou, new THREE.BoxGeometry(0.35, 0.3, 0.35), mat(0x1e3a8a, 0.4, 0.45), X_NOURRICE, Y_FRL, Z);
+    ajout(nou, new THREE.BoxGeometry(0.3, 0.08, 0.3), M.aluFonce, (X_NOURRICE + 0.475) / 2 + 0.05, Y_FRL, Z);
+    for (const dy of [0.17, -0.17]) ajout(nou, cylY(0.06, 0.06, 12), M.laiton, X_NOURRICE, Y_FRL + dy, Z);
+    this.positionPurgeFiltre = new THREE.Vector3(-1.4, Y_FRL - 1.42, Z);
     // Raccords entre modules
     for (const x of [-1.8, -1.0, -0.2]) ajout(equerre, new THREE.BoxGeometry(0.1, 0.45, 0.5), M.aluFonce, x, Y_FRL, Z);
   }
@@ -415,6 +451,11 @@ export class ScenePneumatique {
       this.positionsRegleurs[nom] = new THREE.Vector3(XV - 0.45, y, Z);
     }
     this.vis = reg.children.filter((_, i) => i % 3 === 2);
+    const manos = this._groupe('manometres');
+    ajout(manos, cylY(0.03, 0.3, 8), M.laiton, 4.35, Y_FOND + 0.2, Z);
+    this.manoA = this._manometre(manos, 4.35, Y_FOND + 0.48, Z + 0.06, 10, 8, 0.17);
+    ajout(manos, cylY(0.03, 0.3, 8), M.laiton, 4.35, Y_TETE - 0.2, Z);
+    this.manoB = this._manometre(manos, 4.35, Y_TETE - 0.48, Z + 0.06, 10, 8, 0.17);
 
     // Plateau, came et masses : composant « charge » (suit la tige)
     const plateau = this._groupe('charge');
@@ -455,6 +496,67 @@ export class ScenePneumatique {
       const led = ajout(c, new THREE.SphereGeometry(0.04, 10, 8), new THREE.MeshStandardMaterial({ color: 0x14532d, emissive: 0x000000 }), 0.05, 0.12, 0.16, false);
       this.capteurs.push({ groupe: c, levier, led: led.material, y });
     }
+    // Sélecteur de cycle 0V1 (3/2 à accrochage, bouton tournant) : alimente les capteurs
+    const sel = this._groupe('selecteur');
+    ajout(sel, new THREE.BoxGeometry(0.4, 0.4, 0.35), mat(0x1f2937, 0.3, 0.5), 6.0, 1.75, Z);
+    const bouton = new THREE.Group();
+    bouton.position.set(6.0, 1.75, Z + 0.2);
+    sel.add(bouton);
+    ajout(bouton, cylZ(0.13, 0.08, 20), M.noir, 0, 0, 0);
+    ajout(bouton, new THREE.BoxGeometry(0.05, 0.22, 0.06), M.rouge, 0, 0, 0.05);
+    this.boutonSelecteur = bouton;
+  }
+
+  /* --------- Circuit 2 : bouton 3/2, échappement rapide, vérin SE ---- */
+  _construireCircuit2() {
+    const M = this._mat;
+    // Bouton poussoir 3/2 NF (champignon vert) monté sur le panneau
+    const bt = this._groupe('bouton');
+    ajout(bt, new THREE.BoxGeometry(0.4, 0.5, 0.38), mat(0x9aa5b1, 0.7, 0.35), XB, Y_BOUTON, Z);
+    ajout(bt, new THREE.BoxGeometry(0.5, 0.1, 0.3), M.aluFonce, XB, Y_BOUTON - 0.3, 0.2);
+    ajout(bt, cylZ(0.08, 0.12, 16), M.noir, XB, Y_BOUTON, Z + 0.24);
+    const champignon = new THREE.Group();
+    champignon.position.set(XB, Y_BOUTON, Z + 0.3);
+    bt.add(champignon);
+    ajout(champignon, cylZ(0.05, 0.12, 12), M.noir, 0, 0, 0.02);
+    const tete = ajout(champignon, new THREE.SphereGeometry(0.17, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2).rotateX(Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.35, emissive: 0x000000 }), 0, 0, 0.08);
+    this.champignon = champignon;
+    this.matChampignon = tete.material;
+    ajout(bt, cylY(0.05, 0.12, 10), M.bronze, XB + 0.14, Y_BOUTON - 0.3, Z);      // échappement 3
+    this.positionEchapBouton = new THREE.Vector3(XB + 0.14, Y_BOUTON - 0.4, Z);
+    // Soupape d'échappement rapide 2V2 vissée sous le fond du vérin
+    const er = this._groupe('echapRapide');
+    ajout(er, new THREE.BoxGeometry(0.28, 0.28, 0.28), M.laiton, XB, Y_SE - 0.4, Z);
+    ajout(er, cylX(0.07, 0.2, 12), M.laiton, XB + 0.22, Y_SE - 0.4, Z);
+    ajout(er, cylX(0.08, 0.2, 14), M.bronze, XB + 0.38, Y_SE - 0.4, Z);
+    this.positionEchapRapide = new THREE.Vector3(XB + 0.5, Y_SE - 0.4, Z);
+    // Vérin simple effet Ø20 × 50 à rappel par ressort, tube transparent
+    const se = this._groupe('verinSE');
+    const xFond = X_SE0 - 0.2, xTete = X_SE0 + 1.05;
+    ajout(se, new THREE.BoxGeometry(0.4, 0.4, 0.4), M.alu, xFond, Y_SE, Z);
+    ajout(se, new THREE.BoxGeometry(0.3, 0.4, 0.4), M.alu, xTete + 0.15, Y_SE, Z);
+    for (const x of [xFond, xTete + 0.15]) ajout(se, new THREE.BoxGeometry(0.12, 0.3, 0.25), M.aluFonce, x, Y_SE, 0.13);
+    const tubeSE = ajout(se, cylX(0.13, xTete - X_SE0, 24), verre(0xe0f2fe, 0.22), (X_SE0 + xTete) / 2, Y_SE, Z, false);
+    tubeSE.userData.vitre = true;
+    this.matChambre2 = new THREE.MeshBasicMaterial({ color: COULEURS.repos, transparent: true, opacity: 0.15, depthWrite: false });
+    const geoCh = cylX(0.12, 1, 20);
+    geoCh.translate(0.5, 0, 0);
+    this.chambre2 = ajout(se, geoCh, this.matChambre2, X_SE0, Y_SE, Z, false);
+    this.chambre2.userData.vitre = true;
+    const mobile = new THREE.Group();
+    se.add(mobile);
+    this.mobile2 = mobile;
+    ajout(mobile, cylX(0.12, 0.1, 24), mat(0x1f2937, 0.4, 0.5), X_SE0 + 0.05, Y_SE, Z);
+    ajout(mobile, cylX(0.04, 1.4, 12), M.acier, X_SE0 + 0.1 + 0.7, Y_SE, Z);
+    ajout(mobile, cylX(0.07, 0.08, 12), M.noir, X_SE0 + 1.54, Y_SE, Z);     // embout caoutchouc
+    // Ressort de rappel hélicoïdal (comprimé par le piston)
+    const pts = [];
+    for (let i = 0; i <= 120; i++) { const a = i / 120 * Math.PI * 2 * 9; pts.push(new THREE.Vector3(i / 120, Math.cos(a) * 0.085, Math.sin(a) * 0.085)); }
+    const ressort = ajout(se, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 240, 0.012, 5, false), mat(0x94a3b8, 0.9, 0.3), 0, Y_SE, Z, false);
+    this.ressort = ressort;
+    this.longueurRessort = { x0: X_SE0 + 0.1, x1: xTete };
+    // Butée fixe en face de la tige
+    ajout(se, new THREE.BoxGeometry(0.1, 0.5, 0.35), M.aluFonce, X_SE0 + 2.12, Y_SE, Z);
   }
 
   /* ---------------------------- Tubes ------------------------------- */
@@ -519,8 +621,18 @@ export class ScenePneumatique {
       e5: { pos: this.positionsEchap[5], dir: new THREE.Vector3(0, -1, 0.15) },
       fuite: { pos: this.positionFuite, dir: new THREE.Vector3(0.3, 0.2, 1) },
       soupape: { pos: this.positionSoupape, dir: new THREE.Vector3(0, 1, 0.2) },
-      vanne: { pos: this.positionEchapVanne, dir: new THREE.Vector3(0, -1, 0.3) }
+      vanne: { pos: this.positionEchapVanne, dir: new THREE.Vector3(0, -1, 0.3) },
+      er: { pos: this.positionEchapRapide, dir: new THREE.Vector3(1, 0.1, 0.3) },
+      bouton: { pos: this.positionEchapBouton, dir: new THREE.Vector3(0.2, -1, 0.3) }
     };
+    // Gouttes d'eau de la purge (filtre et cuve du compresseur)
+    const NG = 16;
+    this.gouttes = new THREE.InstancedMesh(new THREE.SphereGeometry(0.035, 8, 6), new THREE.MeshStandardMaterial({ color: 0x60a5fa, roughness: 0.05 }), NG);
+    this.gouttes.frustumCulled = false;
+    this.scene.add(this.gouttes);
+    this.phasesGouttes = Array.from({ length: NG }, (_, i) => i / NG);
+    this.purge = 0;
+    this.rebond = 0; this.tRebond = 0; this.rebond2 = 0;
     const N = 14;
     const noms = Object.keys(this.emetteurs);
     const geo = new THREE.SphereGeometry(0.06, 8, 6);
@@ -551,7 +663,13 @@ export class ScenePneumatique {
       ['verin', 'Vérin double effet', new THREE.Vector3(XV + 1.0, (Y_TUBE0 + Y_TUBE1) / 2, Z + 0.3)],
       ['charge', 'Charge', new THREE.Vector3(XV - 1.2, Y_PLATEAU0 + 0.4, Z)],
       ['capteurs', 'Capteurs 1S1 / 1S2', new THREE.Vector3(6.6, Y_PLATEAU0 + 2.7, Z)],
-      ['tuyaux', 'Tubes', new THREE.Vector3(3.2, 3.15, Z + 0.4)]
+      ['tuyaux', 'Tubes', new THREE.Vector3(3.2, 3.15, Z + 0.4)],
+      ['nourrice', 'Bloc de distribution', new THREE.Vector3(X_NOURRICE + 0.4, Y_FRL - 0.55, Z)],
+      ['bouton', 'Bouton 3/2 (2V1)', new THREE.Vector3(XB - 0.95, Y_BOUTON, Z)],
+      ['echapRapide', 'Échappement rapide', new THREE.Vector3(XB - 1.15, Y_SE - 0.4, Z)],
+      ['verinSE', 'Vérin simple effet', new THREE.Vector3(X_SE0 + 0.5, Y_SE + 0.5, Z)],
+      ['selecteur', 'Sélecteur 0V1', new THREE.Vector3(6.0, 1.75 - 0.5, Z + 0.3)],
+      ['manometres', 'Manomètres A / B', new THREE.Vector3(3.55, (Y_FOND + Y_TETE) / 2, Z + 0.3)]
     ];
     noms.forEach(([id, texte, pos], rang) => {
       const tex = textureTexte(texte);
@@ -754,15 +872,27 @@ export class ScenePneumatique {
     this.angleVentilo += this.vitVentilo * dt;
     this.ventilo.rotation.x = this.angleVentilo;
     this.teteCompresseur.position.y = tourne ? Math.sin(sim.temps * 90) * 0.008 : 0;
+    // Bielle-manivelle : position du piston selon l'angle du vilebrequin
+    const th = this.angleVentilo, rm = this.positionManeton, lb = 0.42;
+    this.vilebrequin.rotation.z = th;
+    const xm = Math.cos(th) * rm, ym = Math.sin(th) * rm;
+    const yPistonC = 3.42 + ym + Math.sqrt(lb * lb - xm * xm);
+    this.piston.position.y = yPistonC + 0.08;
+    this.bielle.position.set(xm / 2, 3.42 + (ym + yPistonC - 3.42) / 2, 0.02);
+    this.bielle.scale.y = Math.hypot(xm, yPistonC - 3.42 - ym);
+    this.bielle.rotation.z = Math.atan2(xm, yPistonC - 3.42 - ym);
     this.voyantCompresseur.emissive.setHex(tourne ? 0x22c55e : 0x000000);
     // Manomètres (aiguille amortie)
     const pc = Math.max(0, sim.pCuve - P_ATM), pr = Math.max(0, sim.pReseau - P_ATM);
-    for (const [m, p] of [[this.manoCuve, pc], [this.manoReseau, pr]]) {
+    const pulsation = tourne ? 0.08 * Math.sin(th * 2) : 0;   // l'aiguille de la cuve « bat » au rythme du piston
+    const pA = Math.max(0, sim.pA - P_ATM), pB = Math.max(0, sim.pB - P_ATM);
+    for (const [m, p] of [[this.manoCuve, pc + pulsation], [this.manoReseau, pr], [this.manoA, pA], [this.manoB, pB]]) {
       m.valeur += (Math.min(m.pMax * 1.02, p) - m.valeur) * Math.min(1, dt * 8);
       m.aiguille.rotation.z = (135 - (m.valeur / m.pMax) * 270) * Math.PI / 180;
     }
     // Vanne : levier dans l'axe (ouverte) ou en travers (fermée)
     this.levierVanne.rotation.y = c.vanne ? 0 : -Math.PI / 2;
+    this.boutonSelecteur.rotation.z += ((c.auto ? -Math.PI / 2 : 0) - this.boutonSelecteur.rotation.z) * Math.min(1, dt * 12);
     // Molette du régulateur (tourne avec la consigne), eau dans le filtre
     this.molette.rotation.y = c.reglage * 0.8;
     this.eau.scale.y = Math.max(0.01, 0.15 + 0.7 * sim.eau);
@@ -775,8 +905,13 @@ export class ScenePneumatique {
     for (const m of this.matSilencieux) m.color.setHex(sale ? 0x2b2116 : 0x8d6a3a);
     // Vérin : équipage mobile et chambres
     const y = sim.position * COURSE;
+    // Arrivée en butée : la charge rebondit légèrement (amortie par les amortissements)
+    if (r.choc1 > 0.02) { this.rebond = Math.min(0.06, r.choc1 * 0.5); this.tRebond = 0; }
+    this.tRebond += dt;
+    const rebond = this.rebond * Math.exp(-this.tRebond * 9) * Math.sin(this.tRebond * 45);
     this.mobile.position.y = y;
     this.plateau.position.y = y;
+    this.masses.forEach((m, i) => { m.position.y = Y_PLATEAU0 + 0.16 + i * 0.085 + rebond * (1 + i * 0.15); });
     const yPiston = Y_TUBE0 + y;
     this.chambreA.position.y = Y_TUBE0;
     this.chambreA.scale.y = Math.max(0.001, y);
@@ -796,13 +931,33 @@ export class ScenePneumatique {
     const deregle = sim.pannes.capteur;
     this.capteurs[1].groupe.position.y = this.capteurs[1].y + (deregle ? 0.4 : 0);
     const actifs = [r.capteur1, r.capteur2];
+    const yCame = Y_PLATEAU0 + 0.06 + y;
     this.capteurs.forEach((k, i) => {
-      k.levier.rotation.z = actifs[i] ? 0.45 : 0;
+      // Le galet suit la came : il s'enfonce progressivement quand la came arrive dessus
+      const yC = k.groupe.position.y;
+      const appui = Math.max(0, Math.min(1, 1 - (Math.abs(yCame - yC) - 0.02) / 0.14));
+      k.levier.rotation.z = 0.45 * appui;
       k.led.emissive.setHex(actifs[i] ? 0x22c55e : 0x000000);
     });
+    // Circuit 2 : champignon enfoncé, piston, ressort, chambre
+    this.champignon.position.z += ((Z + 0.3 - (c.bouton ? 0.07 : 0)) - this.champignon.position.z) * Math.min(1, dt * 25);
+    this.matChampignon.emissive.setHex(c.bouton ? 0x14532d : 0x000000);
+    const x2 = sim.position2 * COURSE2;
+    if (r.choc2 > 0.05) this.rebond2 = Math.min(0.025, r.choc2 * 0.03);
+    this.rebond2 *= Math.exp(-dt * 25);
+    this.mobile2.position.x = x2 + this.rebond2 * Math.sin(sim.temps * 80);
+    this.chambre2.scale.x = Math.max(0.001, x2 + 0.001);
+    const u2 = Math.max(0, Math.min(1, (sim.p2 - P_ATM) / 7));
+    this.matChambre2.color.setHex(u2 > 0.04 ? COULEURS.pression : COULEURS.repos);
+    this.matChambre2.opacity = 0.1 + 0.5 * u2;
+    const L = this.longueurRessort;
+    this.ressort.position.x = L.x0 + x2;
+    this.ressort.scale.x = Math.max(0.05, L.x1 - (L.x0 + x2));
+    this.ressort.visible = !sim.pannes.ressort;
 
     this._majTubes(sim, dt);
     this._majJets(sim, dt);
+    this._majGouttes(dt);
     this.controls.update();
     this._majEtiquettes();
   }
@@ -843,7 +998,7 @@ export class ScenePneumatique {
 
   _majJets(sim, dt) {
     const r = sim.res;
-    const debits = { e3: r.qEchap3, e5: r.qEchap5, fuite: r.qFuite, soupape: r.qSoupape, vanne: r.qVanne };
+    const debits = { e3: r.qEchap3, e5: r.qEchap5, fuite: r.qFuite, soupape: r.qSoupape, vanne: r.qVanne, er: r.qEchapRapide * 0.5, bouton: r.qBoutonEchap * 3 };
     const m = this._mat4, pos = this._vec, q = this._quat, s = this._echelle;
     q.identity();
     for (const [nom, e] of Object.entries(this.emetteurs)) {
@@ -863,6 +1018,27 @@ export class ScenePneumatique {
       }
     }
     this.jets.instanceMatrix.needsUpdate = true;
+  }
+
+  /* Purge : l'eau s'écoule du filtre et de la cuve du compresseur pendant 2 s */
+  purger() { this.purge = 2.2; }
+  _majGouttes(dt) {
+    this.purge = Math.max(0, this.purge - dt);
+    const m = this._mat4, pos = this._vec, q = this._quat, s = this._echelle;
+    q.identity();
+    const n = this.phasesGouttes.length;
+    for (let i = 0; i < n; i++) {
+      this.phasesGouttes[i] = (this.phasesGouttes[i] + dt * 1.6) % 1;
+      const u = this.phasesGouttes[i];
+      const depart = i % 2 ? this.positionPurgeFiltre : this.positionPurgeCuve;
+      const h = depart.y - 0.02;
+      pos.set(depart.x + 0.02 * Math.sin(i * 7.1), depart.y - h * u * u, depart.z);
+      const e = this.purge > 0 ? 1 : 0;
+      s.set(e, e * 1.4, e);
+      m.compose(pos, q, s);
+      this.gouttes.setMatrixAt(i, m);
+    }
+    this.gouttes.instanceMatrix.needsUpdate = true;
   }
 
   rendre(dtReel) {

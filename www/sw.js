@@ -27,6 +27,7 @@ const FICHIERS = [
   './js/pneumatique/scene3d.js',
   './js/pneumatique/schema.js',
   './js/pneumatique/donnees.js',
+  './js/pneumatique/sons.js',
   './vendor/three.min.js',
   './icons/icon-192.png',
   './icons/icon-512.png',

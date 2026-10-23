@@ -30,7 +30,13 @@ export function svgSchema() {
   // Silencieux (rectangle hachuré sous un échappement)
   const silencieux = (x, y) => `<path d="M${x - 7} ${y} h14 l-3 12 h-8 z" class="sc-s"/><line x1="${x - 4}" y1="${y + 4}" x2="${x + 4}" y2="${y + 4}" class="sc-s"/><line x1="${x - 3}" y1="${y + 8}" x2="${x + 3}" y2="${y + 8}" class="sc-s"/>`;
   // Capteur 3/2 à galet, normalement fermé : case gauche = actionné (1 → 2), case droite = repos (2 → 3)
-  const capteur = (x, y, id, nom) => `
+  // Commandes des 3/2 : galet (capteur), bouton poussoir, ou manuelle à accrochage (sélecteur)
+  const actionneur = (x, y, type) => type === 'bouton'
+    ? `<line x1="${x}" y1="${y + 12}" x2="${x - 8}" y2="${y + 12}" class="sc-s"/><path d="M${x - 14} ${y + 4} q-4 8 0 16" class="sc-s"/><line x1="${x - 8}" y1="${y + 6}" x2="${x - 8}" y2="${y + 18}" class="sc-s"/>`
+    : type === 'accrochage'
+      ? `<line x1="${x}" y1="${y + 12}" x2="${x - 8}" y2="${y + 12}" class="sc-s"/><line x1="${x - 8}" y1="${y + 12}" x2="${x - 14}" y2="${y + 2}" class="sc-s"/><path d="M${x - 4} ${y + 24} v6 M${x - 8} ${y + 30} l4 -4 4 4" class="sc-s"/>`
+      : `<line x1="${x}" y1="${y + 12}" x2="${x - 6}" y2="${y + 12}" class="sc-s"/><circle cx="${x - 10}" cy="${y + 12}" r="4" class="sc-s"/>`;
+  const capteur = (x, y, id, nom, type = 'galet') => `
     <g id="${id}" class="sc-capt">
       <rect x="${x}" y="${y}" width="26" height="24" class="sc-case"/>
       <rect x="${x + 26}" y="${y}" width="26" height="24" class="sc-case"/>
@@ -38,8 +44,8 @@ export function svgSchema() {
       <line x1="${x + 20}" y1="${y + 24}" x2="${x + 20}" y2="${y + 17}" class="sc-s"/><line x1="${x + 16}" y1="${y + 17}" x2="${x + 24}" y2="${y + 17}" class="sc-s"/>
       <line x1="${x + 39}" y1="${y}" x2="${x + 46}" y2="${y + 21}" class="sc-s"/><path d="M${x + 47} ${y + 23} l-1 -7 -6 2 z" class="sc-f"/>
       <line x1="${x + 34}" y1="${y + 24}" x2="${x + 34}" y2="${y + 17}" class="sc-s"/><line x1="${x + 30}" y1="${y + 17}" x2="${x + 38}" y2="${y + 17}" class="sc-s"/>
-      <line x1="${x}" y1="${y + 12}" x2="${x - 6}" y2="${y + 12}" class="sc-s"/><circle cx="${x - 10}" cy="${y + 12}" r="4" class="sc-s"/>
-      <path d="M${x + 52} ${y + 12} l2 -5 3 10 3 -10 3 10 2 -5" class="sc-s"/>
+      ${actionneur(x, y, type)}
+      ${type === 'accrochage' ? '' : `<path d="M${x + 52} ${y + 12} l2 -5 3 10 3 -10 3 10 2 -5" class="sc-s"/>`}
       <path d="M${x + 46} ${y + 24} v4 l-4 5 h8 l-4 -5" class="sc-s"/>
     </g>
     <text x="${x + 8}" y="${y - 4}" class="sc-o">${nom}</text>`;
@@ -53,7 +59,7 @@ export function svgSchema() {
   const bouche = (x, y) => `<line x1="${x}" y1="${y}" x2="${x}" y2="${y - 9}" class="sc-s"/><line x1="${x - 5}" y1="${y - 9}" x2="${x + 5}" y2="${y - 9}" class="sc-s"/>`;
   const X14 = 122, X12 = 196, YH = 260, YB = 300;
   return `
-<svg viewBox="0 0 390 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Schéma pneumatique ISO 1219">
+<svg viewBox="0 0 530 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Schéma pneumatique ISO 1219">
 <style>
   .sc-s{fill:none;stroke:#0f172a;stroke-width:2}
   .sc-f{fill:#0f172a}
@@ -72,9 +78,13 @@ export function svgSchema() {
 ${ligne('cuve', '46,458 46,436')}
 ${ligne('alim', '46,384 46,366 108,366 108,396 125,396')}
 ${ligne('alim', '151,396 168,396')}
-${ligne('reseau', '328,396 354,396 354,330 233,330 233,300')}
-${ligne('reseau', '233,330 52,330 52,286', 'sc-lp')}
-${ligne('reseau', '354,330 354,286', 'sc-lp')}
+${ligne('reseau', '328,396 354,396 354,352 233,352 233,300')}
+${ligne('alimSel', '233,352 54,352 54,342')}
+${ligne('alimCapteurs', '59,318 59,304 354,304 354,286', 'sc-lp')}
+${ligne('alimCapteurs', '59,304 52,304 52,286', 'sc-lp')}
+${ligne('alim2', '354,352 454,352 454,286')}
+${ligne('ligne2', '459,262 459,206 440,206 440,182')}
+${ligne('ligne2', '440,138 440,80')}
 ${ligne('ligneA', '214,260 214,226 112,226 112,90')}
 ${ligne('ligneB', '252,260 252,214 232,214 232,90')}
 ${ligne('pilote14', '57,262 57,246 90,246 90,280 104,280', 'sc-lp')}
@@ -160,6 +170,24 @@ ${bouche(X12 + O[3], YB)}
 <!-- ======= Capteurs de fin de course 3/2 à galet ======= -->
 ${capteur(18, 262, 'psc-1s1', '1S1')}
 ${capteur(320, 262, 'psc-1s2', '1S2')}
+${capteur(20, 318, 'psc-0v1', '', 'accrochage')}
+<text x="79" y="334" class="sc-o">0V1</text><text x="79" y="346" class="sc-n">cycle auto</text>
+
+<!-- ======= Circuit 2 : bouton 3/2 NF (2V1) → échappement rapide (2V2) → vérin simple effet (2A) ======= -->
+${capteur(420, 262, 'psc-2v1', '2V1', 'bouton')}
+<g id="psc-2v2">
+  <rect x="426" y="138" width="28" height="44" class="sc-s"/>
+  <circle cx="440" cy="160" r="6" class="sc-s"/>
+  <path d="M430 152 L440 146 L450 152 M430 168 L440 174 L450 168" class="sc-s"/>
+  <line x1="454" y1="160" x2="466" y2="160" class="sc-s"/><g transform="rotate(-90 472 160)">${silencieux(472, 154)}</g>
+</g>
+<text x="472" y="146" class="sc-o">2V2</text>
+<rect x="420" y="52" width="80" height="28" class="sc-s"/>
+<line x1="432" y1="52" x2="432" y2="80" class="sc-s" style="stroke-width:5" id="psc-piston2"/>
+<line x1="432" y1="66" x2="516" y2="66" class="sc-s" style="stroke-width:3" id="psc-tige2"/>
+<path id="psc-ressort2" d="M440 66 l4 -9 6 18 6 -18 6 18 6 -18 6 18 6 -18 4 9" class="sc-s" style="stroke-width:1.5"/>
+<line x1="496" y1="52" x2="496" y2="46" class="sc-s"/>
+<text x="398" y="44" class="sc-t">Vérin simple effet 2A</text>
 
 <!-- ======= Régleurs de débit unidirectionnels (au refoulement) ======= -->
 ${regleur(112, 158, '1V2')}
@@ -197,5 +225,13 @@ export function majSchema(racine, sim) {
   const xp = 126 + sim.position * 92;   // tige : 270 (rentrée) → 362 (sortie)
   const piston = q('#psc-piston'), tige = q('#psc-tige');
   if (piston) { piston.setAttribute('x1', xp); piston.setAttribute('x2', xp); }
+  q('#psc-0v1')?.classList.toggle('actif', sim.cmd.auto);
+  q('#psc-2v1')?.classList.toggle('actif', sim.cmd.bouton);
+  // Vérin simple effet : piston, tige et ressort (comprimé entre le piston et le nez)
+  const x2 = 432 + sim.position2 * 30;
+  const p2 = q('#psc-piston2'), t2 = q('#psc-tige2'), r2 = q('#psc-ressort2');
+  if (p2) { p2.setAttribute('x1', x2); p2.setAttribute('x2', x2); }
+  if (t2) { t2.setAttribute('x1', x2); t2.setAttribute('x2', x2 + 84); }
+  if (r2) r2.setAttribute('transform', `translate(${x2 + 8} 0) scale(${(496 - x2 - 8) / 56} 1) translate(-440 0)`);
   if (tige) { tige.setAttribute('x1', xp); tige.setAttribute('x2', xp + 144); }
 }
