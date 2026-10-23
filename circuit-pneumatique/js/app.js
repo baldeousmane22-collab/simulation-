@@ -32,6 +32,17 @@ async function initialiser3D() {
     if (!(essai.getContext('webgl2') || essai.getContext('webgl'))) throw new Error('WebGL indisponible');
     const { ScenePneumatique } = await import('./scene3d.js');
     scene = new ScenePneumatique($('#pn-canvas'), (id) => ouvrirFiche(id));
+    // Boutons du banc actionnés directement dans la 3D (champignon 2V1, commandes manuelles 14 / 12)
+    scene.surCommande = (commande, oui) => {
+      if (commande === 'bouton2v1') {
+        if (oui) { appuyer(true); expliquerSiBloque(); } else relacher();
+      } else if (oui) {
+        if (sim.cmd.auto) sim.cmd.auto = false;
+        if (!expliquerSiBloque()) flash(commande === 14 ? 'Commande manuelle du pilote 14 : 1 → 4, la tige sort.' : 'Commande manuelle du pilote 12 : 1 → 2, la tige rentre.');
+        sim.impulsionManuelle(commande);
+        majCommandes();
+      }
+    };
     $('#pn-chargement').hidden = true;
     new ResizeObserver(() => { if (scene) { majZones(); scene.redimensionner(); } }).observe($('#pn-vue3d'));
     majZones();

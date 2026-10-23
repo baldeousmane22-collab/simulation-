@@ -388,6 +388,7 @@ export class ScenePneumatique {
       ajout(g, new THREE.BoxGeometry(0.22, 0.42, 0.42), M.noir, x, Y_DIST, Z);
       const b = ajout(g, cylZ(0.07, 0.08, 16), new THREE.MeshStandardMaterial({ color: cote === 14 ? 0x2563eb : 0x16a34a, emissive: 0x000000, roughness: 0.4 }), x, Y_DIST + 0.08, Z + 0.24);
       this.boutons[cote] = b;
+      this._zoneAppui(g, cote, x, Y_DIST + 0.08, Z + 0.3, 0.2);
     }
     // Fenêtre et indicateur de position du tiroir
     ajout(g, new THREE.BoxGeometry(0.7, 0.12, 0.01), verre(0x0f172a, 0.6), X_DIST, Y_DIST + 0.05, Z + 0.226, false).userData.vitre = true;
@@ -526,6 +527,7 @@ export class ScenePneumatique {
     const tete = ajout(champignon, new THREE.SphereGeometry(0.17, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2).rotateX(Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.35, emissive: 0x000000 }), 0, 0, 0.08);
     this.champignon = champignon;
     this.matChampignon = tete.material;
+    this._zoneAppui(bt, 'bouton2v1', XB, Y_BOUTON, Z + 0.42, 0.32);
     ajout(bt, cylY(0.05, 0.12, 10), M.bronze, XB + 0.14, Y_BOUTON - 0.3, Z);      // échappement 3
     this.positionEchapBouton = new THREE.Vector3(XB + 0.14, Y_BOUTON - 0.4, Z);
     // Soupape d'échappement rapide 2V2 vissée sous le fond du vérin
@@ -584,6 +586,16 @@ export class ScenePneumatique {
       }
     }
     return chemin;
+  }
+
+  /* Zone tactile invisible autour d'une commande manuelle du banc */
+  _zoneAppui(parent, commande, x, y, z, rayon) {
+    this.zonesAppui = this.zonesAppui || [];
+    const m = new THREE.Mesh(new THREE.SphereGeometry(rayon, 12, 8), new THREE.MeshBasicMaterial({ visible: false }));
+    m.position.set(x, y, z);
+    m.userData.commande = commande;
+    parent.add(m);
+    this.zonesAppui.push(m);
   }
 
   _construireTubes() {
@@ -786,7 +798,31 @@ export class ScenePneumatique {
     this.raycaster = new THREE.Raycaster();
     const debut = { x: 0, y: 0, t: 0, id: -1 };
     let nb = 0;
+    this.appui = null;   // { commande, id } : bouton du banc maintenu par le doigt
+    const finAppui = (e) => {
+      if (!this.appui || e.pointerId !== this.appui.id) return false;
+      const c = this.appui.commande;
+      this.appui = null;
+      this.controls.enabled = true;
+      if (this.surCommande) this.surCommande(c, false);
+      return true;
+    };
+    // Phase de capture : passe avant les contrôles de caméra
     this.canvas.addEventListener('pointerdown', (e) => {
+      if (this.appui || !this.surCommande || !this.zonesAppui) return;
+      const rect = this.canvas.getBoundingClientRect();
+      const ndc = new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
+      this.raycaster.setFromCamera(ndc, this.camera);
+      const h = this.raycaster.intersectObjects(this.zonesAppui, false)[0];
+      if (!h) return;
+      this.appui = { commande: h.object.userData.commande, id: e.pointerId };
+      this.controls.enabled = false;
+      try { this.canvas.setPointerCapture(e.pointerId); } catch (err) { /* sans importance */ }
+      this.surCommande(this.appui.commande, true);
+    }, true);
+    for (const ev of ['pointerup', 'pointercancel']) this.canvas.addEventListener(ev, (e) => { if (finAppui(e)) { nb = Math.max(0, nb - 1); debut.id = -1; e.stopImmediatePropagation(); } }, true);
+    this.canvas.addEventListener('pointerdown', (e) => {
+      if (this.appui && e.pointerId === this.appui.id) return;
       nb++;
       if (nb === 1) { debut.x = e.clientX; debut.y = e.clientY; debut.t = performance.now(); debut.id = e.pointerId; }
       else debut.id = -1;
