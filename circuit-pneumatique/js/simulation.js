@@ -100,7 +100,7 @@ export class SimulationPneumatique {
   reinitialiser() {
     // Commandes de l'opérateur
     this.cmd = {
-      compresseur: true,     // interrupteur du compresseur (marche automatique sur pressostat)
+      compresseur: false,    // interrupteur du compresseur (marche automatique sur pressostat) : à démarrer
       vanne: true,           // vanne d'arrivée 3/2 (fermée = circuit mis à l'échappement)
       reglage: 6,            // consigne du régulateur (bar)
       regleurSortie: 50,     // ouverture du régleur côté tige (règle la vitesse de SORTIE) (%)
@@ -439,6 +439,8 @@ export class SimulationPneumatique {
       m = 'Rentrée de tige : la chambre B est alimentée par 1 → 2 ; la chambre A s\'échappe par son régleur puis 4 → 5. La charge aide à descendre : c\'est l\'étranglement à l\'échappement qui la retient.';
     } else if (this.dist > 0 && this.position > 0.98) {
       m = 'Tige sortie : la chambre A reste à la pression du réseau (' + f(pRes) + ' bar) et maintient la charge. Distributeur bistable : il garde sa position sans commande (mémoire).';
+    } else if (this.position < 0.02 && !c.compresseur && !c.auto) {
+      m = 'Compresseur à l\'arrêt, cuve gonflée à ' + f(pCuve) + ' bar : on peut déjà travailler sur cette réserve. Appuyez sur « Compresseur » pour le démarrer (il s\'arrête seul à ' + CARAC.P_COUPURE + ' bar), puis sur « Sortie » ou « Auto ».';
     } else if (this.position < 0.02) {
       m = c.auto ? 'Cycle automatique : 1S1 (tige rentrée) pilote 14 → sortie ; 1S2 (tige sortie) pilote 12 → rentrée.'
                  : 'Tige rentrée. Commandez « Sortie » (pilote 14) ou lancez le cycle automatique. Les régleurs de débit règlent les vitesses.';
