@@ -506,5 +506,17 @@ if ('serviceWorker' in navigator && !dansApk && (location.protocol === 'https:' 
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW :', err)));
 }
 
+/* APK Android : le bouton « retour » du téléphone ferme d'abord la fiche, puis quitte l'appli */
+if (dansApk && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+  const AppNative = window.Capacitor.Plugins.App;
+  AppNative.addListener('backButton', () => {
+    if (!$('#pn-fiche').hidden) history.back();
+    else AppNative.exitApp();
+  });
+  // Appli mise en arrière-plan : on coupe la boucle et le son
+  AppNative.addListener('pause', () => arreterBoucle());
+  AppNative.addListener('resume', () => demarrerBoucle());
+}
+
 majTout();
 initialiser3D();

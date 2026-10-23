@@ -29,6 +29,21 @@ comprime, gouttes de purge, bouffées d'air. Sons synthétisés (bouton 🔊).
 Sur un PC : `npx http-server circuit-pneumatique -p 8080` puis http://localhost:8080.
 Après la première ouverture (en https ou sur localhost), elle fonctionne hors connexion.
 
+## APK Android
+
+**Lien direct :** https://github.com/baldeousmane22-collab/simulation-/releases/download/circuit-pneumatique/CircuitPneumatique.apk
+
+Ouvrir le lien sur le téléphone, toucher le fichier téléchargé, autoriser l'installation depuis
+cette source si Android le demande, puis **Installer** (Android 7.0 minimum). L'appli
+« Pneumatique 3D » fonctionne hors connexion ; le bouton retour du téléphone ferme d'abord la
+fiche ouverte.
+
+L'APK est reconstruit et signé automatiquement par GitHub Actions à chaque modification du
+dossier (workflow « Construire l'APK Circuit pneumatique »), avec la même clé permanente que les
+autres applis du dépôt : les mises à jour s'installent par-dessus l'ancienne version.
+Le projet Android (Capacitor 8) est dans `apk/` : `apk/scripts/preparer-web.sh` y copie l'appli
+web, puis `npx cap sync android` et `./gradlew assembleRelease` construisent l'APK.
+
 ## Organisation
 
 ```
@@ -42,6 +57,7 @@ js/sons.js            bruitages synthétisés (Web Audio)
 js/donnees.js         textes pédagogiques (fiches, pannes, quiz) : modifiables
 vendor/three.min.js   Three.js r186 (embarqué pour le hors-connexion)
 sw.js, manifest.webmanifest, icons/   application installable (PWA)
+apk/                  projet Android Capacitor (APK)
 ```
 
 Après une modification, changer `VERSION_CACHE` dans `sw.js` pour que les téléphones
