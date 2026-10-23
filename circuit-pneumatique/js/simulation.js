@@ -427,7 +427,7 @@ export class SimulationPneumatique {
       m = 'La cuve est vide. Mettez le compresseur en marche : il gonfle la cuve jusqu\'à ' + CARAC.P_COUPURE + ' bar puis s\'arrête (pressostat).';
     } else if (r.signalBloquant) {
       m = 'Les deux pilotes 14 et 12 sont actionnés en même temps : le distributeur bistable ne peut pas basculer (signal bloquant). Relâchez la commande opposée.';
-    } else if (this.commutation) {
+    } else if (this.commutation && this.pannes.eau) {
       m = 'Le tiroir du distributeur colle : il bascule avec retard…';
     } else if (r.cale) {
       m = 'Le vérin cale : effort disponible F = p × S = ' + f(pRes) + ' bar × ' + Math.round(S_PISTON) + ' mm² ≈ ' + Math.round(r.fDispo) +

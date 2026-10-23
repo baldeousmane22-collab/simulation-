@@ -291,6 +291,8 @@ function choisirOnglet(nom) {
 const liste = (t) => `<ul>${t.map(x => `<li>${x}</li>`).join('')}</ul>`;
 
 function ouvrirFiche(id) {
+  // Le schéma imprimé sur le panneau ouvre l'onglet Schéma
+  if (id === 'schemaPanneau') { if (scene) scene.selectionner(null); choisirOnglet('schema'); return; }
   const f = FICHES[id];
   if (!f) return;
   ouvrirFeuille(f.nom, `

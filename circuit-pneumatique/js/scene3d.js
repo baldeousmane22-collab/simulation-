@@ -13,11 +13,14 @@
    transparent pour voir le ressort se comprimer. Le carter et le cylindre
    du compresseur sont transparents : on voit le piston, la bielle et le
    vilebrequin tourner (rotation ralentie).
+   Le schéma ISO 1219 du banc est imprimé sur le panneau, au-dessus du
+   distributeur, et s'anime en direct comme dans l'onglet Schéma.
    ===================================================================== */
 
 import * as THREE from '../vendor/three.min.js';
 import { OrbitControls, RoomEnvironment } from '../vendor/three.min.js';
 import { P_ATM } from './simulation.js';
+import { svgSchema, majSchema } from './schema.js';
 
 const Z = 0.4;                    // plan médian des composants (devant le panneau)
 const XV = 5.2;                   // axe du vérin
@@ -145,6 +148,7 @@ export class ScenePneumatique {
     this._construireVerin();
     this._construireCapteurs();
     this._construireCircuit2();
+    this._construireSchema();
     this._construireTubes();
     this._construireJets();
     this._construireEtiquettes();
@@ -650,6 +654,56 @@ export class ScenePneumatique {
   }
 
   /* --------------------------- Étiquettes --------------------------- */
+  /* ------------- Schéma ISO imprimé sur le panneau (animé) ---------- */
+  _construireSchema() {
+    const g = this._groupe('schemaPanneau');
+    const L = 2.6, H = L * 520 / 530, cx = 2.85, cy = 6.72;
+    ajout(g, new THREE.BoxGeometry(L + 0.16, H + 0.36, 0.03), this._mat.aluFonce, cx, cy + 0.1, 0.015);
+    const c = document.createElement('canvas');
+    c.width = 1060; c.height = 1040;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, c.width, c.height);
+    this.texSchema = new THREE.CanvasTexture(c);
+    this.texSchema.colorSpace = THREE.SRGBColorSpace;
+    this.texSchema.anisotropy = 4;
+    ajout(g, new THREE.PlaneGeometry(L, H), new THREE.MeshBasicMaterial({ map: this.texSchema, toneMapped: false }), cx, cy, 0.035, false);
+    // Bandeau de titre
+    const t = document.createElement('canvas'); t.width = 1024; t.height = 64;
+    const x = t.getContext('2d');
+    x.fillStyle = '#1e293b'; x.fillRect(0, 0, 1024, 64);
+    x.fillStyle = '#f8fafc'; x.font = 'bold 36px Arial'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText('Schéma pneumatique du banc (ISO 1219)', 512, 34);
+    const texT = new THREE.CanvasTexture(t); texT.colorSpace = THREE.SRGBColorSpace;
+    ajout(g, new THREE.PlaneGeometry(L, L * 64 / 1024), new THREE.MeshBasicMaterial({ map: texT, toneMapped: false }), cx, cy + H / 2 + 0.11, 0.035, false);
+    // Le SVG est tenu hors de la page, mis à jour comme celui de l'onglet, puis redessiné dans la texture
+    this.svgSchema = document.createElement('div');
+    this.svgSchema.innerHTML = svgSchema();
+    const svg = this.svgSchema.firstElementChild;
+    svg.setAttribute('width', c.width); svg.setAttribute('height', c.height);
+    this.imgSchema = new Image();
+    this.imgSchema.onload = () => {
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(this.imgSchema, 0, 0, c.width, c.height);
+      this.texSchema.needsUpdate = true;
+      this._schemaEnCours = false;
+    };
+    this.imgSchema.onerror = () => { this._schemaEnCours = false; };
+    this._tSchema = 1;
+  }
+
+  /* Redessine le schéma du panneau (≈ 4 fois par seconde, seulement si l'image a changé) */
+  _majSchema(sim, dt) {
+    this._tSchema += dt;
+    if (this._tSchema < 0.25 || this._schemaEnCours) return;
+    this._tSchema = 0;
+    majSchema(this.svgSchema, sim);
+    const texte = new XMLSerializer().serializeToString(this.svgSchema.firstElementChild);
+    if (texte === this._dernierSchema) return;
+    this._dernierSchema = texte;
+    this._schemaEnCours = true;
+    this.imgSchema.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(texte);
+  }
+
   _construireEtiquettes() {
     const noms = [
       ['compresseur', 'Compresseur + cuve', new THREE.Vector3(-5.6, 5.3, Z)],
@@ -958,6 +1012,7 @@ export class ScenePneumatique {
     this._majTubes(sim, dt);
     this._majJets(sim, dt);
     this._majGouttes(dt);
+    this._majSchema(sim, dt);
     this.controls.update();
     this._majEtiquettes();
   }
