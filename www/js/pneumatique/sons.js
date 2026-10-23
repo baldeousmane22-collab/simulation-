@@ -86,10 +86,12 @@ export class SonsPneumatiques {
     const r = sim.res, t = this.ctx.currentTime, lisse = 0.06;
     const regle = (g, v) => g.gain.setTargetAtTime(v, t, lisse);
     // Échappements : silencieux 3 et 5, échappement rapide, bouton, vanne
-    const echap = r.qEchap3 + r.qEchap5 + r.qBoutonEchap + r.qVanne * 0.5;
+    // Débits sortants seulement (une chambre en dépression aspire de l'air : débit négatif)
+    const pos = (x) => (x > 0 && Number.isFinite(x) ? x : 0);
+    const echap = pos(r.qEchap3) + pos(r.qEchap5) + pos(r.qBoutonEchap) + pos(r.qVanne) * 0.5;
     const sale = sim.pannes.silencieux;
     this.filtreEchap.frequency.setTargetAtTime(sale ? 700 : 2600, t, 0.1);
-    regle(this.gEchap, Math.min(0.5, Math.sqrt(echap / 400) * (sale ? 0.35 : 0.45) + Math.sqrt(r.qEchapRapide / 300) * 0.6));
+    regle(this.gEchap, Math.min(0.5, Math.sqrt(echap / 400) * (sale ? 0.35 : 0.45) + Math.sqrt(pos(r.qEchapRapide) / 300) * 0.6));
     regle(this.gFuite, r.qFuite > 1 ? Math.min(0.12, 0.04 + r.qFuite / 600) : 0);
     regle(this.gSoupape, r.qSoupape > 1 ? Math.min(0.5, 0.15 + r.qSoupape / 500) : 0);
     // Compresseur

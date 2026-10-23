@@ -2,6 +2,9 @@
 # Publication de l'application web (PWA) sur GitHub Pages
 # Adresse : https://<compte>.github.io/<dépôt>/
 #
+# Les applis autonomes (un dossier chacune à la racine du dépôt) sont copiées
+# dans le site publié : https://<compte>.github.io/<dépôt>/<dossier>/
+#
 # Fonctionne avec les deux réglages possibles de Settings > Pages > Source :
 #  - « Deploy from a branch » (gh-pages) : job « branche-gh-pages »
 #  - « GitHub Actions »                  : job « deploiement-actions »
@@ -11,7 +14,7 @@ name: Publier sur GitHub Pages
 on:
   push:
     branches: [main, 'claude/**', 'ccr-*']
-    paths: ['www/**', 'scripts/**', '.github/workflows/pages.yml']
+    paths: ['www/**', 'pompe-centrifuge/**', 'circuit-pneumatique/**', 'scripts/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:
@@ -41,6 +44,13 @@ jobs:
             test -f "www/$f" || { echo "Fichier manquant : www/$f"; exit 1; }
           done
 
+      - name: Ajouter les applis autonomes au site
+        run: |
+          for d in pompe-centrifuge circuit-pneumatique; do
+            test -f "$d/index.html" || { echo "Fichier manquant : $d/index.html"; exit 1; }
+            cp -r "$d" www/
+          done
+
       - name: Publier dans la branche gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
@@ -67,6 +77,13 @@ jobs:
 
       - name: Appliquer le numéro de version (site, cache, application)
         run: bash scripts/version.sh
+
+      - name: Ajouter les applis autonomes au site
+        run: |
+          for d in pompe-centrifuge circuit-pneumatique; do
+            test -f "$d/index.html" || { echo "Fichier manquant : $d/index.html"; exit 1; }
+            cp -r "$d" www/
+          done
 
       - name: Préparer le site
         run: touch www/.nojekyll

@@ -151,7 +151,11 @@ const appuyer = (oui) => {
   bouton2v1.classList.toggle('enfonce', oui);
   bouton2v1.textContent = oui ? '🟢 Bouton 2V1 enfoncé… relâchez' : '🟢 Maintenir le bouton 2V1';
 };
-bouton2v1.addEventListener('pointerdown', (e) => { e.preventDefault(); bouton2v1.setPointerCapture?.(e.pointerId); appuyer(true); });
+bouton2v1.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  appuyer(true);
+  try { bouton2v1.setPointerCapture(e.pointerId); } catch (err) { /* doigt déjà relâché */ }
+});
 for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) bouton2v1.addEventListener(ev, () => appuyer(false));
 bouton2v1.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); appuyer(true); } });
 bouton2v1.addEventListener('keyup', (e) => { if (e.key === ' ' || e.key === 'Enter') appuyer(false); });

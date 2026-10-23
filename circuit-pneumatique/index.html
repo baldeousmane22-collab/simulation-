@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Circuit pneumatique 3D</title>
+  <meta name="description" content="Simulation 3D d'un circuit pneumatique pour la formation des mécaniciens : compresseur, FRL, distributeur 5/2, vérins, capteurs, pannes et quiz.">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Pneumatique 3D">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<section id="pneu" class="ecran ecran-sim actif" aria-label="Banc pneumatique">
+  <div id="pn-vue3d" class="zone3d">
+    <canvas id="pn-canvas" class="canvas3d" aria-label="Vue 3D du circuit pneumatique"></canvas>
+
+    <div class="barre-haut">
+      <div class="titre-sim" id="pn-titre">Banc pneumatique</div>
+      <button type="button" class="btn-rond" id="pn-son" title="Sons du banc" aria-label="Sons" aria-pressed="false">🔇</button>
+      <button type="button" class="btn-rond" id="pn-etiquettes" title="Afficher / masquer les étiquettes" aria-label="Étiquettes" aria-pressed="true">🏷️</button>
+    </div>
+
+    <div class="hud">
+      <div class="hud-ligne">
+        <div class="hud-pression"><small>Cuve</small><b id="pn-hud-cuve">0</b><small>bar</small></div>
+        <div class="hud-pression"><small>Réseau</small><b id="pn-hud-res">0</b><small>bar</small></div>
+      </div>
+      <div id="pn-alerte" class="hud-alerte" hidden></div>
+    </div>
+
+    <div class="legende-3d" aria-hidden="true">
+      <span><i class="pastille asp"></i>Air comprimé</span>
+      <span><i class="pastille ret"></i>Échappement</span>
+      <span><i class="pastille repos"></i>Atmosphère</span>
+    </div>
+    <button type="button" id="pn-recentrer" class="btn-recentrer">⌖ Recentrer la vue</button>
+    <div id="pn-chargement" class="chargement"><div class="roue"></div>Chargement de la 3D…</div>
+  </div>
+
+  <div id="pn-panneau" class="panneau">
+    <div class="barre-rapide">
+      <button type="button" id="pn-compresseur" class="btn-pompe" aria-pressed="true">
+        <i class="voyant"></i><span class="lib-pompe">Compresseur<small>AUTO</small></span>
+      </button>
+      <div class="segmente" role="group" aria-label="Commande du distributeur">
+        <button type="button" data-pn-cmd="rentree" title="Rentrée de tige (pilote 12)"><b>▼</b><span>Rentrée</span></button>
+        <button type="button" data-pn-cmd="sortie" title="Sortie de tige (pilote 14)"><b>▲</b><span>Sortie</span></button>
+        <button type="button" data-pn-cmd="auto" title="Sélecteur 0V1 : cycle automatique (va-et-vient)"><b>↻</b><span>Auto</span></button>
+      </div>
+      <button type="button" id="pn-replier" class="btn-rond petit btn-replier" aria-label="Replier le panneau" title="Replier / déplier">▾</button>
+    </div>
+
+    <nav class="onglets" role="tablist">
+      <button type="button" role="tab" data-pn-onglet="commandes" class="actif">Commandes</button>
+      <button type="button" role="tab" data-pn-onglet="schema">Schéma</button>
+      <button type="button" role="tab" data-pn-onglet="pannes">Pannes</button>
+      <button type="button" role="tab" data-pn-onglet="quiz">Quiz</button>
+    </nav>
+
+    <div class="contenu-panneau" id="pn-contenu">
+      <!-- Onglet Commandes -->
+      <div class="onglet actif" data-pn-contenu="commandes">
+        <div id="pn-message" class="message"></div>
+        <div class="ligne-boutons">
+          <button type="button" id="pn-vanne" class="btn-secondaire btn-consigner" aria-pressed="false">🔓 Vanne d'arrivée ouverte</button>
+        </div>
+
+        <label class="curseur">
+          <span class="lib">Régulateur de pression <b id="pn-curseur-p-val">6 bar</b></span>
+          <input type="range" id="pn-curseur-p" min="1" max="8" step="0.5" value="6">
+          <span class="bornes"><span>1 bar</span><span>8 bar</span></span>
+        </label>
+        <label class="curseur">
+          <span class="lib">Régleur côté tige (1V3) : vitesse de SORTIE <b id="pn-curseur-rs-val">50 %</b></span>
+          <input type="range" id="pn-curseur-rs" min="0" max="100" step="5" value="50">
+          <span class="bornes"><span>fermé</span><span>ouvert</span></span>
+        </label>
+        <label class="curseur">
+          <span class="lib">Régleur côté fond (1V2) : vitesse de RENTRÉE <b id="pn-curseur-rr-val">50 %</b></span>
+          <input type="range" id="pn-curseur-rr" min="0" max="100" step="5" value="50">
+          <span class="bornes"><span>fermé</span><span>ouvert</span></span>
+        </label>
+        <label class="curseur">
+          <span class="lib">Charge sur le plateau <b id="pn-curseur-m-val">10 kg</b></span>
+          <input type="range" id="pn-curseur-m" min="0" max="40" step="5" value="10">
+          <span class="bornes"><span>0 kg</span><span>40 kg</span></span>
+        </label>
+
+        <div class="mesures">
+          <div><small>Pression cuve</small><b id="pn-m-cuve">0 bar</b></div>
+          <div id="pn-c-res"><small>Pression réseau</small><b id="pn-m-res">0 bar</b></div>
+          <div><small>Chambre A (fond)</small><b id="pn-m-pa">0 bar</b></div>
+          <div><small>Chambre B (tige)</small><b id="pn-m-pb">0 bar</b></div>
+          <div><small>Vitesse de tige</small><b id="pn-m-v">0 mm/s</b></div>
+          <div><small>Sortie de tige</small><b id="pn-m-x">0 mm</b></div>
+          <div id="pn-c-f"><small>Force théorique</small><b id="pn-m-f">0 N</b></div>
+          <div><small>Poids à soulever</small><b id="pn-m-poids">0 N</b></div>
+          <div><small>Débit consommé</small><b id="pn-m-q">0 NL/min</b></div>
+          <div id="pn-c-taux"><small>Compresseur en marche</small><b id="pn-m-taux">0 %</b></div>
+          <div><small>Durée d'un cycle</small><b id="pn-m-cycle">—</b></div>
+          <div><small>Air par cycle</small><b id="pn-m-conso">—</b></div>
+          <div><small>Cycles</small><b id="pn-m-n">0</b></div>
+          <div><small>Capteurs</small><b id="pn-m-capt">—</b></div>
+        </div>
+
+        <div class="carte">
+          <h3>Circuit 2 : vérin simple effet</h3>
+          <p class="aide">Bouton poussoir 3/2 NF (2V1) → soupape d'échappement rapide (2V2) → vérin simple effet à ressort (2A). Maintenez le bouton enfoncé, puis relâchez.</p>
+          <button type="button" id="pn-bouton2v1" class="btn-principal pleine-largeur btn-maintenir">🟢 Maintenir le bouton 2V1</button>
+          <div class="mesures">
+            <div><small>Pression vérin 2A</small><b id="pn-m-p2">0 bar</b></div>
+            <div><small>Sortie de tige 2A</small><b id="pn-m-x2">0 mm</b></div>
+          </div>
+        </div>
+
+        <div class="carte">
+          <h3>Calcul de l'effort du vérin</h3>
+          <div id="pn-calcul" class="calcul"></div>
+        </div>
+        <div class="ligne-boutons">
+          <button type="button" id="pn-purger" class="btn-secondaire">💧 Purger le filtre</button>
+          <button type="button" id="pn-reinit" class="btn-secondaire">↺ Réinitialiser</button>
+        </div>
+      </div>
+
+      <!-- Onglet Schéma -->
+      <div class="onglet" data-pn-contenu="schema">
+        <div id="pn-schema" class="schema-svg"></div>
+        <p class="aide">Les conduites changent de couleur en direct : <b>bleu</b> = air comprimé, <b>vert</b> = échappement, <b>gris</b> = atmosphère. La case jaune du distributeur est la position active ; les capteurs actionnés s'allument en vert. Repérage : 1A = vérin, 1V1 = distributeur, 1V2 / 1V3 = régleurs, 1S1 / 1S2 = capteurs.</p>
+      </div>
+
+      <!-- Onglet Pannes -->
+      <div class="onglet" data-pn-contenu="pannes">
+        <p class="aide">Activez une panne puis observez : manomètres, vitesse du vérin, compresseur, échappements, cuve du filtre…</p>
+        <div id="pn-liste-pannes" class="liste-pannes"></div>
+        <div id="pn-detail-panne" class="detail-panne" hidden></div>
+        <div class="mystere">
+          <h3>🔍 Panne mystère</h3>
+          <p class="aide">Une panne est activée au hasard, banc en cycle automatique. Observez, mesurez, puis faites votre diagnostic.</p>
+          <button type="button" id="pn-mystere" class="btn-principal">Lancer une panne mystère</button>
+          <div id="pn-mystere-choix" class="choix" hidden></div>
+          <div id="pn-mystere-resultat" class="resultat" hidden></div>
+        </div>
+        <button type="button" id="pn-reparer" class="btn-secondaire pleine-largeur">🔧 Tout réparer</button>
+      </div>
+
+      <!-- Onglet Quiz -->
+      <div class="onglet" data-pn-contenu="quiz">
+        <div id="pn-quiz"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="pn-fiche" class="feuille" role="dialog" aria-modal="true" aria-labelledby="pn-fiche-nom" hidden>
+    <div class="feuille-entete">
+      <h2 id="pn-fiche-nom"></h2>
+      <button type="button" class="btn-rond petit fermer" data-pn-fermer aria-label="Fermer">✕</button>
+    </div>
+    <div class="feuille-corps" id="pn-fiche-corps"></div>
+  </div>
+</section>
+
+<div id="erreur-webgl" class="erreur" hidden>
+  <h2>La 3D n'a pas pu démarrer</h2>
+  <p>Votre navigateur ne prend pas en charge WebGL ou il est désactivé. Essayez avec Chrome à jour.</p>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
