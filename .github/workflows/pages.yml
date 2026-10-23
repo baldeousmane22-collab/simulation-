@@ -49,6 +49,7 @@ jobs:
           for d in pompe-centrifuge circuit-pneumatique; do
             test -f "$d/index.html" || { echo "Fichier manquant : $d/index.html"; exit 1; }
             cp -r "$d" www/
+            rm -rf "www/$d/apk"   # projet Android : inutile sur le site
           done
 
       - name: Publier dans la branche gh-pages
@@ -83,6 +84,7 @@ jobs:
           for d in pompe-centrifuge circuit-pneumatique; do
             test -f "$d/index.html" || { echo "Fichier manquant : $d/index.html"; exit 1; }
             cp -r "$d" www/
+            rm -rf "www/$d/apk"   # projet Android : inutile sur le site
           done
 
       - name: Préparer le site
