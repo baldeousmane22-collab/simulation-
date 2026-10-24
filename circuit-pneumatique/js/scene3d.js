@@ -268,6 +268,7 @@ export class ScenePneumatique {
     for (const z of [Z - 0.85, Z + 0.85]) ajout(g, cylZ(0.3, 0.18, 24), M.noir, -7.2, 0.3, z);
     // Purge sous la cuve
     ajout(g, cylY(0.06, 0.25), M.laiton, -5.6, 0.42, Z);
+    this._zoneAppui(g, 'purge', -5.6, 0.42, Z + 0.1, 0.24);
     // Socle du groupe moto-compresseur sur la cuve
     ajout(g, new THREE.BoxGeometry(2.4, 0.12, 1.2), M.gris, -6.4, 3.12, Z);
     // Moteur électrique + ventilateur (tourne en marche)
@@ -307,7 +308,8 @@ export class ScenePneumatique {
     ajout(tete, cylY(0.15, 0.3), M.noir, 0.42, 4.25, 0.15);   // filtre d'aspiration
     // Pressostat, manomètre de cuve, soupape de sûreté, robinet de sortie
     ajout(g, new THREE.BoxGeometry(0.55, 0.55, 0.45), mat(0x374151, 0.3, 0.5), -4.4, 3.45, Z);
-    ajout(g, new THREE.BoxGeometry(0.2, 0.2, 0.1), mat(0xdc2626, 0.3, 0.5), -4.4, 3.82, Z + 0.15);
+    ajout(g, new THREE.BoxGeometry(0.2, 0.2, 0.1), mat(0xdc2626, 0.3, 0.5), -4.4, 3.82, Z + 0.15);   // interrupteur marche / arrêt
+    this._zoneAppui(g, 'compresseur', -4.4, 3.82, Z + 0.22, 0.22);
     this.manoCuve = this._manometre(g, -4.4, 3.45, Z + 0.32, 12, 10, 0.2);
     const soupape = new THREE.Group();
     soupape.position.set(-4.05, 3.3, Z - 0.1);
@@ -342,6 +344,7 @@ export class ScenePneumatique {
     ajout(levier, new THREE.BoxGeometry(0.12, 0.1, 0.12), M.noir, 0, 0, 0);
     ajout(levier, new THREE.BoxGeometry(0.62, 0.08, 0.12), M.rouge, 0.25, 0.05, 0);
     this.levierVanne = levier;
+    this._zoneAppui(vanne, 'vanne', -2.05, Y_FRL + 0.38, Z + 0.15, 0.34);
     ajout(vanne, cylY(0.07, 0.18), M.noir, -2.2, Y_FRL - 0.38, Z);   // échappement de la vanne
     this.positionEchapVanne = new THREE.Vector3(-2.2, Y_FRL - 0.5, Z);
     // Filtre : corps, cuve transparente, eau, élément filtrant, purge
@@ -353,6 +356,7 @@ export class ScenePneumatique {
     eauGeo.translate(0, 0.5, 0);
     this.eau = ajout(filtre, eauGeo, new THREE.MeshStandardMaterial({ color: 0x60a5fa, transparent: true, opacity: 0.65, roughness: 0.1 }), -1.4, Y_FRL - 1.2, Z, false);
     ajout(filtre, cylY(0.05, 0.16), M.noir, -1.4, Y_FRL - 1.3, Z);
+    this._zoneAppui(filtre, 'purge', -1.4, Y_FRL - 1.3, Z + 0.05, 0.2);
     // Régulateur : corps, molette, manomètre
     const reg = this._groupe('regulateur');
     ajout(reg, new THREE.BoxGeometry(0.55, 0.55, 0.55), corps, -0.6, Y_FRL, Z);
@@ -510,6 +514,7 @@ export class ScenePneumatique {
     ajout(bouton, cylZ(0.13, 0.08, 20), M.noir, 0, 0, 0);
     ajout(bouton, new THREE.BoxGeometry(0.05, 0.22, 0.06), M.rouge, 0, 0, 0.05);
     this.boutonSelecteur = bouton;
+    this._zoneAppui(sel, 'selecteur', 6.0, 1.75, Z + 0.28, 0.3);
   }
 
   /* --------- Circuit 2 : bouton 3/2, échappement rapide, vérin SE ---- */
