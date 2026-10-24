@@ -32,11 +32,18 @@ async function initialiser3D() {
     if (!(essai.getContext('webgl2') || essai.getContext('webgl'))) throw new Error('WebGL indisponible');
     const { ScenePneumatique } = await import('./scene3d.js');
     scene = new ScenePneumatique($('#pn-canvas'), (id) => ouvrirFiche(id));
-    // Boutons du banc actionnés directement dans la 3D (champignon 2V1, commandes manuelles 14 / 12)
+    // Commandes du banc actionnées directement dans la 3D : champignon 2V1, commandes manuelles 14 / 12,
+    // levier de la vanne 3/2, interrupteur du compresseur, sélecteur 0V1, purges
     scene.surCommande = (commande, oui) => {
       if (commande === 'bouton2v1') {
         if (oui) { appuyer(true); expliquerSiBloque(); } else relacher();
-      } else if (oui) {
+      } else if (!oui) {
+        // Les autres commandes du banc agissent au moment où l'on pose le doigt
+      } else if (commande === 'vanne') $('#pn-vanne').click();
+      else if (commande === 'compresseur') $('#pn-compresseur').click();
+      else if (commande === 'selecteur') $('#pneu [data-pn-cmd=auto]').click();
+      else if (commande === 'purge') $('#pn-purger').click();
+      else {
         if (sim.cmd.auto) sim.cmd.auto = false;
         if (!expliquerSiBloque()) flash(commande === 14 ? 'Commande manuelle du pilote 14 : 1 → 4, la tige sort.' : 'Commande manuelle du pilote 12 : 1 → 2, la tige rentre.');
         sim.impulsionManuelle(commande);
@@ -189,6 +196,7 @@ $$('#pneu [data-pn-cmd]').forEach(b => b.addEventListener('click', () => {
   if (cmd === 'auto') {
     sim.cmd.auto = !sim.cmd.auto;
     if (sim.cmd.auto && !expliquerSiBloque()) flash('Sélecteur 0V1 sur « Auto » : les capteurs sont alimentés, le distributeur est piloté par 1S1 (tige rentrée → sortie) et 1S2 (tige sortie → rentrée).');
+    else if (!sim.cmd.auto) flash('Sélecteur 0V1 sur « Arrêt » : les capteurs ne sont plus alimentés, le cycle s\'arrête à la fin du mouvement en cours.');
   } else {
     if (sim.cmd.auto) { sim.cmd.auto = false; flash('Cycle automatique arrêté : commande manuelle.'); }
     sim.impulsionManuelle(cmd === 'sortie' ? 14 : 12);
@@ -198,7 +206,9 @@ $$('#pneu [data-pn-cmd]').forEach(b => b.addEventListener('click', () => {
 
 $('#pn-vanne').addEventListener('click', () => {
   sim.cmd.vanne = !sim.cmd.vanne;
-  if (!sim.cmd.vanne) flash('Vanne 3/2 fermée : l\'arrivée est coupée et le circuit se vide par l\'échappement. Vérifiez au manomètre que la pression tombe à 0.');
+  flash(sim.cmd.vanne
+    ? 'Vanne 3/2 ouverte : le circuit se remet sous pression. Attention, les vérins peuvent bouger à la remise en air.'
+    : 'Vanne 3/2 fermée : l\'arrivée est coupée et le circuit se vide par l\'échappement. Vérifiez au manomètre que la pression tombe à 0.');
   majCommandes();
 });
 $('#pn-purger').addEventListener('click', () => {
