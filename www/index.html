@@ -41,6 +41,14 @@
     <button id="btn-accouplement" class="btn-geant bleu" type="button">
       <span class="ico" aria-hidden="true">⚙️</span><span>Moteur + réducteur<small>accouplement, alignement, pannes</small></span>
     </button>
+    <a id="lien-accouplements" class="btn-geant bleu vert" href="accouplements/">
+      <span class="ico" aria-hidden="true">📘</span><span>Accouplements<small>cours + 12 types en 3D + défauts d'alignement</small></span>
+    </a>
+    <script>
+      // Dans l'APK l'appli Accouplements n'est pas embarquée : on ouvre alors la version en ligne.
+      fetch('accouplements/index.html', { method: 'HEAD' }).then(r => { if (!r.ok) throw 0; })
+        .catch(() => { document.getElementById('lien-accouplements').href = 'https://baldeousmane22-collab.github.io/simulation-/accouplements/'; });
+    </script>
 
     <div class="legende-accueil">
       <span><i class="pastille asp"></i>Aspiration</span>
