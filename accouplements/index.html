@@ -16,6 +16,36 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+<section id="accueil" class="ecran actif" aria-label="Accueil">
+  <div class="accueil-contenu">
+    <img src="icons/icon-192.png" width="96" height="96" alt="" class="logo">
+    <h1>Les accouplements</h1>
+    <p class="sous-titre">Cours et simulation 3D — Brevet technique, mécanique</p>
+    <button type="button" class="btn-geant" data-aller="cours"><span>📘</span> Cours</button>
+    <div class="grille-accueil">
+      <button type="button" data-aller="sim"><span>🎛️</span>Simulation 3D</button>
+      <button type="button" data-aller="defauts"><span>⤡</span>Défauts d'alignement</button>
+      <button type="button" data-aller="comparer"><span>📊</span>Comparer les types</button>
+      <button type="button" data-aller="quiz"><span>📝</span>Quiz</button>
+    </div>
+    <p class="pied">IRAM Boké — formation des mécaniciens</p>
+  </div>
+</section>
+
+<section id="cours" class="ecran" aria-label="Cours sur les accouplements">
+  <header class="barre-cours">
+    <button type="button" class="btn-rond" id="cours-retour" aria-label="Retour">←</button>
+    <div class="titre-cours" id="cours-titre">Cours : les accouplements</div>
+    <button type="button" class="btn-rond" id="cours-accueil" aria-label="Accueil">🏠</button>
+  </header>
+  <div class="cours-corps" id="cours-corps"></div>
+  <footer class="barre-cours bas" id="cours-nav" hidden>
+    <button type="button" class="btn-secondaire" id="cours-prec">◀ Précédent</button>
+    <button type="button" class="btn-principal" id="cours-3d">🎛️ Voir en 3D</button>
+    <button type="button" class="btn-secondaire" id="cours-suiv">Suivant ▶</button>
+  </footer>
+</section>
+
 <main id="app">
   <section id="vue3d" aria-label="Vue 3D de l'accouplement">
     <canvas id="canvas3d" aria-label="Accouplement en 3D : glisser pour tourner, pincer pour zoomer, deux doigts pour déplacer"></canvas>
@@ -29,6 +59,7 @@
     <div class="legende-axes" id="legende-axes"><span class="pt vert"></span>axe moteur <span class="pt orange"></span>axe machine <span id="hud-exag"></span></div>
 
     <div class="outils">
+      <button type="button" class="btn-rond" id="b-accueil" title="Accueil" aria-label="Accueil">🏠</button>
       <button type="button" class="btn-rond" id="b-marche" title="Marche / arrêt" aria-label="Marche / arrêt">⏸</button>
       <button type="button" class="btn-rond" id="b-eclate" title="Vue éclatée" aria-label="Vue éclatée" aria-pressed="false">💥</button>
       <button type="button" class="btn-rond" id="b-transp" title="Carter / manchon transparent" aria-label="Carter transparent" aria-pressed="true">🔍</button>

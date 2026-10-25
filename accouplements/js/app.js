@@ -4,6 +4,7 @@
    ===================================================================== */
 import { Scene3D } from './scene3d.js';
 import { TYPES, DEFAUTS, QUIZ } from './donnees.js';
+import { CHAPITRES } from '../cours/cours.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = (v, n = 2) => v.toFixed(n).replace('.', ',');
@@ -310,7 +311,7 @@ function boucle(t) {
   if ((tTexte -= dt) <= 0) { majTextes(res); tTexte = 0.15; }
   if ((tGraphe -= dt) <= 0) { dessinerGraphes(); tGraphe = 0.08; }
   if (tToast > 0 && (tToast -= dt) <= 0) $('toast').hidden = true;
-  if (scene) {
+  if (scene && ecran === 'sim') {
     const E = exagEff(), v = etat.val;
     const tourne = etat.marche && etat.rpm > 0;
     scene.maj({
@@ -323,6 +324,56 @@ function boucle(t) {
     }, dt);
   }
   requestAnimationFrame(boucle);
+}
+
+/* ----------------------- Accueil et cours ---------------------------- */
+let ecran = 'accueil', chapitre = -1, depuisCours = false;
+function montrer(id) {
+  ecran = id;
+  for (const e of ['accueil', 'cours']) $(e).classList.toggle('actif', e === id);
+  if (id === 'sim' && scene) scene.redimensionner();
+}
+function ouvrirOnglet(id) {
+  document.querySelector(`.onglets button[data-onglet="${id}"]`).click();
+}
+document.querySelectorAll('[data-aller]').forEach(b => b.addEventListener('click', () => {
+  const a = b.dataset.aller;
+  if (a === 'cours') { afficherChapitre(-1); montrer('cours'); return; }
+  montrer('sim');
+  depuisCours = false;
+  ouvrirOnglet({ sim: 'o-types', defauts: 'o-defauts', comparer: 'o-comparer', quiz: 'o-quiz' }[a]);
+}));
+$('b-accueil').addEventListener('click', () => { montrer(depuisCours ? 'cours' : 'accueil'); depuisCours = false; });
+$('cours-accueil').addEventListener('click', () => montrer('accueil'));
+$('cours-retour').addEventListener('click', () => chapitre < 0 ? montrer('accueil') : afficherChapitre(-1));
+$('cours-prec').addEventListener('click', () => afficherChapitre(chapitre - 1));
+$('cours-suiv').addEventListener('click', () => afficherChapitre(chapitre + 1));
+$('cours-3d').addEventListener('click', () => {
+  const v = CHAPITRES[chapitre].voir;
+  choisirType(TYPES.find(t => t.id === v.type));
+  appliquerDefaut(v.defaut);
+  montrer('sim');
+  depuisCours = true;
+  ouvrirOnglet(v.defaut === 'aligne' ? 'o-types' : 'o-defauts');
+  toast('🏠 = retour au chapitre');
+});
+// chapitre -1 = sommaire
+function afficherChapitre(i) {
+  chapitre = Math.max(-1, Math.min(CHAPITRES.length - 1, i));
+  const c = CHAPITRES[chapitre];
+  $('cours-nav').hidden = chapitre < 0;
+  if (chapitre < 0) {
+    $('cours-titre').textContent = 'Cours : les accouplements';
+    $('cours-corps').innerHTML = `<p class="aide">Brevet technique — 12 chapitres. Chaque chapitre se termine par « Voir en 3D » pour observer l'accouplement dans la simulation.</p>
+      <ol class="sommaire">${CHAPITRES.map((x, j) => `<li><button type="button" data-ch="${j}"><span class="num">${j + 1}.</span><span>${x.ico}</span>${esc(x.titre)}</button></li>`).join('')}</ol>`;
+    $('cours-corps').querySelectorAll('[data-ch]').forEach(b => b.addEventListener('click', () => afficherChapitre(+b.dataset.ch)));
+  } else {
+    $('cours-titre').textContent = `${chapitre + 1}. ${c.titre}`;
+    $('cours-corps').innerHTML = `<h4 style="margin-top:0">${c.ico} Chapitre ${chapitre + 1} / ${CHAPITRES.length}</h4>` + c.html;   // texte du cours (fichier local, pas de saisie utilisateur)
+    $('cours-prec').disabled = chapitre === 0;
+    $('cours-suiv').disabled = chapitre === CHAPITRES.length - 1;
+  }
+  $('cours-corps').scrollTop = 0;
 }
 
 /* ---------------------------- Démarrage ------------------------------ */

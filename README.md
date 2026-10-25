@@ -183,6 +183,11 @@ embarqué pour fonctionner hors connexion) et l'APK est construit par le workflo
 - **Lien web** : https://baldeousmane22-collab.github.io/simulation-/accouplements/
 - **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/accouplements/Accouplements.apk
 
+**Écran d'accueil** : 📘 **Cours** (dossier `accouplements/cours/` : 12 chapitres pour le brevet technique — définition,
+classification, rigides, élastiques, métalliques, Oldham et cardan, défauts d'alignement, méthode d'alignement,
+choix et calcul du couple, entretien et sécurité, résumé + exercices corrigés ; chaque chapitre a un bouton
+« Voir en 3D »), Simulation 3D, Défauts d'alignement, Comparer, Quiz.
+
 **12 types d'accouplement** animés en 3D : rigide à plateaux, rigide à manchon, à crabots (étoile),
 à pneu, à broches et douilles, à lames (avec entretoise), à denture double, à chaîne double,
 à grille, Oldham, joint de cardan, à soufflet métallique. Vue éclatée, carter transparent,
