@@ -46,7 +46,7 @@
     </a>
     <script>
       // Dans l'APK l'appli Accouplements n'est pas embarquée : on ouvre alors la version en ligne.
-      fetch('accouplements/index.html', { method: 'HEAD' }).then(r => { if (!r.ok) throw 0; })
+      fetch('accouplements/index.html', { cache: 'no-store' }).then(r => { if (!r.ok) throw 0; })
         .catch(() => { document.getElementById('lien-accouplements').href = 'https://baldeousmane22-collab.github.io/simulation-/accouplements/'; });
     </script>
 

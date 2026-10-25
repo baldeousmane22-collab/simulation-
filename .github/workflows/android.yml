@@ -16,7 +16,7 @@ name: Construire l'APK Android
 on:
   push:
     branches: [main, 'claude/**']
-    paths: ['www/**', '!www/plan-maison/**', 'android/**', 'scripts/**', 'package.json', 'package-lock.json', 'capacitor.config.json', '.github/workflows/android.yml']
+    paths: ['www/**', '!www/plan-maison/**', 'accouplements/**', '!accouplements/apk/**', 'android/**', 'scripts/**', 'package.json', 'package-lock.json', 'capacitor.config.json', '.github/workflows/android.yml']
   workflow_dispatch:
   # Chaque lundi : entretien de la clé permanente (voir job « entretien »)
   schedule:
@@ -75,8 +75,17 @@ jobs:
       - name: Installer les dépendances (Capacitor)
         run: npm ci
 
+      - name: Ajouter l'appli Accouplements (cours + 3D) dans l'APK
+        run: |
+          test -f accouplements/index.html
+          rm -rf www/accouplements
+          cp -r accouplements www/accouplements
+          rm -rf www/accouplements/apk   # projet Android de l'appli seule : inutile ici
+
       - name: Copier l'application web dans le projet Android
         run: npx cap sync android
+          test -f android/app/src/main/assets/public/accouplements/index.html
+          test -f android/app/src/main/assets/public/accouplements/cours/cours.js
 
       # Clé permanente sans aucune configuration : elle est créée une seule fois
       # par GitHub puis conservée dans le cache privé des constructions (jamais
