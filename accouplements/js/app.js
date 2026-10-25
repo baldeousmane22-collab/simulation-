@@ -177,7 +177,7 @@ function majTextes(res) {
   $('v-a').textContent = fmt(v.a, t.id === 'cardan' ? 1 : 2) + ' °';
   $('v-x').textContent = (v.x >= 0 ? '+' : '') + fmt(v.x) + ' mm';
   const E = exagEff();
-  $('hud-exag').textContent = E > 1 ? `· défauts exagérés ×${E}` : '· échelle réelle';
+  $('hud-exag').textContent = E === 'auto' ? '· défauts exagérés (échelle auto)' : E > 1 ? `· défauts exagérés ×${E}` : '· échelle réelle';
   const cl = (r) => r <= 0.5 ? 'ok' : r <= 1 ? 'moyen' : r <= 1.6 ? 'alerte' : 'ko';
   const pc = (r) => Math.round(r * 100) + ' % de la tolérance';
   const arret = !(etat.marche && etat.rpm > 0);
@@ -290,7 +290,19 @@ function afficherQuiz() {
 
 /* ------------------------------- Boucle ------------------------------ */
 function exagEff() {
-  return etat.exag === 'auto' ? etat.type.exag : +etat.exag;
+  if (etat.exag !== 'auto') return +etat.exag;
+  return etat.type.id === 'cardan' ? 1 : 'auto';
+}
+// Valeurs affichées en 3D (unités de 100 mm, radians). En « auto », une tolérance
+// donne toujours le même écart visible (10 mm, 4°, 6 mm) quel que soit le type.
+function affichage(v) {
+  const E = exagEff(), t = etat.type, lim = (x, m) => Math.max(-m, Math.min(m, x));
+  if (E === 'auto') return {
+    r: lim(t.tol.r ? v.r / t.tol.r * 0.1 : 0, 0.35),
+    a: lim(t.tol.a ? v.a / t.tol.a * 4 : 0, 15) * Math.PI / 180,
+    x: lim(t.tol.x ? v.x / t.tol.x * 0.06 : 0, 0.3)
+  };
+  return { r: lim(v.r * E / 100, 0.6), a: lim(v.a * E, 40) * Math.PI / 180, x: lim(v.x * E / 100, 0.6) };
 }
 let tPrec = performance.now(), tGraphe = 0, tTexte = 0;
 function boucle(t) {
@@ -312,13 +324,11 @@ function boucle(t) {
   if ((tGraphe -= dt) <= 0) { dessinerGraphes(); tGraphe = 0.08; }
   if (tToast > 0 && (tToast -= dt) <= 0) $('toast').hidden = true;
   if (scene && ecran === 'sim') {
-    const E = exagEff(), v = etat.val;
+    const d = affichage(etat.val);
     const tourne = etat.marche && etat.rpm > 0;
     scene.maj({
       theta: etat.theta,
-      r: Math.min(0.6, v.r * E / 100),
-      a: Math.min(40, v.a * E) * Math.PI / 180,
-      x: Math.max(-0.6, Math.min(0.6, v.x * E / 100)),
+      r: d.r, a: d.a, x: d.x, planHorizontal: etat.type.id === 'cardan',
       eclate: etat.ecl, transparent: etat.transparent, axes: etat.axes, taux: res.taux,
       secousse: tourne && res.vib > 2.8 ? Math.min(0.04, (res.vib - 2.8) * 0.006) : 0
     }, dt);
@@ -328,7 +338,8 @@ function boucle(t) {
 
 /* ----------------------- Accueil et cours ---------------------------- */
 let ecran = 'accueil', chapitre = -1, depuisCours = false;
-function montrer(id) {
+function montrer(id, histo = true) {
+  if (histo && id !== ecran) history.pushState({ ecran: id }, '');
   ecran = id;
   for (const e of ['accueil', 'cours']) $(e).classList.toggle('actif', e === id);
   if (id === 'sim' && scene) scene.redimensionner();
@@ -343,6 +354,11 @@ document.querySelectorAll('[data-aller]').forEach(b => b.addEventListener('click
   depuisCours = false;
   ouvrirOnglet({ sim: 'o-types', defauts: 'o-defauts', comparer: 'o-comparer', quiz: 'o-quiz' }[a]);
 }));
+window.addEventListener('popstate', (e) => {
+  const id = (e.state && e.state.ecran) || 'accueil';
+  if (id === 'cours' && !e.state.ch && chapitre >= 0) afficherChapitre(-1);   // retour : chapitre → sommaire
+  montrer(id, false);
+});
 $('b-accueil').addEventListener('click', () => { montrer(depuisCours ? 'cours' : 'accueil'); depuisCours = false; });
 $('cours-accueil').addEventListener('click', () => montrer('accueil'));
 $('cours-retour').addEventListener('click', () => chapitre < 0 ? montrer('accueil') : afficherChapitre(-1));
@@ -359,7 +375,9 @@ $('cours-3d').addEventListener('click', () => {
 });
 // chapitre -1 = sommaire
 function afficherChapitre(i) {
+  const avant = chapitre;
   chapitre = Math.max(-1, Math.min(CHAPITRES.length - 1, i));
+  if (avant < 0 && chapitre >= 0 && ecran === 'cours') history.pushState({ ecran: 'cours', ch: true }, '');
   const c = CHAPITRES[chapitre];
   $('cours-nav').hidden = chapitre < 0;
   if (chapitre < 0) {
@@ -377,6 +395,7 @@ function afficherChapitre(i) {
 }
 
 /* ---------------------------- Démarrage ------------------------------ */
+history.replaceState({ ecran: 'accueil' }, '');
 choisirType(etat.type);
 afficherQuiz();
 window.addEventListener('resize', () => scene && scene.redimensionner());

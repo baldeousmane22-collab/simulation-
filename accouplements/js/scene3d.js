@@ -235,7 +235,8 @@ export class Scene3D {
     const s = e.secousse;
     this.moteur.position.set(0, s * Math.sin(e.theta + 0.6), s * 0.5 * Math.cos(e.theta));
     this.menee.position.set(e.x, e.r - s * Math.sin(e.theta + 0.6), -s * 0.5 * Math.cos(2 * e.theta));
-    this.menee.rotation.set(0, 0, e.a);
+    // cardan : angle dans le plan horizontal (la machine ne plonge pas dans le socle)
+    if (e.planHorizontal) this.menee.rotation.set(0, -e.a, 0); else this.menee.rotation.set(0, 0, e.a);
     this.moteur.updateMatrixWorld(); this.menee.updateMatrixWorld();
 
     // Faces des moyeux (non éclatées) et axes

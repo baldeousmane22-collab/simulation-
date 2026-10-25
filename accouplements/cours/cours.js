@@ -21,18 +21,16 @@ const SVG_DEFAUTS = `
 </svg>`;
 
 const SVG_COMPARATEUR = `
-<svg viewBox="0 0 320 170" class="schema" role="img" aria-label="Mesure au comparateur radial et de face">
-  <style>.t{fill:#cbd5e1;font:12px sans-serif}.h{fill:#6b7480}.c{fill:#facc15}</style>
-  <rect x="20" y="60" width="120" height="16" class="h"/><rect x="140" y="30" width="22" height="76" class="h"/>
-  <rect x="166" y="30" width="22" height="76" class="h"/><rect x="188" y="60" width="120" height="16" class="h"/>
-  <line x1="90" y1="60" x2="90" y2="14" stroke="#94a3b8" stroke-width="3"/><line x1="90" y1="14" x2="177" y2="14" stroke="#94a3b8" stroke-width="3"/>
-  <circle cx="177" cy="14" r="9" class="c"/><line x1="177" y1="23" x2="177" y2="30" stroke="#facc15" stroke-width="3"/>
-  <text x="196" y="18" class="t">comparateur RADIAL → décalage</text>
-  <line x1="90" y1="76" x2="90" y2="140" stroke="#94a3b8" stroke-width="3"/><line x1="90" y1="140" x2="196" y2="140" stroke="#94a3b8" stroke-width="3"/>
-  <circle cx="205" cy="140" r="9" class="c"/><line x1="196" y1="100" x2="190" y2="100" stroke="#facc15" stroke-width="3"/>
-  <line x1="196" y1="140" x2="196" y2="100" stroke="#94a3b8" stroke-width="2"/>
-  <text x="220" y="144" class="t">comparateur de FACE</text><text x="220" y="158" class="t">→ angle</text>
-  <text x="20" y="104" class="t">moyeu fixe</text><text x="230" y="98" class="t">moyeu mesuré</text>
+<svg viewBox="0 0 360 200" class="schema" role="img" aria-label="Mesure au comparateur radial et de face">
+  <style>.t{fill:#cbd5e1;font:12px sans-serif}.h{fill:#6b7480}.c{fill:#facc15}.s{stroke:#94a3b8;stroke-width:3;fill:none}</style>
+  <rect x="10" y="92" width="150" height="16" class="h"/><rect x="150" y="70" width="24" height="60" class="h"/>
+  <rect x="180" y="58" width="24" height="84" class="h" style="fill:#2e7d4f"/><rect x="204" y="92" width="146" height="16" class="h" style="fill:#2e7d4f"/>
+  <path d="M110 92 V34 H192" class="s"/><circle cx="192" cy="24" r="10" class="c"/><line x1="192" y1="34" x2="192" y2="58" stroke="#facc15" stroke-width="3"/>
+  <path d="M110 108 V160 H150" class="s"/><circle cx="160" cy="160" r="10" class="c"/>
+  <polyline points="160,150 160,137 180,137" fill="none" stroke="#facc15" stroke-width="3"/>
+  <text x="210" y="22" class="t">comparateur RADIAL</text><text x="210" y="38" class="t">→ mesure le décalage</text>
+  <text x="190" y="176" class="t">comparateur de FACE</text><text x="190" y="192" class="t">→ mesure l'angle</text>
+  <text x="12" y="84" class="t">moyeu fixe (support)</text><text x="236" y="84" class="t">moyeu mesuré</text>
 </svg>`;
 
 export const CHAPITRES = [
