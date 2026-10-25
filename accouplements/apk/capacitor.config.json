@@ -1,0 +1,8 @@
+{
+  "appId": "fr.formation.accouplements",
+  "appName": "Accouplements 3D",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#0f172a"
+  }
+}

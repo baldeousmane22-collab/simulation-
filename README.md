@@ -175,3 +175,24 @@ Toute l'appli tient dans `www/plan-maison/index.html` ; toutes les dimensions so
 `CONFIG` en tête du script. Le projet Android est dans `plan-maison/` (Capacitor 8, Three.js
 embarqué pour fonctionner hors connexion) et l'APK est construit par le workflow
 « Construire l'APK Plan de maison ».
+
+---
+
+# Accouplements 3D (types et défauts d'alignement)
+
+- **Lien web** : https://baldeousmane22-collab.github.io/simulation-/accouplements/
+- **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/accouplements/Accouplements.apk
+
+**12 types d'accouplement** animés en 3D : rigide à plateaux, rigide à manchon, à crabots (étoile),
+à pneu, à broches et douilles, à lames (avec entretoise), à denture double, à chaîne double,
+à grille, Oldham, joint de cardan, à soufflet métallique. Vue éclatée, carter transparent,
+nom des pièces au toucher.
+
+**Défauts d'alignement** (animés, exagérés à l'écran) : décalage parallèle, angulaire, combiné,
+écart axial, avec démonstration automatique. Cinématique réelle : disque d'Oldham qui décrit un
+cercle à 2× la vitesse, cardan non homocinétique (courbe de vitesse de sortie), entretoise et
+soufflet qui se plient. Diagnostic : % de tolérance, vibrations ISO 10816 (signal + spectre 1×/2×/3×),
+température, durée de vie, efforts sur les roulements. Onglets **Fiche**, **Comparer** et **Quiz**.
+
+Tout est dans le dossier `accouplements/` (projet Android dans `accouplements/apk`,
+construit par l'action « Construire l'APK Accouplements »).

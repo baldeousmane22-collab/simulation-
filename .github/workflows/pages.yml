@@ -14,7 +14,7 @@ name: Publier sur GitHub Pages
 on:
   push:
     branches: [main, 'claude/**', 'ccr-*']
-    paths: ['www/**', 'pompe-centrifuge/**', 'circuit-pneumatique/**', 'scripts/**', '.github/workflows/pages.yml']
+    paths: ['www/**', 'pompe-centrifuge/**', 'circuit-pneumatique/**', 'accouplements/**', 'scripts/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:
@@ -46,7 +46,7 @@ jobs:
 
       - name: Ajouter les applis autonomes au site
         run: |
-          for d in pompe-centrifuge circuit-pneumatique; do
+          for d in pompe-centrifuge circuit-pneumatique accouplements; do
             test -f "$d/index.html" || { echo "Fichier manquant : $d/index.html"; exit 1; }
             cp -r "$d" www/
             rm -rf "www/$d/apk"   # projet Android : inutile sur le site
@@ -81,7 +81,7 @@ jobs:
 
       - name: Ajouter les applis autonomes au site
         run: |
-          for d in pompe-centrifuge circuit-pneumatique; do
+          for d in pompe-centrifuge circuit-pneumatique accouplements; do
             test -f "$d/index.html" || { echo "Fichier manquant : $d/index.html"; exit 1; }
             cp -r "$d" www/
             rm -rf "www/$d/apk"   # projet Android : inutile sur le site
