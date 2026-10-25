@@ -83,7 +83,8 @@ jobs:
           rm -rf www/accouplements/apk   # projet Android de l'appli seule : inutile ici
 
       - name: Copier l'application web dans le projet Android
-        run: npx cap sync android
+        run: |
+          npx cap sync android
           test -f android/app/src/main/assets/public/accouplements/index.html
           test -f android/app/src/main/assets/public/accouplements/cours/cours.js
 
