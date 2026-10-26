@@ -201,3 +201,27 @@ température, durée de vie, efforts sur les roulements. Onglets **Fiche**, **Co
 
 Tout est dans le dossier `accouplements/` (projet Android dans `accouplements/apk`,
 construit par l'action « Construire l'APK Accouplements »).
+
+---
+
+# Engrenages 3D (types, formules et calculs — brevet technique)
+
+- **Lien web** : https://baldeousmane22-collab.github.io/simulation-/engrenages/
+- **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/engrenages/Engrenages.apk
+
+**8 types d'engrenages animés en 3D**, avec un vrai profil de dent en développante de cercle (α = 20°)
+et des roues synchronisées : denture droite, hélicoïdale, intérieure (couronne), pignon-crémaillère
+(aller-retour), conique (renvoi d'angle 90°), roue et vis sans fin, train à 2 étages, train épicycloïdal
+(planétaire, satellites, porte-satellites). Flèches de sens de rotation, étiquettes avec les vitesses,
+nom des pièces au toucher, vitesse d'animation, pause, plein écran.
+
+Onglets : **Réglages** (module normalisé, nombres de dents, β, filets, q, frottement, n1, P, η + alertes :
+interférence Z < 17, montage des satellites, irréversibilité…), **Calculs** (chaque grandeur avec sa formule,
+l'application numérique et le résultat : p, d, da, df, db, ha, hf, h, a, r, i, n2, ω, C1, C2, Ft, Fr, Fa,
+δ1/δ2, γ, rendement de la vis, formule de Willis…), **Profil** (dessin coté des dents, zoomable au doigt),
+**Cours** (définition, utilisations, avantages / inconvénients, formules générales, vocabulaire, classification),
+**Exercices** (9 exercices corrigés + entraînement aux valeurs aléatoires avec vérification) et **Quiz** (18 questions).
+
+Tout est dans le dossier `engrenages/` (textes modifiables dans `engrenages/js/donnees.js`, formules dans
+`engrenages/js/calculs.js`) ; projet Android dans `engrenages/apk`, construit par l'action
+« Construire l'APK Engrenages ».

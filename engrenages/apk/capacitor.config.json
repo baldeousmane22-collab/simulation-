@@ -1,0 +1,8 @@
+{
+  "appId": "fr.formation.engrenages",
+  "appName": "Engrenages 3D",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#0f172a"
+  }
+}
