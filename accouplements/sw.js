@@ -4,7 +4,7 @@
    « Cache d'abord, réseau en secours ». Changer VERSION_CACHE à chaque
    livraison pour que les téléphones téléchargent la nouvelle version.
    ===================================================================== */
-const VERSION_CACHE = 'accouplements-v3';
+const VERSION_CACHE = 'accouplements-v4';
 const FICHIERS = [
   './', './index.html', './manifest.webmanifest', './css/style.css',
   './js/app.js', './js/scene3d.js', './js/donnees.js', './cours/cours.js',

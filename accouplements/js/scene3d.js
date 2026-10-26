@@ -64,14 +64,20 @@ export class Scene3D {
   }
 
   _initRendu() {
-    const r = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
-    r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    // appareils modestes (peu de mémoire / de cœurs) : rendu allégé pour éviter que la WebView se ferme
+    const modeste = (navigator.deviceMemory || 4) <= 3 || (navigator.hardwareConcurrency || 4) <= 4;
+    this.modeste = modeste;
+    const r = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: !modeste, alpha: true, powerPreference: 'default' });
+    r.setPixelRatio(Math.min(window.devicePixelRatio || 1, modeste ? 1 : 1.5));
     r.outputColorSpace = THREE.SRGBColorSpace;
     r.toneMapping = THREE.ACESFilmicToneMapping;
     r.toneMappingExposure = 1.05;
-    r.shadowMap.enabled = true;
+    r.shadowMap.enabled = !modeste;
     r.shadowMap.type = THREE.PCFShadowMap;
     this.renderer = r;
+    // perte du contexte graphique (mémoire saturée) : on attend qu'il revienne au lieu de planter
+    this.canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this.perdu = true; }, false);
+    this.canvas.addEventListener('webglcontextrestored', () => { this.perdu = false; }, false);
     this.scene = new THREE.Scene();
     const pmrem = new THREE.PMREMGenerator(r);
     this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
@@ -88,7 +94,7 @@ export class Scene3D {
     const soleil = new THREE.DirectionalLight(0xffffff, 1.7);
     soleil.position.set(3, 9, 6);
     soleil.castShadow = true;
-    soleil.shadow.mapSize.set(1024, 1024);
+    soleil.shadow.mapSize.set(modeste ? 512 : 1024, modeste ? 512 : 1024);
     Object.assign(soleil.shadow.camera, { left: -7, right: 7, top: 5, bottom: -5, near: 1, far: 30 });
     soleil.shadow.bias = -0.0008;
     this.scene.add(soleil);
@@ -224,6 +230,7 @@ export class Scene3D {
   /* ------------------------ Mise à jour par image --------------------- */
   // e = { theta, r, a, x (valeurs affichées : unités et radians), eclate, transparent, axes, taux, secousse }
   maj(e, dt) {
+    if (this.perdu) return;
     if (this.anim) {
       const a = this.anim;
       a.t = Math.min(1, a.t + dt / a.duree);

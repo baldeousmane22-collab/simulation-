@@ -19,12 +19,20 @@ const etat = {
   defaut: 'aligne', demo: false, tDemo: 0, res: null
 };
 
-let scene;
-try {
-  scene = new Scene3D($('canvas3d'));
-} catch (err) {
-  $('vue3d').innerHTML = '<p class="aide" style="padding:20px">La 3D (WebGL) n\'est pas disponible sur cet appareil.</p>';
-  console.error(err);
+// La 3D n'est créée qu'à la première ouverture de la simulation : l'accueil et
+// le cours restent légers (tablettes modestes, WebView Android).
+let scene = null, echec3D = false;
+function creerScene() {
+  if (scene || echec3D) return;
+  try {
+    scene = new Scene3D($('canvas3d'));
+    scene.onPiece = (nom) => toast(nom);
+    scene.choisirType(etat.type);
+  } catch (err) {
+    echec3D = true; scene = null;
+    $('vue3d').insertAdjacentHTML('beforeend', '<p class="aide" style="position:absolute;inset:auto 0 40% 0;text-align:center;padding:20px">La 3D (WebGL) n\'est pas disponible sur cet appareil. Le cours, les fiches et le quiz restent utilisables.</p>');
+    console.error(err);
+  }
 }
 
 /* ------------------------------ Onglets ------------------------------ */
@@ -342,7 +350,7 @@ function montrer(id, histo = true) {
   if (histo && id !== ecran) history.pushState({ ecran: id }, '');
   ecran = id;
   for (const e of ['accueil', 'cours']) $(e).classList.toggle('actif', e === id);
-  if (id === 'sim' && scene) scene.redimensionner();
+  if (id === 'sim') { creerScene(); if (scene) scene.redimensionner(); }
 }
 function ouvrirOnglet(id) {
   document.querySelector(`.onglets button[data-onglet="${id}"]`).click();
