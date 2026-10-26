@@ -106,7 +106,7 @@ h3 { font-size: 15px; margin: 14px 0 6px; color: #fde68a; }
 .question button.faux { background: rgba(239, 68, 68, .2); border-color: var(--rouge); }
 .score { font-size: 17px; font-weight: 700; margin: 8px 0; }
 
-body.plein .panneau { display: none; }
+body.plein .panneau, body.plein .entete { display: none; }
 
 /* Téléphone en portrait : 3D en haut, panneau en dessous */
 @media (max-width: 820px) and (orientation: portrait), (max-width: 600px) {

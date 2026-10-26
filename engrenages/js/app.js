@@ -396,7 +396,33 @@ document.querySelector('.onglets').addEventListener('click', (e) => {
 $('#b-pause').addEventListener('click', (e) => { scene.pause = !scene.pause; e.currentTarget.textContent = scene.pause ? '▶' : '⏸'; });
 $('#b-etiq').addEventListener('click', (e) => { scene.montrerEtiq = !scene.montrerEtiq; e.currentTarget.setAttribute('aria-pressed', scene.montrerEtiq); });
 $('#b-centre').addEventListener('click', () => scene.recentrer());
-$('#b-plein').addEventListener('click', () => { document.body.classList.toggle('plein'); setTimeout(() => scene.recentrer(), 60); });
+/* Plein écran : vraie API plein écran (écran entier, sans barres) + 3D seule ; repli sur la 3D seule si refusée */
+const enPleinEcran = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+function modePlein(actif) {
+  document.body.classList.toggle('plein', actif);
+  const b = $('#b-plein');
+  b.textContent = actif ? '✕' : '⛶';
+  b.title = actif ? 'Quitter le plein écran' : 'Plein écran';
+  b.setAttribute('aria-label', b.title);
+  setTimeout(() => scene.recentrer(), 120);
+}
+$('#b-plein').addEventListener('click', async () => {
+  const el = document.documentElement;
+  if (document.body.classList.contains('plein')) {
+    if (enPleinEcran()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    modePlein(false);
+    return;
+  }
+  modePlein(true);
+  try {
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (req && !window.Capacitor?.isNativePlatform?.()) await req.call(el, { navigationUI: 'hide' });
+  } catch (e) { /* plein écran refusé : la 3D occupe quand même toute la fenêtre */ }
+});
+const surChangement = () => { if (!enPleinEcran() && document.body.classList.contains('plein')) modePlein(false); };
+document.addEventListener('fullscreenchange', surChangement);
+document.addEventListener('webkitfullscreenchange', surChangement);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.body.classList.contains('plein') && !enPleinEcran()) modePlein(false); });
 $('#vitesse').addEventListener('input', (e) => { scene.vitesse = parseFloat(e.target.value); });
 
 if (location.search.includes('debug')) window.__scene = scene;
