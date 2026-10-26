@@ -16,7 +16,7 @@ name: Construire l'APK Android
 on:
   push:
     branches: [main, 'claude/**']
-    paths: ['www/**', '!www/plan-maison/**', 'accouplements/**', '!accouplements/apk/**', 'android/**', 'scripts/**', 'package.json', 'package-lock.json', 'capacitor.config.json', '.github/workflows/android.yml']
+    paths: ['www/**', '!www/plan-maison/**', 'accouplements/**', '!accouplements/apk/**', 'engrenages/**', '!engrenages/apk/**', 'android/**', 'scripts/**', 'package.json', 'package-lock.json', 'capacitor.config.json', '.github/workflows/android.yml']
   workflow_dispatch:
   # Chaque lundi : entretien de la clé permanente (voir job « entretien »)
   schedule:
@@ -82,11 +82,19 @@ jobs:
           cp -r accouplements www/accouplements
           rm -rf www/accouplements/apk   # projet Android de l'appli seule : inutile ici
 
+      - name: Ajouter l'appli Engrenages (3D + calculs) dans l'APK
+        run: |
+          test -f engrenages/index.html
+          rm -rf www/engrenages
+          cp -r engrenages www/engrenages
+          rm -rf www/engrenages/apk   # projet Android de l'appli seule : inutile ici
+
       - name: Copier l'application web dans le projet Android
         run: |
           npx cap sync android
           test -f android/app/src/main/assets/public/accouplements/index.html
           test -f android/app/src/main/assets/public/accouplements/cours/cours.js
+          test -f android/app/src/main/assets/public/engrenages/js/scene3d.js
 
       # Clé permanente sans aucune configuration : elle est créée une seule fois
       # par GitHub puis conservée dans le cache privé des constructions (jamais
