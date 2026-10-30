@@ -225,3 +225,24 @@ l'application numérique et le résultat : p, d, da, df, db, ha, hf, h, a, r, i,
 Tout est dans le dossier `engrenages/` (textes modifiables dans `engrenages/js/donnees.js`, formules dans
 `engrenages/js/calculs.js`) ; projet Android dans `engrenages/apk`, construit par l'action
 « Construire l'APK Engrenages ».
+
+---
+
+# Chaîne de broyage 2D (culbuteur → alimentateur → chaîne racleuse → broyeur → CV301)
+
+- **Lien web** : https://baldeousmane22-collab.github.io/simulation-/broyage/
+- **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/broyage/Broyage.apk
+
+Simulation 2D animée de la ligne de broyage de la bauxite : **culbuteur** (rotation du wagon à 160°,
+bridage, couronne + pignon), **trémie**, **alimentateur à tabliers** (variateur 10–50 Hz, débit calculé),
+**miettes qui passent entre les tabliers** et tombent dans la **chaîne racleuse**, **broyeur à rouleaux
+dentés** contrarotatifs et **convoyeur à bande CV301** (tendeur à contrepoids, antidévireur).
+Chaque machine montre sa **chaîne cinématique** (moteur → accouplement / coupleur → réducteur → organe).
+
+Onglets : **Commande** (marche / arrêt de chaque machine avec asservissements, démarrage séquentiel de l'aval
+vers l'amont, arrêt séquentiel avec vidange, arrêt d'urgence, défauts simulés), **Chaîne cinématique**
+(schéma animé + calculs n2 = n1 / i, v = π·D·n / 60, C = 9550·P / n), **Cours** et **Quiz** (10 questions).
+Zoom à la molette ou au pincement, déplacement au doigt, toucher une machine pour sa fiche.
+
+Tout est dans le dossier `broyage/` (textes et caractéristiques dans `broyage/js/donnees.js`) ; projet Android
+dans `broyage/apk`, construit par l'action « Construire l'APK Broyage ».

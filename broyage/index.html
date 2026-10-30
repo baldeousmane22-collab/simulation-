@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Chaîne de broyage 2D</title>
+  <meta name="description" content="Simulation 2D de la chaîne cinématique du broyage : culbuteur, alimentateur à tabliers, chaîne racleuse, broyeur et convoyeur CV301.">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Broyage 2D">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self'">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="entete">
+  <div class="titre"><span class="logo">⛏️</span> Chaîne de broyage <small>Culbuteur → Alimentateur → Chaîne racleuse → Broyeur → CV301</small></div>
+</header>
+
+<main class="disposition">
+  <section class="zone" id="zone" aria-label="Vue 2D de l'installation">
+    <canvas id="canvas" aria-label="Installation de broyage animée"></canvas>
+    <div class="outils">
+      <button type="button" class="btn-rond" id="b-pause" title="Pause / lecture" aria-label="Pause">⏸</button>
+      <button type="button" class="btn-rond" id="b-etiq" title="Étiquettes" aria-label="Étiquettes" aria-pressed="true">🏷️</button>
+      <button type="button" class="btn-rond" id="b-centre" title="Recentrer la vue" aria-label="Recentrer">🎯</button>
+      <button type="button" class="btn-rond" id="b-plein" title="Plein écran" aria-label="Plein écran">⛶</button>
+    </div>
+    <div class="alerte" id="alerte" hidden></div>
+    <label class="vitesse">🐢 <input type="range" id="vitesse" min="0.2" max="3" step="0.1" value="1" aria-label="Vitesse de l'animation"> 🐇</label>
+    <div class="info" id="info" hidden></div>
+    <div class="aide">1 doigt : déplacer · 2 doigts : zoomer · toucher une machine : sa chaîne cinématique</div>
+  </section>
+
+  <aside class="panneau">
+    <nav class="onglets" id="onglets">
+      <button type="button" data-p="commande" class="actif">Commande</button>
+      <button type="button" data-p="cinematique">Chaîne cinématique</button>
+      <button type="button" data-p="cours">Cours</button>
+      <button type="button" data-p="quiz">Quiz</button>
+    </nav>
+    <div class="contenu">
+      <section class="page actif" id="p-commande">
+        <div class="seq">
+          <button type="button" class="btn prim" id="b-demarrer">▶ Démarrage séquentiel</button>
+          <button type="button" class="btn" id="b-arreter">■ Arrêt séquentiel</button>
+          <button type="button" class="btn au" id="b-au">⛔ Arrêt d'urgence</button>
+        </div>
+        <p class="note">On démarre <b>de l'aval vers l'amont</b> (CV301 d'abord) et on arrête <b>de l'amont vers l'aval</b> (culbuteur d'abord) pour vider la ligne. Une machine ne peut démarrer que si la machine en aval tourne.</p>
+        <div id="machines"></div>
+        <div class="param">
+          <label><span>Variateur de l'alimentateur</span><span id="v-freq">40 Hz</span></label>
+          <div class="ligne"><input type="range" id="freq" min="10" max="50" step="1" value="40" aria-label="Fréquence du variateur"></div>
+        </div>
+        <h3>Mesures</h3>
+        <div class="mesures" id="mesures"></div>
+      </section>
+
+      <section class="page" id="p-cinematique">
+        <div class="choix" id="choix"></div>
+        <canvas id="schema" class="schema" width="480" height="230" aria-label="Schéma de la chaîne cinématique"></canvas>
+        <div id="fiche"></div>
+      </section>
+
+      <section class="page" id="p-cours"><div id="cours"></div></section>
+
+      <section class="page" id="p-quiz"><div id="quiz"></div></section>
+    </div>
+  </aside>
+</main>
+
+<script src="js/donnees.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

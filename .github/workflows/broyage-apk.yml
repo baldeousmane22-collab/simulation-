@@ -1,0 +1,155 @@
+# ===================================================================
+# APK Android de l'application « Chaîne de broyage 2D » (Capacitor 8)
+# - source : broyage/ (la même appli que sur GitHub Pages)
+# - projet Android : broyage/apk/android
+# - minSdk 24 (Android 7.0) ; targetSdk 36
+# - L'APK signé est publié dans la version « broyage » des Releases :
+#   https://github.com/<compte>/<dépôt>/releases/download/broyage/Broyage.apk
+# Signature : même clé permanente que l'appli hydraulique (secrets ANDROID_*
+# ou cache privé GitHub), sinon clé temporaire.
+# ===================================================================
+name: Construire l'APK Broyage
+
+on:
+  push:
+    branches: [main, 'claude/**', 'ccr-*']
+    paths: ['broyage/**', '.github/workflows/broyage-apk.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk-broyage-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: broyage/apk
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Numéro de version
+        run: |
+          N=$(git rev-list --count HEAD)
+          echo "VERSION_NAME=1.0.${N}" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=$((100 + N))" >> "$GITHUB_ENV"
+          echo "Version 1.0.${N}"
+
+      - name: Installer Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Installer Node.js 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: broyage/apk/package-lock.json
+
+      - name: Compléter le SDK Android (préinstallé sur le runner)
+        run: |
+          SDKM=$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -1)
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" --install "platforms;android-36" "build-tools;36.0.0" > /dev/null
+
+      - name: Installer les dépendances (Capacitor)
+        run: npm ci
+
+      - name: Copier l'appli web dans le projet Android
+        run: |
+          bash scripts/preparer-web.sh
+          npx cap sync android
+          test -f android/app/src/main/assets/public/index.html
+          test -f android/app/src/main/assets/public/js/app.js
+
+      - name: Récupérer la clé permanente (cache privé GitHub)
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cle-signature-apk
+          key: cle-signature-apk-v1
+
+      - name: Préparer la clé de signature
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KS_KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          KS="$RUNNER_TEMP/signature.jks"
+          if [ -n "$KS_B64" ]; then
+            echo "Clé des secrets du dépôt."
+            printf '%s' "$KS_B64" | tr -d ' \r\n\t' | base64 -d > "$KS"
+            KS_PASS="$(printf '%s' "$KS_PASS" | tr -d '\r\n')"
+            KS_ALIAS="$(printf '%s' "$KS_ALIAS" | tr -d ' \r\n')"
+            KS_KEY_PASS="$(printf '%s' "${KS_KEY_PASS:-$KS_PASS}" | tr -d '\r\n')"
+            echo "KEYSTORE_PASSWORD=$KS_PASS" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=$KS_ALIAS" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=$KS_KEY_PASS" >> "$GITHUB_ENV"
+          elif [ -f ~/.cle-signature-apk/signature.jks ]; then
+            echo "Clé permanente conservée par GitHub."
+            cp ~/.cle-signature-apk/signature.jks "$KS"
+            PASS="$(cat ~/.cle-signature-apk/mot-de-passe)"
+            echo "::add-mask::$PASS"
+            echo "KEYSTORE_PASSWORD=$PASS" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=hydraulique" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=$PASS" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Aucune clé permanente disponible : clé temporaire."
+            PASS="$(openssl rand -hex 16)"
+            echo "::add-mask::$PASS"
+            keytool -genkeypair -keystore "$KS" -alias broyage -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "$PASS" -keypass "$PASS" -dname "CN=Broyage 2D, O=Formation, C=FR"
+            echo "KEYSTORE_PASSWORD=$PASS" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=broyage" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=$PASS" >> "$GITHUB_ENV"
+          fi
+          echo "KEYSTORE_PATH=$KS" >> "$GITHUB_ENV"
+
+      - name: Construire l'APK release signé
+        working-directory: broyage/apk/android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease
+
+      - name: Vérifier la signature et renommer l'APK
+        run: |
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          test -f "$APK" || { ls -R android/app/build/outputs; exit 1; }
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/apksigner" verify --verbose "$APK"
+          "$BT/aapt" dump badging "$APK" | grep -E "package:|sdkVersion|targetSdkVersion|application-label:"
+          mkdir -p sortie
+          cp "$APK" sortie/Broyage.apk
+
+      - name: Conserver l'APK (artefact de la construction)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Broyage-apk
+          path: broyage/apk/sortie/Broyage.apk
+
+      - name: Publier l'APK (version « broyage » des Releases)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: broyage
+          name: Chaîne de broyage — APK Android
+          target_commitish: ${{ github.sha }}
+          make_latest: 'false'
+          files: broyage/apk/sortie/Broyage.apk
+          body: |
+            APK Android de l'application **Chaîne de broyage 2D** (version ${{ env.VERSION_NAME }}),
+            Android 7.0 minimum.
+
+            **Installation** : téléchargez `Broyage.apk` sur le téléphone, ouvrez-le,
+            puis autorisez l'installation depuis cette source si Android le demande.
+            L'appli fonctionne hors connexion (simulation 2D animée, chaîne cinématique, calculs, cours, quiz).
+
+            Version web : https://baldeousmane22-collab.github.io/simulation-/broyage/

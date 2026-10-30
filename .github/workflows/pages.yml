@@ -14,7 +14,7 @@ name: Publier sur GitHub Pages
 on:
   push:
     branches: [main, 'claude/**', 'ccr-*']
-    paths: ['www/**', 'pompe-centrifuge/**', 'circuit-pneumatique/**', 'accouplements/**', 'engrenages/**', 'scripts/**', '.github/workflows/pages.yml']
+    paths: ['www/**', 'pompe-centrifuge/**', 'circuit-pneumatique/**', 'accouplements/**', 'engrenages/**', 'broyage/**', 'scripts/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:
@@ -46,13 +46,14 @@ jobs:
 
       - name: Ajouter les applis autonomes au site
         run: |
-          for d in pompe-centrifuge circuit-pneumatique accouplements engrenages; do
+          for d in pompe-centrifuge circuit-pneumatique accouplements engrenages broyage; do
             test -f "$d/index.html" || { echo "Fichier manquant : $d/index.html"; exit 1; }
             cp -r "$d" www/
             rm -rf "www/$d/apk"   # projet Android : inutile sur le site
           done
           # nouveau numéro de cache hors connexion à chaque publication (mise à jour des téléphones)
           sed -i "s/^const VERSION_CACHE = .*/const VERSION_CACHE = 'engrenages-v$(git rev-list --count HEAD)';/" www/engrenages/sw.js
+          sed -i "s/^const VERSION_CACHE = .*/const VERSION_CACHE = 'broyage-v$(git rev-list --count HEAD)';/" www/broyage/sw.js
 
       - name: Publier dans la branche gh-pages
         uses: peaceiris/actions-gh-pages@v4
@@ -83,13 +84,14 @@ jobs:
 
       - name: Ajouter les applis autonomes au site
         run: |
-          for d in pompe-centrifuge circuit-pneumatique accouplements engrenages; do
+          for d in pompe-centrifuge circuit-pneumatique accouplements engrenages broyage; do
             test -f "$d/index.html" || { echo "Fichier manquant : $d/index.html"; exit 1; }
             cp -r "$d" www/
             rm -rf "www/$d/apk"   # projet Android : inutile sur le site
           done
           # nouveau numéro de cache hors connexion à chaque publication (mise à jour des téléphones)
           sed -i "s/^const VERSION_CACHE = .*/const VERSION_CACHE = 'engrenages-v$(git rev-list --count HEAD)';/" www/engrenages/sw.js
+          sed -i "s/^const VERSION_CACHE = .*/const VERSION_CACHE = 'broyage-v$(git rev-list --count HEAD)';/" www/broyage/sw.js
 
       - name: Préparer le site
         run: touch www/.nojekyll
