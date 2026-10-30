@@ -246,3 +246,20 @@ En 3D : 1 doigt pour tourner, 2 doigts pour zoomer / déplacer, toucher une mach
 
 Tout est dans le dossier `broyage/` (textes et caractéristiques dans `broyage/js/donnees.js`) ; projet Android
 dans `broyage/apk`, construit par l'action « Construire l'APK Broyage ».
+
+### Vente : codes d'activation (Chaîne de broyage)
+
+L'appli (site et APK) demande un **code d'activation** ; sans code, un **mode démonstration de 5 minutes** est proposé.
+
+1. Le client ouvre l'appli : l'écran « Activation » affiche l'**identifiant de son appareil** (ex. `K7Q2-M9XD`), qu'il vous envoie.
+2. Vous ouvrez le **générateur** : https://baldeousmane22-collab.github.io/simulation-/broyage/generateur-codes.html
+   et chargez votre fichier **`cle-privee-NE-PAS-PARTAGER.json`** (gardé chez vous, jamais sur GitHub).
+3. Nom du client + identifiant + durée (illimitée, 30 jours, 3 mois, 6 mois, 1 an, date) → **Générer** →
+   envoyez le message par WhatsApp (code + lien d'activation directe pour la version web).
+4. Le client colle le code → appli activée. Les ventes sont listées dans le générateur (export CSV / Excel).
+
+Le code est **signé** (ECDSA P-256) : l'appli ne contient que la clé publique, personne ne peut fabriquer de code sans
+votre clé privée. Chaque code ne marche que sur l'appareil indiqué (si le client efface les données de l'appli, il
+faudra un nouveau code). Réglages (numéro WhatsApp du vendeur, durée de la démo) : en haut de `broyage/js/licence.js`.
+Limite : le code source étant public, un informaticien pourrait retirer la vérification ; passer le dépôt en privé
+renforce la protection.

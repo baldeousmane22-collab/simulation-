@@ -6,7 +6,7 @@
 const VERSION_CACHE = 'broyage-v2';
 const FICHIERS = [
   './', './index.html', './manifest.webmanifest', './css/style.css',
-  './js/app.js', './js/donnees.js', './js/scene3d.js', './vendor/three.min.js', './icons/icon-192.png', './icons/icon-512.png'
+  './js/app.js', './js/donnees.js', './js/licence.js', './js/scene3d.js', './vendor/three.min.js', './icons/icon-192.png', './icons/icon-512.png'
 ];
 
 self.addEventListener('install', (e) => {

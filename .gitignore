@@ -8,3 +8,6 @@ android/local.properties
 android/app/src/main/assets/public/
 android/capacitor-cordova-android-plugins/build/
 .DS_Store
+
+# Clé privée des licences : ne jamais publier
+*cle-privee*
