@@ -161,8 +161,7 @@
       case 'echange':
         m.info = 'Wagon vide sorti, wagon plein entré';
         cul.alpha = Math.abs(1 - cul.t / 1.2);
-        if (cul.t > 1.2 && cul.charge < 1) cul.charge = 1;
-        if (cul.t > 2.4) { cul.alpha = 1; cul.phase = 'attente'; cul.t = 0; }
+        if (cul.t > 2.4) { cul.alpha = 1; cul.charge = 1; cul.phase = 'attente'; cul.t = 0; }
         break;
     }
     // déversement : la bauxite sort dès que le wagon dépasse ~95°
@@ -443,8 +442,9 @@
     ctx.fillStyle = degV(-45, 50, '#4b5563', '#374151'); ctx.fillRect(-96, -45, 192, 95);
     ctx.strokeStyle = '#6b7280'; ctx.lineWidth = 2; ctx.strokeRect(-96, -45, 192, 95);
     for (const rx of [-48, 0, 48]) { ctx.beginPath(); ctx.moveTo(rx, -45); ctx.lineTo(rx, 50); ctx.stroke(); }
-    if (cul.charge > 0) { // chargement
-      const hc = 95 * cul.charge;
+    const chW = cul.phase === 'echange' && cul.t > 1.2 ? 1 : cul.charge;   // wagon plein qui entre
+    if (chW > 0) { // chargement
+      const hc = 95 * chW;
       ctx.save(); ctx.beginPath(); ctx.rect(-92, -60, 184, 106); ctx.clip();
       ctx.fillStyle = '#8b3a1a';
       ctx.beginPath(); ctx.moveTo(-92, 46); ctx.lineTo(-92, 46 - hc + 10); ctx.quadraticCurveTo(0, 46 - hc - 22, 92, 46 - hc + 10); ctx.lineTo(92, 46); ctx.fill();
@@ -877,21 +877,22 @@
     $('b-au').textContent = etat.au ? '↺ Réarmer l\'arrêt d\'urgence' : '⛔ Arrêt d\'urgence';
   }
 
+  let score = 0, rep = 0;
+  $('quiz').addEventListener('click', (e) => {
+    if (e.target.id === 'b-quiz') { construireCours(); return; }
+    const b = e.target.closest('.question button'); if (!b) return;
+    const bloc = b.parentElement; if (bloc.dataset.fait) return;
+    bloc.dataset.fait = 1; rep++;
+    const it = D.quiz[+bloc.dataset.i], j = +b.dataset.j;
+    if (j === it.b) score++; else b.classList.add('faux');
+    bloc.querySelectorAll('button')[it.b].classList.add('bon');
+    $('score').textContent = `Score : ${score} / ${rep}` + (rep === D.quiz.length ? ` — ${score >= 8 ? 'Très bien !' : 'Relisez l\'onglet Cours.'}` : '');
+  });
   function construireCours() {
     $('cours').innerHTML = D.cours + '<p class="note">Valeurs d\'exemple pédagogique. Le remplissage de la trémie est accéléré (×3) pour la démonstration.</p>';
-    const q = $('quiz'); let score = 0, rep = 0;
+    const q = $('quiz'); score = 0; rep = 0;
     q.innerHTML = D.quiz.map((it, i) => `<div class="question" data-i="${i}"><p>${i + 1}. ${it.q}</p>${it.r.map((r, j) => `<button type="button" data-j="${j}">${r}</button>`).join('')}</div>`).join('') +
       `<div class="score" id="score"></div><button type="button" class="btn" id="b-quiz">Recommencer</button>`;
-    q.addEventListener('click', (e) => {
-      if (e.target.id === 'b-quiz') { construireCours(); return; }
-      const b = e.target.closest('.question button'); if (!b) return;
-      const bloc = b.parentElement; if (bloc.dataset.fait) return;
-      bloc.dataset.fait = 1; rep++;
-      const it = D.quiz[+bloc.dataset.i], j = +b.dataset.j;
-      if (j === it.b) score++; else b.classList.add('faux');
-      bloc.querySelectorAll('button')[it.b].classList.add('bon');
-      $('score').textContent = `Score : ${score} / ${rep}` + (rep === D.quiz.length ? ` — ${score >= 8 ? 'Très bien !' : 'Relisez l\'onglet Cours.'}` : '');
-    }, { once: false });
   }
 
   // onglets
@@ -1002,6 +1003,7 @@
     const info = $('info');
     if (!id) { sel = null; info.hidden = true; return; }
     sel = id; choixSchema = id; majFiche();
+    if (vue === '3d' && window.VUE3D) window.VUE3D.cibler(id);
     const m = M[id];
     info.innerHTML = `<b>${m.nom}</b>${m.role}<br><span style="color:#94a3b8">${m.chaine.map(c => c.l).join(' → ')}</span>
       <br><button type="button" class="btn" id="b-voir" style="margin:6px 0 0">Voir la chaîne cinématique</button>`;

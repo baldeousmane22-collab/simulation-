@@ -233,7 +233,7 @@ Tout est dans le dossier `engrenages/` (textes modifiables dans `engrenages/js/d
 - **Lien web** : https://baldeousmane22-collab.github.io/simulation-/broyage/
 - **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/broyage/Broyage.apk
 
-Simulation **3D animée** (vue 2D en option, bouton « 2D ») de la ligne de broyage de la bauxite : **culbuteur** (rotation du wagon à 160°,
+Simulation **3D animée** (vue 2D en option, bouton « 2D ») de la ligne de broyage de la bauxite : **voie ferrée** (rails, traverses, ballast) avec une rame de wagons qui avance à chaque échange, **culbuteur** (rotation du wagon à 160°,
 bridage, couronne + pignon), **trémie**, **alimentateur à tabliers** (variateur 10–50 Hz, débit calculé),
 **miettes qui passent entre les tabliers** et tombent dans la **chaîne racleuse**, **broyeur à rouleaux
 dentés** contrarotatifs et **convoyeur à bande CV301** (tendeur à contrepoids, antidévireur).

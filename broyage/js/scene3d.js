@@ -49,7 +49,7 @@ if (renderer) {
     jaune: mat(0xeab308, { metalness: 0.2 }), bleu: mat(0x2563eb, { metalness: 0.3 }), bleuF: mat(0x1e3a8a),
     reduc: mat(0x64748b, { metalness: 0.45 }), orange: mat(0xf59e0b, { metalness: 0.3 }), rouge: mat(0xdc2626),
     violet: mat(0xa855f7), caout: mat(0x161b26, { metalness: 0, roughness: 0.9 }), beton: mat(0x1d2535, { metalness: 0, roughness: 0.95 }),
-    sol: mat(0x1c2537, { metalness: 0, roughness: 1 }), bauxite: mat(0x8b3a1a, { metalness: 0, roughness: 0.95 }),
+    sol: mat(0x1c2537, { metalness: 0, roughness: 1 }), bauxite: mat(0x7a3216, { metalness: 0, roughness: 1 }),
     vitre: mat(0x94a3b8, { transparent: true, opacity: 0.16, metalness: 0.1, depthWrite: false, side: THREE.DoubleSide }),
     jupe: mat(0x64748b, { transparent: true, opacity: 0.35, depthWrite: false, side: THREE.DoubleSide }),
     noir: mat(0x0f172a), vert: mat(0x22c55e, { emissive: 0x22c55e, emissiveIntensity: 0.6 }), invisible: new THREE.MeshBasicMaterial({ visible: false })
@@ -141,7 +141,7 @@ if (renderer) {
   //  Construction
   // =====================================================================
   // --- Génie civil : sol (arrière), sous-sol, mur du fond ---
-  boite(2300, 16, 6, M.sol, 960, G.SOL + 16, -4.9);             // sol (arrière, vue en coupe)
+  boite(2300, 16, 15, M.sol, 960, G.SOL + 24, -9.4);             // sol (arrière, vue en coupe)
   boite(2300, 600, 0.2, M.beton, 960, G.SOL + 300, -2.0);         // mur du fond
   boite(2300, 10, 5.5, M.sol, 960, 885, 0.65);                    // plancher du sous-sol
   boite(225, 16, 3.9, M.beton, -28, G.SOL + 16, 0.05);            // dalle à gauche de la fosse
@@ -154,34 +154,85 @@ if (renderer) {
     const bande = new THREE.Mesh(new THREE.TorusGeometry((C.R - 9) * S, 0.035, 8, 64), M.jaune); bande.position.z = z + (z > 0 ? 0.09 : -0.09); piv.add(bande);
   }
   for (const [lx, ly] of [[-118, -60], [118, -60], [-125, 75], [125, 75]]) boiteLoc(14, 14, 3.3, M.charpente, lx, ly, 0, piv);
-  boiteLoc(256, 10, 3.3, M.fonce, 0, 75, 0, piv);                       // plateforme
-  for (const lx of [-54, 54]) boiteLoc(10, 6, 3.3, M.acier, lx, 67, 0, piv); // rails dans le culbuteur
-  for (const s of [-1, 1]) boiteLoc(8, 140, 0.12, M.charpente, s * 120, 5, 1.45, piv), boiteLoc(8, 140, 0.12, M.charpente, s * 120, 5, -1.45, piv);
-  // wagon
-  const wagon = new THREE.Group(); piv.add(wagon);
-  const tole = mat(0x4b5563, { metalness: 0.5 });
-  boiteLoc(192, 6, 2.7, tole, 0, 47, 0, wagon);
-  for (const s of [-1, 1]) boiteLoc(6, 95, 2.7, tole, s * 93, 2, 0, wagon);
-  for (const s of [-1, 1]) boiteLoc(192, 95, 0.05, tole, 0, 2, s * 1.33, wagon);
-  for (const s of [-1, 1]) for (const k of [-0.9, 0, 0.9]) boiteLoc(5, 97, 0.06, mat(0x374151), s * 97, 2, k, wagon);
-  for (const zb of [-0.95, 0.95]) for (const s of [-1, 1]) {
-    const r = new THREE.Mesh(new THREE.CylinderGeometry(9 * S, 9 * S, 0.06, 18), M.noir); r.rotation.z = Math.PI / 2; r.position.set(s * 54 * S, -58 * S, zb); wagon.add(r);
+  boiteLoc(210, 10, 3.3, M.fonce, 0, 82, 0, piv);                       // plateforme
+  // --- Voie ferrée : rails profilés (champignon, âme, patin), traverses, ballast ---
+  const RAIL_Y = C.y + 67, ECART = 54, PAS_W = 3.0;                      // dessus du rail, demi-écartement, pas des wagons
+  const matRail = mat(0xa8b0bc, { metalness: 0.85, roughness: 0.3 });
+  const geoRail = (L) => {
+    const f = [[-6, 10], [6, 10], [6, 8], [1.3, 7], [1.3, 3], [3, 2], [3, 0], [-3, 0], [-3, 2], [-1.3, 3], [-1.3, 7], [-6, 8]];
+    const sh = new THREE.Shape(f.map(([u, v]) => new THREE.Vector2(u * S, (v - 10) * S)));   // origine = dessus du rail
+    const g = new THREE.ExtrudeGeometry(sh, { depth: L, bevelEnabled: false }); g.translate(0, 0, -L / 2); return g;
+  };
+  function rail(lx, ly, z1, z2, parent) {           // rail le long de z (lx, ly : position du dessus, repère du parent)
+    const o = new THREE.Mesh(geoRail(z2 - z1), matRail); o.position.set(lx, ly, (z1 + z2) / 2); return ajout(o, parent);
   }
-  const charge = boiteLoc(180, 88, 2.6, M.bauxite, 0, 0, 0, wagon);
+  for (const s of [-1, 1]) rail(s * ECART * S, -67 * S, -1.65, 1.65, piv);        // rails sur la plateforme du culbuteur
+  for (const s of [-1, 1]) boiteLoc(14, 5, 3.3, M.charpente, s * ECART, 79.5, 0, piv);   // semelles sous les rails
+  // voie arrière (sur ballast) et voie avant (sur pont métallique)
+  const Z_AR = [-17, -1.85], Z_AV = [1.85, 11];
+  for (const s of [-1, 1]) for (const [z1, z2] of [Z_AR, Z_AV]) rail(X(C.x + s * ECART), Y(RAIL_Y), z1, z2);
+  const matTrav = mat(0x6b6f76, { metalness: 0.1, roughness: 0.9 }), nTr = Math.round((Z_AR[1] - Z_AR[0]) / 0.3) + Math.round((Z_AV[1] - Z_AV[0]) / 0.3);
+  const trav = new THREE.InstancedMesh(new THREE.BoxGeometry(170 * S, 5 * S, 0.12), matTrav, nTr); racine.add(trav);
+  let it = 0;
+  for (const [z1, z2] of [Z_AR, Z_AV]) for (let z = z1 + 0.15; z < z2 && it < nTr; z += 0.3) {
+    trav.setMatrixAt(it++, new THREE.Matrix4().makeTranslation(X(C.x), Y(RAIL_Y + 12.5), z));
+  }
+  trav.count = it;
+  const ballast = new THREE.Shape([[-100, 320], [100, 320], [135, 327], [-135, 327]].map(([u, v]) => new THREE.Vector2(u * S, Y(v))));
+  const gB = new THREE.ExtrudeGeometry(ballast, { depth: Z_AR[1] - Z_AR[0], bevelEnabled: false }); gB.translate(X(C.x), 0, Z_AR[0]);
+  racine.add(new THREE.Mesh(gB, mat(0x57534e, { metalness: 0, roughness: 1 })));
+  // pont côté avant : deux poutres en I, entretoises, poteaux
+  for (const s of [-1, 1]) {
+    const xg = C.x + s * ECART;
+    boite(14, 3, Z_AV[1] - Z_AV[0], M.charpente, xg, RAIL_Y + 16.5, (Z_AV[0] + Z_AV[1]) / 2);
+    boite(3, 22, Z_AV[1] - Z_AV[0], M.charpente, xg, RAIL_Y + 29, (Z_AV[0] + Z_AV[1]) / 2);
+    boite(14, 3, Z_AV[1] - Z_AV[0], M.charpente, xg, RAIL_Y + 41.5, (Z_AV[0] + Z_AV[1]) / 2);
+    for (const z of [4.6, 8.2, 11]) boite(10, 880 - RAIL_Y - 43, 0.1, M.charpente, xg, (RAIL_Y + 43 + 880) / 2, z);
+  }
+  for (let z = Z_AV[0] + 0.6; z < Z_AV[1]; z += 1.2) boite(2 * ECART, 6, 0.06, M.charpente, C.x, RAIL_Y + 30, z);
+  // --- Wagons (trémie ouverte, bogies, attelages) ---
+  const tole = mat(0x4b5563, { metalness: 0.5 }), tole2 = mat(0x374151, { metalness: 0.5 });
+  const geoRoue = new THREE.CylinderGeometry(9 * S, 9 * S, 0.05, 20); geoRoue.rotateZ(Math.PI / 2);
+  const geoTas = (() => {
+    const p = [[-90, 44], [90, 44], [72, 52], [35, 61], [0, 64], [-35, 61], [-72, 52]];
+    const g = new THREE.ExtrudeGeometry(new THREE.Shape(p.map(([u, v]) => new THREE.Vector2(u * S, v * S))), { depth: 2.5, bevelEnabled: false });
+    g.translate(0, 0, -1.25); return g;
+  })();
+  function creerWagon(plein) {
+    const w = new THREE.Group(), roues = [];
+    boiteLoc(192, 6, 2.7, tole, 0, 47, 0, w);                                   // fond
+    for (const s of [-1, 1]) boiteLoc(6, 95, 2.7, tole, s * 93, 2, 0, w);        // parois longues
+    for (const s of [-1, 1]) boiteLoc(192, 95, 0.05, tole, 0, 2, s * 1.33, w);   // parois d'extrémité
+    for (const s of [-1, 1]) boiteLoc(200, 5, 2.76, tole2, 0, s > 0 ? -46 : 44, 0, w);     // cadre haut / bas
+    for (const s of [-1, 1]) for (const k of [-0.9, -0.3, 0.3, 0.9]) boiteLoc(5, 97, 0.06, tole2, s * 97, 2, k, w); // raidisseurs
+    for (const zb of [-0.95, 0.95]) {
+      boiteLoc(130, 8, 0.75, M.charpente, 0, 52, zb, w);                        // châssis du bogie
+      for (const dz of [-0.28, 0.28]) for (const s of [-1, 1]) {
+        const r = new THREE.Mesh(geoRoue, M.noir); r.position.set(s * (ECART - 3.5) * S, -58 * S, zb + dz); w.add(r); roues.push(r);
+      }
+    }
+    for (const s of [-1, 1]) boiteLoc(14, 10, 0.18, M.charpente, 0, 48, s * 1.42, w);  // attelages
+    const ch = boiteLoc(180, 88, 2.6, M.bauxite, 0, 0, 0, w);
+    ch.add(new THREE.Mesh(geoTas, M.bauxite));                                   // dôme de bauxite
+    ch.visible = plein;
+    w.userData = { charge: ch, roues };
+    return w;
+  }
+  const wagon = creerWagon(true); piv.add(wagon);
+  const charge = wagon.userData.charge;
   // brides de serrage
   const brides = [];
   for (const s of [-1, 1]) { const b = boiteLoc(40, 10, 2.6, M.jaune, s * 90, -70, 0, piv); brides.push(b); boiteLoc(8, 26, 2.6, M.jaune, s * 90, -86, 0, piv); }
-  anim.cul = { piv, wagon, charge, brides };
+  // rame : wagons pleins en attente (arrière), wagons vidés (avant)
+  const rame = new THREE.Group(); rame.position.set(X(C.x), Y(C.y), 0); racine.add(rame);
+  const wagonsRame = [];
+  for (const k of [-4, -3, -2, -1, 1, 2, 3]) { const w = creerWagon(k < 0); w.position.z = k * PAS_W; rame.add(w); wagonsRame.push(w); }
+  anim.cul = { piv, wagon, charge, brides, rame, wagonsRame, PAS_W };
   // galets porteurs
   for (const a of [Math.PI * 0.62, Math.PI * 0.38]) for (const z of [-1.55, 1.55]) {
     const gx = C.x + Math.cos(a) * (C.R + 14), gy = C.y + Math.sin(a) * (C.R + 14);
     cylZ(10, 0.22, M.acier, gx, gy, z); boite(28, 40, 0.3, M.charpente, gx, gy + 20, z);
   }
-  // voie ferrée (vers l'arrière) + wagon en attente
-  for (const lx of [206, 314]) boite(8, 8, 9, M.acier, lx, G.SOL - 1, -6.2), boite(8, 8, 3.4, M.acier, lx, G.SOL - 1, 0);
-  for (let z = -10; z < -1.8; z += 0.5) boite(150, 6, 0.18, M.charpente, 260, G.SOL + 5, z);
-  const wAtt = new THREE.Group(); wAtt.position.set(X(C.x), Y(C.y), -4.6); racine.add(wAtt);
-  wAtt.add(wagon.clone());
   // entraînement : pignon + réducteur + frein + accouplement + moteur (côté avant)
   const zC = 1.55;
   const px = C.x + C.R + 10 + 18;
@@ -396,16 +447,23 @@ if (renderer) {
   const ang3 = { cul: 0, A: 0, R: 0, B: 0, V: 0 };
   function tourneMoteur(mt, ramp, dt) { mt.ventil.rotation.x += dt * 40 * ramp; }
 
+  let tR = performance.now();
+  const dtReel = () => { const t = performance.now(), d = (t - tR) / 1000; tR = t; return d; };
   function rendre(dt) {
     const e = B.etat, ma = B.mach, cu = B.cul;
     for (const k of ['culbuteur', 'alim', 'racleuse', 'broyeur', 'cv301']) ang3[k] = (ang3[k] || 0) + dt * 40 * ma[k].ramp;
     // culbuteur
     anim.cul.piv.rotation.z = -cu.th;
-    anim.cul.charge.visible = cu.charge > 0.02;
+    // échange de wagon : la rame avance d'un pas, le wagon vidé sort vers l'avant
+    const f = cu.phase === 'echange' ? Math.min(1, cu.t / 2.4) : 0, avance = f * anim.cul.PAS_W;
+    anim.cul.wagon.position.z = avance; anim.cul.rame.position.z = avance;
+    const plein = cu.phase === 'echange' ? false : cu.charge > 0.02;
+    anim.cul.charge.visible = plein;
     anim.cul.charge.scale.y = Math.max(0.02, cu.charge);
     anim.cul.charge.position.y = -(46 - 88 * cu.charge / 2) * S;
-    anim.cul.wagon.visible = cu.alpha > 0.15;
-    anim.cul.wagon.position.z = cu.phase === 'echange' ? (cu.t < 1.2 ? cu.t * 3 : (cu.t - 2.4) * 3) : 0;
+    const aRoue = -avance / (9 * S);
+    for (const r of anim.cul.wagon.userData.roues) r.rotation.x = aRoue;
+    for (const w of anim.cul.wagonsRame) for (const r of w.userData.roues) r.rotation.x = aRoue;
     anim.cul.brides.forEach(b => { b.position.y = -(-70 + cu.bride * 18) * S; });
     anim.pignon.rotation.z = cu.th * 200 / 17 / 2;
     anim.arbreCul.rotation.x = anim.accCul.rotation.x = ang3.culbuteur;
@@ -464,6 +522,7 @@ if (renderer) {
     q.identity();
     blocs.count = n; blocs.instanceMatrix.needsUpdate = true; if (blocs.instanceColor) blocs.instanceColor.needsUpdate = true;
 
+    majVol(Math.min(0.05, dtReel()));
     controls.update();
     renderer.render(scene, camera);
     etiquettes();
@@ -485,7 +544,23 @@ if (renderer) {
     });
   }
 
-  window.VUE3D = { rendre, recentrer, redim };
+  // centrage progressif de la caméra sur une machine touchée
+  let vol = null;
+  const CADRAGE = { culbuteur: [300, 230, 7.5, 5, 9], alim: [520, 560, 0, 2.6, 8], racleuse: [450, 700, 0, 2, 7],
+    broyeur: [960, 660, 0, 1.6, 5.5], cv301: [1250, 680, 0, 3, 11] };
+  function cibler(id) {
+    const c = CADRAGE[id]; if (!c) return;
+    const t = new THREE.Vector3(X(c[0]), Y(c[1]), 0), dir = new THREE.Vector3(c[2] * 0.25 + 0.6, c[3] / c[4], 1).normalize();
+    vol = { t0: controls.target.clone(), p0: camera.position.clone(), t1: t, p1: t.clone().addScaledVector(dir, c[4] * 1.15), k: 0 };
+  }
+  function majVol(dt) {
+    if (!vol) return;
+    vol.k = Math.min(1, vol.k + dt * 1.6); const e = vol.k * vol.k * (3 - 2 * vol.k);
+    controls.target.lerpVectors(vol.t0, vol.t1, e); camera.position.lerpVectors(vol.p0, vol.p1, e);
+    if (vol.k >= 1) vol = null;
+  }
+  controls.addEventListener('start', () => { vol = null; });
+  window.VUE3D = { rendre, recentrer, redim, cibler };
   redim(); recentrer();
   B.changerVue('3d');
 }
