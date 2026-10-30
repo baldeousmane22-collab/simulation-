@@ -587,13 +587,24 @@
     // rouleaux dentés contrarotatifs
     engrenage(b.rx1, b.ry, b.R - 6, 10, etat.angR, 8, '#9ca3af');
     engrenage(b.rx2, b.ry, b.R - 6, 10, -etat.angR + 0.3, 8, '#9ca3af');
-    // entraînement : réducteur + coupleur hydraulique + moteur
+    // deux entraînements indépendants : un moteur + coupleur + réducteur par rouleau (module)
+    // module 2 (rouleau droit)
     arbre(b.rx2, b.ry, 1032, b.ry);
     ctx.fillStyle = '#273248'; ctx.fillRect(1028, 677, 190, 6);
-    reducteur(1030, 624, 60, 52, etat.angMot * m.ramp, etat.angR);
+    reducteur(1030, 624, 60, 52, etat.angMot * m.ramp, -etat.angR);
     arbre(1090, b.ry, 1142, b.ry);
     coupleur(1098, b.ry, 38, 36);
     moteur(1142, 632, 72, 38, m.ramp);
+    // module 1 (rouleau gauche) : chaîne placée au-dessus
+    ctx.save(); ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 3; ctx.setLineDash([7, 4]); // arbre côté opposé (pointillé)
+    ctx.beginPath(); ctx.moveTo(b.rx1, b.ry); ctx.lineTo(b.rx1, 562); ctx.lineTo(1032, 562); ctx.stroke(); ctx.restore();
+    ctx.fillStyle = '#273248'; ctx.fillRect(1028, 589, 190, 6);
+    reducteur(1030, 536, 60, 52, etat.angMot * m.ramp, etat.angR);
+    arbre(1090, 562, 1142, 562);
+    coupleur(1098, 562, 38, 36);
+    moteur(1142, 544, 72, 38, m.ramp);
+    ctx.fillStyle = '#fde68a'; ctx.font = 'bold 12px system-ui'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('M1', 1222, 563); ctx.fillText('M2', 1222, 651);
   }
 
   function dessinCV301() {
@@ -681,13 +692,13 @@
       etiquette(`Alimentateur à tabliers · ${fr(vA, 2)} m/s`, 580, 440, '#fde68a', '#f59e0b');
       if (detail) etiquette('Miettes entre les tabliers ↓', 560, 636, '#fdba74', '#ea580c');
       etiquette(`Chaîne racleuse · ${fr(vR, 2)} m/s`, 420, 762, '#fde68a', '#f59e0b');
-      etiquette(`Broyeur · ${(nRouleaux() * mach.broyeur.ramp).toFixed(0)} tr/min`, 1140, 603, '#fde68a', '#f59e0b');
+      etiquette(`Broyeur (2 moteurs) · ${(nRouleaux() * mach.broyeur.ramp).toFixed(0)} tr/min`, 1130, 510, '#fde68a', '#f59e0b');
       etiquette(`Convoyeur CV301 · ${fr(vB, 2)} m/s`, 1250, 765, '#fde68a', '#f59e0b');
       if (detail) etiquette('Vers stockage', 1708, 810);
       if (cam.s > 0.75) {
         etiquette('Moteur', 598, 205); etiquette('Réducteur', 493, 198); etiquette('Pignon / couronne', 430, 292);
         etiquette('Variateur', 673, 438); etiquette('Moteur', 747, 466); etiquette('Réducteur', 821, 458); etiquette('Chaîne de transmission', 905, 540);
-        etiquette('Moteur', 817, 714); etiquette('Réducteur', 769, 708); etiquette('Coupleur hydraulique', 1117, 700); etiquette('Moteur', 1178, 618); etiquette('Réducteur', 1060, 612);
+        etiquette('Moteur', 817, 714); etiquette('Réducteur', 769, 708); etiquette('Coupleur hydraulique', 1117, 700); etiquette('Moteur 2', 1178, 618); etiquette('Réducteur 2', 1060, 612); etiquette('Moteur 1', 1178, 530); etiquette('Réducteur 1', 1060, 524);
         etiquette('Tendeur à contrepoids', 1480, 870); etiquette('Antidévireur', 1752, 530); etiquette('Tambour de tête', 1640, 625); etiquette('Tambour de queue', 660, 885);
         etiquette('Raclettes', 600, 676); etiquette('Rouleaux dentés', 925, 720);
       }
@@ -698,13 +709,15 @@
   //  Schéma de la chaîne cinématique (onglet)
   // =====================================================================
   const sc = $('schema'), sx = sc.getContext('2d');
-  let choixSchema = 'culbuteur', tS = 0;
+  let choixSchema = 'culbuteur', tS = 0, sens = 1;
   function dessinSchema(dt) {
     const m = M[choixSchema], mm = mach[choixSchema], el = m.chaine;
     tS += dt * mm.ramp;
-    const w = sc.width, h = sc.height, n = el.length, pas = (w - 20) / n, yA = 92;
+    const hv = m.double ? 280 : 230; if (sc.height !== hv) sc.height = hv;
+    const w = sc.width, h = sc.height, n = el.length, pas = (w - 20) / n, yT = m.double ? 50 : 0;
     sx.setTransform(1, 0, 0, 1, 0, 0); sx.clearRect(0, 0, w, h);
     sx.fillStyle = '#0b1220'; sx.fillRect(0, 0, w, h);
+    const corps = (yA) => {
     // arbre continu : rapide avant le réducteur, lent après
     const iRed = el.findIndex(e => e.t === 'reducteur');
     for (let k = 0; k < n - 1; k++) {
@@ -773,16 +786,31 @@
         case 'rouleaux':
           gear(sx, cx - 13, yA, 13, 9, tS, '#9ca3af'); gear(sx, cx + 13, yA, 13, 9, -tS + 0.3, '#9ca3af');
           break;
+        case 'rouleau':
+          gear(sx, cx, yA, 20, 10, sens * tS, '#9ca3af', 7);
+          sx.fillStyle = '#fff'; sx.font = '16px system-ui'; sx.textAlign = 'center'; sx.fillText(sens > 0 ? '↻' : '↺', cx, yA - 34);
+          break;
         case 'tambour':
           gear(sx, cx, yA, 22, 14, tS, '#9ca3af', 0.01);
           sx.strokeStyle = '#111827'; sx.lineWidth = 5; sx.beginPath(); sx.arc(cx, yA, 25, -Math.PI / 2, Math.PI / 2, true); sx.stroke();
           break;
       }
       sx.restore();
+    });
+    };
+    if (m.double) {               // deux chaînes identiques : une par rouleau (module)
+      [[70, 'Module 1 · rouleau gauche'], [146, 'Module 2 · rouleau droit']].forEach(([yr, nom], r) => {
+        sens = r ? -1 : 1; corps(yr);
+        sx.fillStyle = '#fde68a'; sx.font = 'bold 10px system-ui'; sx.textAlign = 'left'; sx.fillText(nom, 6, yr - 38);
+      });
+      sens = 1;
+    } else corps(92);
+    el.forEach((e, k) => {
+      const cx = 10 + pas * (k + 0.5);
       sx.fillStyle = '#fde68a'; sx.font = `bold ${pas < 80 ? 10 : 11}px system-ui`; sx.textAlign = 'center'; sx.textBaseline = 'alphabetic';
-      ligneTexte(e.l, cx, 160, pas - 2, 12);
+      ligneTexte(e.l, cx, 160 + yT, pas - 2, 12);
       sx.fillStyle = '#94a3b8'; sx.font = '10px system-ui';
-      ligneTexte(e.d, cx, 190, pas - 2, 11);
+      ligneTexte(e.d, cx, 190 + yT, pas - 2, 11);
     });
     sx.fillStyle = '#ef4444'; sx.font = '10px system-ui'; sx.textAlign = 'left'; sx.fillText('━ arbre rapide (avant réducteur)', 10, 18);
     sx.fillStyle = '#3b82f6'; sx.fillText('━ arbre lent, couple élevé', 200, 18);
@@ -826,7 +854,7 @@
   // =====================================================================
   const ZONES = {
     culbuteur: [95, 60, 640, 330], alim: [140, 470, 860, 625], racleuse: [120, 645, 840, 760],
-    broyeur: [835, 590, 1225, 750], cv301: [630, 540, 1920, 890]
+    broyeur: [835, 500, 1240, 750], cv301: [630, 540, 1920, 890]
   };
   let sel = null;
 
@@ -940,7 +968,7 @@
         [`Alimentateur à tabliers · ${fr(vA, 2)} m/s`, 520, 520, 1],
         ['Miettes entre les tabliers ↓', 560, 636, 2],
         [`Chaîne racleuse · ${fr(vR, 2)} m/s`, 420, 740, 1],
-        [`Broyeur · ${(nRouleaux() * mach.broyeur.ramp).toFixed(0)} tr/min`, 930, 590, 1],
+        [`Broyeur (2 moteurs) · ${(nRouleaux() * mach.broyeur.ramp).toFixed(0)} tr/min`, 930, 590, 1],
         [`Convoyeur CV301 · ${fr(vB, 2)} m/s`, 1250, 690, 1],
         ['Vers stockage', 1708, 800, 0]
       ];

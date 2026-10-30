@@ -236,7 +236,7 @@ Tout est dans le dossier `engrenages/` (textes modifiables dans `engrenages/js/d
 Simulation **3D animée** (vue 2D en option, bouton « 2D ») de la ligne de broyage de la bauxite : **voie ferrée** (rails, traverses, ballast) avec une rame de wagons qui avance à chaque échange, **culbuteur** (rotation du wagon à 160°,
 bridage, couronne + pignon), **trémie**, **alimentateur à tabliers** (variateur 10–50 Hz, débit calculé),
 **miettes qui passent entre les tabliers** et tombent dans la **chaîne racleuse**, **broyeur à rouleaux
-dentés** contrarotatifs et **convoyeur à bande CV301** (tendeur à contrepoids, antidévireur).
+dentés** contrarotatifs à **deux moteurs (un par module)** et **convoyeur à bande CV301** (tendeur à contrepoids, antidévireur).
 Chaque machine montre sa **chaîne cinématique** (moteur → accouplement / coupleur → réducteur → organe).
 
 Onglets : **Commande** (marche / arrêt de chaque machine avec asservissements, démarrage séquentiel de l'aval

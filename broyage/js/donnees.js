@@ -85,28 +85,29 @@ window.DONNEES = {
       points: ['Si elle s\'arrête, les miettes s\'accumulent sous l\'alimentateur (bourrage).', 'Elle doit tourner avant l\'alimentateur.', 'Contrôler les raclettes, les maillons et la tension (tendeur à la queue).']
     },
     broyeur: {
-      nom: 'Broyeur à rouleaux dentés', court: 'Broyeur',
-      role: "Concasse les gros blocs entre deux rouleaux dentés qui tournent en sens inverse.",
+      nom: 'Broyeur à rouleaux dentés (2 modules)', court: 'Broyeur',
+      role: "Concasse les gros blocs entre deux rouleaux dentés qui tournent en sens inverse. Chaque rouleau (module) a son propre moteur.",
       aval: ['cv301'],
-      moteur: { P: 250, n: 1490, nb: 1 },
+      moteur: { P: 132, n: 1490, nb: 2 },
+      double: true,
       chaine: [
-        { t: 'moteur', l: 'Moteur', d: '250 kW · 1490 tr/min' },
+        { t: 'moteur', l: 'Moteur', d: '132 kW · 1490 tr/min (×2)' },
         { t: 'coupleur', l: 'Coupleur hydraulique', d: 'démarrage progressif, limite le couple' },
         { t: 'reducteur', l: 'Réducteur', d: 'i = 20' },
-        { t: 'synchro', l: 'Pignons de synchro', d: 'Z = Z : sens inverse' },
-        { t: 'rouleaux', l: '2 rouleaux dentés', d: 'Ø 0,70 m' }
+        { t: 'accouplement', l: 'Accouplement', d: 'à denture' },
+        { t: 'rouleau', l: 'Rouleau denté', d: 'Ø 0,70 m' }
       ],
       i: 20, D: 0.7,
       calc(m) {
         const n2 = m.moteur.n / m.i, v = Math.PI * m.D * n2 / 60, C = 9550 * m.moteur.P / n2;
         return [
-          ['Vitesse des rouleaux', 'n2 = n1 / i', `1490 / 20`, `${n2.toFixed(1)} tr/min`],
-          ['Vitesse périphérique', 'v = π × D × n2 / 60', `π × 0,7 × ${n2.toFixed(1)} / 60`, `${v.toFixed(2)} m/s`],
-          ['Couple de sortie', 'C = 9550 × P / n2', `9550 × 250 / ${n2.toFixed(1)}`, `${(C / 1000).toFixed(1)} kN·m`],
-          ['Rapport des pignons de synchro', 'i = Z2 / Z1', 'Z / Z', '1 (sens inverse)']
+          ['Vitesse de chaque rouleau', 'n2 = n1 / i', `1490 / 20`, `${n2.toFixed(1)} tr/min`],
+          ['Vitesse périphérique des dents', 'v = π × D × n2 / 60', `π × 0,7 × ${n2.toFixed(1)} / 60`, `${v.toFixed(2)} m/s`],
+          ['Couple sur chaque rouleau', 'C = 9550 × P / n2', `9550 × 132 / ${n2.toFixed(1)}`, `${(C / 1000).toFixed(1)} kN·m`],
+          ['Puissance installée', 'P = 2 × 132', '2 moteurs', '264 kW']
         ];
       },
-      points: ['Le coupleur hydraulique protège la chaîne cinématique en cas de blocage (bloc trop dur).', 'Les pignons de synchronisation font tourner les 2 rouleaux en sens inverse à la même vitesse.', 'Contrôler l\'usure des dents, le jeu entre rouleaux, le niveau d\'huile du coupleur.']
+      points: ['Deux modules indépendants : chaque rouleau a son moteur, son coupleur hydraulique et son réducteur.', 'Les deux moteurs tournent en sens inverse (montage symétrique) : la matière est entraînée vers le bas entre les rouleaux.', 'Les deux moteurs démarrent ensemble ; si un moteur déclenche, le broyeur s\'arrête et l\'alimentateur aussi.', 'Comparer les intensités des deux moteurs : un écart signale une usure ou un blocage d\'un rouleau.', 'Contrôler l\'usure des dents, le jeu entre rouleaux, le niveau d\'huile des coupleurs.']
     },
     cv301: {
       nom: 'Convoyeur à bande CV301', court: 'CV301',
@@ -140,7 +141,7 @@ window.DONNEES = {
   <li><b>Alimentateur à tabliers</b> : une chaîne de plaques d'acier (tabliers) extrait la matière sous la trémie, à vitesse réglée par un <b>variateur</b>.</li>
   <li><b>Miettes</b> : les fines passent dans les petits jeux <b>entre les tabliers</b> et tombent dans la <b>chaîne racleuse</b> placée dessous.</li>
   <li><b>Chaîne racleuse</b> : des raclettes poussent les miettes au fond de l'auge et les déversent sur le CV301.</li>
-  <li><b>Broyeur</b> : deux rouleaux dentés contrarotatifs concassent les gros blocs.</li>
+  <li><b>Broyeur</b> : deux rouleaux dentés contrarotatifs concassent les gros blocs ; chaque rouleau (module) a son propre moteur, coupleur hydraulique et réducteur.</li>
   <li><b>Convoyeur CV301</b> : la bande reçoit la bauxite broyée et les miettes et les évacue.</li>
 </ol>
 <h3>La chaîne cinématique</h3>
@@ -177,7 +178,7 @@ window.DONNEES = {
     { q: "Rôle du coupleur hydraulique du broyeur :", r: ["Démarrage progressif et protection contre les surcharges", "Augmenter la vitesse", "Changer le sens de rotation"], b: 0 },
     { q: "Que se passe-t-il si le CV301 s'arrête ?", r: ["Rien", "Seul le culbuteur s'arrête", "Toutes les machines en amont s'arrêtent (asservissement)"], b: 2 },
     { q: "Rôle de l'antidévireur du CV301 :", r: ["Empêcher la bande inclinée de reculer à l'arrêt", "Centrer la bande", "Nettoyer la bande"], b: 0 },
-    { q: "Comment tournent les deux rouleaux du broyeur ?", r: ["Dans le même sens", "En sens inverse, entraînés par des pignons de synchronisation", "Un seul rouleau tourne"], b: 1 },
+    { q: "Comment sont entraînés les deux rouleaux du broyeur ?", r: ["Par un seul moteur et une courroie", "Chacun par son propre moteur (2 modules), en sens inverse", "Un seul rouleau tourne"], b: 1 },
     { q: "Avant d'intervenir sur la chaîne racleuse, on doit :", r: ["Ralentir la chaîne", "Consigner la machine", "Prévenir après l'intervention"], b: 1 }
   ]
 };

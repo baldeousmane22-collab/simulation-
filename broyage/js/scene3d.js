@@ -330,17 +330,25 @@ if (renderer) {
   const dentsMat = mat(0x9ca3af, { metalness: 0.7, roughness: 0.35 });
   anim.r1 = engrenage(Br.R - 6, 10, 8, zB * 1.8, dentsMat, Br.rx1, Br.ry);
   anim.r2 = engrenage(Br.R - 6, 10, 8, zB * 1.8, dentsMat, Br.rx2, Br.ry);
-  for (const x of [Br.rx1, Br.rx2]) cylZ(6, zB * 2 + 0.5, M.acier, x, Br.ry, 0.2);
-  anim.sync1 = engrenage(22, 16, 4, 0.08, M.acier, Br.rx1, Br.ry, zB + 0.2);
-  anim.sync2 = engrenage(22, 16, 4, 0.08, M.acier, Br.rx2, Br.ry, zB + 0.2);
-  const zBD = zB + 0.35;
-  anim.arbreB = tourneAxeX(5, 1030 - Br.rx2, M.acier, (Br.rx2 + 1030) / 2, Br.ry, zBD);
-  boite(190, 6, 0.8, M.charpente, 1123, 680, zBD);
-  reducteur(1060, 650, 60, 52, zBD, 0.55);
-  anim.arbreB2 = tourneAxeX(5, 52, M.acier, 1116, Br.ry, zBD);
-  const cB = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), M.orange); cB.scale.set(19 * S, 18 * S, 18 * S); cB.position.set(X(1117), Y(Br.ry), zBD); racine.add(cB);
-  anim.motB = moteur(1178, 651, 72, 38, zBD, -1);
-  zone('broyeur', 835, 590, 1225, 750, -0.8, 1.4);
+  // deux modules : chaque rouleau a sa propre chaîne cinématique, dans l'axe du rouleau (côté avant)
+  // rouleau → accouplement à denture → réducteur → coupleur hydraulique → moteur
+  boite(140, 6, 1.9, M.charpente, (Br.rx1 + Br.rx2) / 2, Br.ry + 33, 1.7);                 // passerelle support
+  for (const x of [Br.rx1 - 32, Br.rx2 + 32]) for (const z of [0.85, 2.55]) boite(8, 880 - Br.ry - 36, 0.08, M.charpente, x, (Br.ry + 36 + 880) / 2, z);
+  anim.modB = [];
+  [Br.rx1, Br.rx2].forEach((x, k) => {
+    cylZ(6, 0.5, M.acier, x, Br.ry, zB + 0.1);                                               // arbre du rouleau
+    const acc = cylZ(11, 0.08, M.fonce, x, Br.ry, 0.88);                                    // accouplement à denture
+    boite(4, 20, 0.09, M.jaune, x, Br.ry, 0.88);
+    const red = new THREE.Mesh(new THREE.BoxGeometry(48 * S, 56 * S, 0.5), M.reduc); red.position.set(X(x), Y(Br.ry), 1.17); racine.add(red);
+    boite(52, 4, 0.52, M.charpente, x, Br.ry, 1.17);
+    const arb = cylZ(4, 0.14, M.acier, x, Br.ry, 1.48);
+    const coup = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), M.orange); coup.scale.set(17 * S, 17 * S, 0.17); coup.position.set(X(x), Y(Br.ry), 1.66); racine.add(coup);
+    const mot = moteur(x, Br.ry, 72, 36, 2.12, -1); mot.g.rotation.y = -Math.PI / 2;
+    // repère du sens de rotation sur l'accouplement
+    acc.add(new THREE.Mesh(new THREE.BoxGeometry(18 * S, 4 * S, 0.1), M.jaune));
+    anim.modB.push({ acc, arb, mot, sens: k ? 1 : -1 });
+  });
+  zone('broyeur', 835, 590, 1030, 750, -0.8, 2.7);
 
   // --- Convoyeur CV301 ---
   const V = G.CV, ang = Math.atan2(Y(V.y2 - V.rt) - Y(V.y1 - V.rq), X(V.x2) - X(V.x1)), zV = 0.42;
@@ -496,8 +504,7 @@ if (renderer) {
     anim.accR.rotation.x = ang3.racleuse; tourneMoteur(anim.motR, ma.racleuse.ramp, dt);
     // broyeur
     anim.r1.rotation.z = -e.angR; anim.r2.rotation.z = e.angR + 0.3;
-    anim.sync1.rotation.z = -e.angR; anim.sync2.rotation.z = e.angR + 0.1;
-    anim.arbreB.rotation.x = e.angR; anim.arbreB2.rotation.x = ang3.broyeur; tourneMoteur(anim.motB, ma.broyeur.ramp, dt);
+    for (const md of anim.modB) { md.acc.rotation.z = md.sens * e.angR; md.arb.rotation.z = md.sens * ang3.broyeur; tourneMoteur(md.mot, ma.broyeur.ramp, dt); }
     // convoyeur
     texBande.offset.x = -e.offB * S / 0.35;
     anim.tamQ.rotation.z = -e.offB / V.rq; anim.tamT.rotation.z = -e.offB / V.rt;
@@ -547,7 +554,7 @@ if (renderer) {
   // centrage progressif de la caméra sur une machine touchée
   let vol = null;
   const CADRAGE = { culbuteur: [300, 230, 7.5, 5, 9], alim: [520, 560, 0, 2.6, 8], racleuse: [450, 700, 0, 2, 7],
-    broyeur: [960, 660, 0, 1.6, 5.5], cv301: [1250, 680, 0, 3, 11] };
+    broyeur: [930, 660, 0, 2.2, 6.5], cv301: [1250, 680, 0, 3, 11] };
   function cibler(id) {
     const c = CADRAGE[id]; if (!c) return;
     const t = new THREE.Vector3(X(c[0]), Y(c[1]), 0), dir = new THREE.Vector3(c[2] * 0.25 + 0.6, c[3] / c[4], 1).normalize();
