@@ -1,6 +1,6 @@
 {
   "appId": "fr.formation.broyage",
-  "appName": "Broyage 2D",
+  "appName": "Broyage 3D",
   "webDir": "www",
   "android": {
     "backgroundColor": "#0f172a"

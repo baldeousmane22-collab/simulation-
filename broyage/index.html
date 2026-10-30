@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Chaîne de broyage 2D</title>
-  <meta name="description" content="Simulation 2D de la chaîne cinématique du broyage : culbuteur, alimentateur à tabliers, chaîne racleuse, broyeur et convoyeur CV301.">
+  <title>Chaîne de broyage 3D</title>
+  <meta name="description" content="Simulation 3D animée de la chaîne cinématique du broyage : culbuteur, alimentateur à tabliers, chaîne racleuse, broyeur et convoyeur CV301.">
   <meta name="theme-color" content="#0f172a">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Broyage 2D">
+  <meta name="apple-mobile-web-app-title" content="Broyage 3D">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self'">
   <link rel="manifest" href="manifest.webmanifest">
@@ -23,8 +23,11 @@
 
 <main class="disposition">
   <section class="zone" id="zone" aria-label="Vue 2D de l'installation">
-    <canvas id="canvas" aria-label="Installation de broyage animée"></canvas>
+    <canvas id="canvas3d" aria-label="Installation de broyage en 3D"></canvas>
+    <div id="etiq3d" class="calque-etiq"></div>
+    <canvas id="canvas" hidden aria-label="Installation de broyage animée en 2D"></canvas>
     <div class="outils">
+      <button type="button" class="btn-rond btn-vue" id="b-vue" title="Changer de vue 3D / 2D" aria-label="Changer de vue">2D</button>
       <button type="button" class="btn-rond" id="b-pause" title="Pause / lecture" aria-label="Pause">⏸</button>
       <button type="button" class="btn-rond" id="b-etiq" title="Étiquettes" aria-label="Étiquettes" aria-pressed="true">🏷️</button>
       <button type="button" class="btn-rond" id="b-centre" title="Recentrer la vue" aria-label="Recentrer">🎯</button>
@@ -33,7 +36,7 @@
     <div class="alerte" id="alerte" hidden></div>
     <label class="vitesse">🐢 <input type="range" id="vitesse" min="0.2" max="3" step="0.1" value="1" aria-label="Vitesse de l'animation"> 🐇</label>
     <div class="info" id="info" hidden></div>
-    <div class="aide">1 doigt : déplacer · 2 doigts : zoomer · toucher une machine : sa chaîne cinématique</div>
+    <div class="aide" id="aide">1 doigt : déplacer · 2 doigts : zoomer · toucher une machine : sa chaîne cinématique</div>
   </section>
 
   <aside class="panneau">
@@ -75,5 +78,6 @@
 
 <script src="js/donnees.js"></script>
 <script src="js/app.js"></script>
+<script type="module" src="js/scene3d.js"></script>
 </body>
 </html>

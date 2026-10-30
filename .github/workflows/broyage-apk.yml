@@ -69,6 +69,7 @@ jobs:
           bash scripts/preparer-web.sh
           npx cap sync android
           test -f android/app/src/main/assets/public/index.html
+          test -f android/app/src/main/assets/public/vendor/three.min.js
           test -f android/app/src/main/assets/public/js/app.js
 
       - name: Récupérer la clé permanente (cache privé GitHub)
@@ -107,7 +108,7 @@ jobs:
             PASS="$(openssl rand -hex 16)"
             echo "::add-mask::$PASS"
             keytool -genkeypair -keystore "$KS" -alias broyage -keyalg RSA -keysize 2048 -validity 10000 \
-              -storepass "$PASS" -keypass "$PASS" -dname "CN=Broyage 2D, O=Formation, C=FR"
+              -storepass "$PASS" -keypass "$PASS" -dname "CN=Broyage 3D, O=Formation, C=FR"
             echo "KEYSTORE_PASSWORD=$PASS" >> "$GITHUB_ENV"
             echo "KEY_ALIAS=broyage" >> "$GITHUB_ENV"
             echo "KEY_PASSWORD=$PASS" >> "$GITHUB_ENV"
@@ -145,11 +146,11 @@ jobs:
           make_latest: 'false'
           files: broyage/apk/sortie/Broyage.apk
           body: |
-            APK Android de l'application **Chaîne de broyage 2D** (version ${{ env.VERSION_NAME }}),
+            APK Android de l'application **Chaîne de broyage 3D** (version ${{ env.VERSION_NAME }}),
             Android 7.0 minimum.
 
             **Installation** : téléchargez `Broyage.apk` sur le téléphone, ouvrez-le,
             puis autorisez l'installation depuis cette source si Android le demande.
-            L'appli fonctionne hors connexion (simulation 2D animée, chaîne cinématique, calculs, cours, quiz).
+            L'appli fonctionne hors connexion (simulation 3D animée, chaîne cinématique, calculs, cours, quiz).
 
             Version web : https://baldeousmane22-collab.github.io/simulation-/broyage/

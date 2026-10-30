@@ -560,8 +560,8 @@
       ctx.fillRect(r.x1 + d - 2, yb - 5, 4, r.fond - yb + 4);
       ctx.fillRect(r.x2 - d - 2, yh - 8, 4, 12);
     }
-    engrenage(r.x1, r.y, r.r - 4, 7, etat.offR / r.r, 4, '#94a3b8');
-    engrenage(r.x2, r.y, r.r - 4, 7, etat.offR / r.r, 4, '#94a3b8');
+    engrenage(r.x1, r.y, r.r - 4, 7, -etat.offR / r.r, 4, '#94a3b8');
+    engrenage(r.x2, r.y, r.r - 4, 7, -etat.offR / r.r, 4, '#94a3b8');
     // entraînement de tête : réducteur + accouplement + moteur
     ctx.fillStyle = '#273248'; ctx.fillRect(755, 752, 75, 5);
     arbre(r.x2, r.y, 760, 735);
@@ -912,7 +912,39 @@
   $('vitesse').oninput = (e) => { etat.vit = +e.target.value; };
   $('b-pause').onclick = (e) => { etat.pause = !etat.pause; e.currentTarget.textContent = etat.pause ? '▶' : '⏸'; };
   $('b-etiq').onclick = (e) => { etat.etiq = !etat.etiq; e.currentTarget.setAttribute('aria-pressed', etat.etiq); };
-  $('b-centre').onclick = recentrer;
+  $('b-centre').onclick = () => { if (vue === '3d' && window.VUE3D) window.VUE3D.recentrer(); else recentrer(); };
+  // ---------- Vue 3D / 2D ----------
+  let vue = '2d';
+  function changerVue(v) {
+    if (v === '3d' && !window.VUE3D) v = '2d';
+    vue = v;
+    cv.hidden = v !== '2d'; $('canvas3d').hidden = v !== '3d'; $('etiq3d').hidden = v !== '3d';
+    $('b-vue').textContent = v === '3d' ? '2D' : '3D';
+    $('aide').textContent = v === '3d' ? '1 doigt : tourner · 2 doigts : zoomer / déplacer · toucher une machine : sa fiche'
+      : '1 doigt : déplacer · 2 doigts : zoomer · toucher une machine : sa chaîne cinématique';
+    if (v === '2d') { redim(); recentrer(); } else window.VUE3D.redim();
+  }
+  $('b-vue').onclick = () => changerVue(vue === '3d' ? '2d' : '3d');
+  // état partagé avec la vue 3D (scene3d.js)
+  window.BROYAGE = {
+    etat, mach, cul, parts: () => parts, choisir, changerVue, yBande, yRetour,
+    avancer(s) { for (let i = 0; i < s * 50; i++) pas(0.02); },
+    GEO: { W, H, SOL, CUL, TREM, AL, AL_HAUT, RA, BR, CV, CV_A, CAPA },
+    sel: () => sel,
+    libelles() {
+      const vA = vAlimNom() * mach.alim.ramp, vR = vRacNom() * mach.racleuse.ramp, vB = vBandeNom() * mach.cv301.ramp;
+      return [
+        [`Culbuteur · ${(cul.th * 180 / Math.PI).toFixed(0)}°`, CUL.x, 70, 1],
+        [`Trémie ${etat.stock.toFixed(0)} t`, 280, 470, 0],
+        [`Alimentateur à tabliers · ${fr(vA, 2)} m/s`, 520, 520, 1],
+        ['Miettes entre les tabliers ↓', 560, 636, 2],
+        [`Chaîne racleuse · ${fr(vR, 2)} m/s`, 420, 740, 1],
+        [`Broyeur · ${(nRouleaux() * mach.broyeur.ramp).toFixed(0)} tr/min`, 930, 590, 1],
+        [`Convoyeur CV301 · ${fr(vB, 2)} m/s`, 1250, 690, 1],
+        ['Vers stockage', 1708, 800, 0]
+      ];
+    }
+  };
   $('b-plein').onclick = (e) => {
     const on = !document.body.classList.contains('plein');
     document.body.classList.toggle('plein', on); e.currentTarget.textContent = on ? '✕' : '⛶';
@@ -964,7 +996,9 @@
   function toucher(ex, ey) {
     const [x, y] = versMonde(ex, ey);
     const ordreTest = ['racleuse', 'broyeur', 'alim', 'culbuteur', 'cv301'];
-    const id = ordreTest.find(k => { const z = ZONES[k]; return x >= z[0] && x <= z[2] && y >= z[1] && y <= z[3]; });
+    choisir(ordreTest.find(k => { const z = ZONES[k]; return x >= z[0] && x <= z[2] && y >= z[1] && y <= z[3]; }));
+  }
+  function choisir(id) {
     const info = $('info');
     if (!id) { sel = null; info.hidden = true; return; }
     sel = id; choixSchema = id; majFiche();
@@ -984,7 +1018,7 @@
       const n = Math.ceil(dt / 0.02);
       for (let i = 0; i < n; i++) pas(dt / n);
     }
-    dessin();
+    if (vue === '2d') dessin(); else if (window.VUE3D) window.VUE3D.rendre(dt);
     if ($('p-cinematique').classList.contains('actif')) dessinSchema(etat.pause ? 0 : dt);
     tUi += dt;
     if (tUi > 0.25) { tUi = 0; majCommandes(); }
@@ -993,6 +1027,7 @@
 
   construireCommandes();
   construireCours();
+  changerVue('2d'); // la vue 3D s'active dès que scene3d.js est chargé
   new ResizeObserver(redim).observe(cv);
   redim();
   majCommandes();

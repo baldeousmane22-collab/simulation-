@@ -3,10 +3,10 @@
    « Cache d'abord, réseau en secours ». Changer VERSION_CACHE à chaque
    livraison pour que les téléphones téléchargent la nouvelle version.
    ===================================================================== */
-const VERSION_CACHE = 'broyage-v1';
+const VERSION_CACHE = 'broyage-v2';
 const FICHIERS = [
   './', './index.html', './manifest.webmanifest', './css/style.css',
-  './js/app.js', './js/donnees.js', './icons/icon-192.png', './icons/icon-512.png'
+  './js/app.js', './js/donnees.js', './js/scene3d.js', './vendor/three.min.js', './icons/icon-192.png', './icons/icon-512.png'
 ];
 
 self.addEventListener('install', (e) => {

@@ -14,7 +14,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 .disposition { flex: 1; display: flex; min-height: 0; }
 .zone { position: relative; flex: 1; min-width: 0; background: #0b1220; overflow: hidden; touch-action: none; }
-#canvas { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+#canvas, #canvas3d { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+.calque-etiq { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.etiq3d { position: absolute; left: 0; top: 0; background: rgba(15, 23, 42, .86); border: 1px solid #475569; border-radius: 6px;
+  padding: 2px 7px; font-size: 12px; font-weight: 600; white-space: nowrap; will-change: transform; }
+.etiq3d.p1 { border-color: var(--accent); color: #fde68a; }
+.etiq3d.p2 { border-color: #ea580c; color: #fdba74; }
+.btn-vue { font-size: 13px; font-weight: 800; color: #fde68a; }
+[hidden] { display: none !important; }
 .outils { position: absolute; right: 8px; top: 8px; display: flex; gap: 6px; }
 .btn-rond { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--bord); background: rgba(22, 33, 59, .9); font-size: 17px; }
 .btn-rond[aria-pressed="false"] { opacity: .5; }

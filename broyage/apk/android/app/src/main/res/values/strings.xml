@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Broyage 2D</string>
-    <string name="title_activity_main">Broyage 2D</string>
+    <string name="app_name">Broyage 3D</string>
+    <string name="title_activity_main">Broyage 3D</string>
     <string name="package_name">fr.formation.broyage</string>
     <string name="custom_url_scheme">fr.formation.broyage</string>
 </resources>

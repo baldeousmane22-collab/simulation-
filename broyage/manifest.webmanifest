@@ -1,7 +1,7 @@
 {
-  "name": "Chaîne de broyage 2D",
+  "name": "Chaîne de broyage 3D",
   "short_name": "Broyage",
-  "description": "Simulation 2D de la chaîne cinématique du broyage : culbuteur, alimentateur à tabliers, chaîne racleuse, broyeur et convoyeur CV301.",
+  "description": "Simulation 3D animée de la chaîne cinématique du broyage : culbuteur, alimentateur à tabliers, chaîne racleuse, broyeur et convoyeur CV301.",
   "lang": "fr",
   "start_url": "./",
   "scope": "./",
