@@ -272,13 +272,14 @@ renforce la protection.
 - **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/fraisage/Fraisage.apk
 
 Fraiseuse à console en 3D : la fraise tourne, la table / le chariot / la console déplacent la pièce, la matière
-est enlevée en direct (copeaux, arrosage, changement d'outil). **10 opérations** : surfaçage en bout (fraise à
+est enlevée en direct (copeaux, arrosage, changement d'outil). **12 opérations** : surfaçage en bout (fraise à
 surfacer), surfaçage en roulant (fraiseuse horizontale), épaulement, rainure droite, poche, contournage,
-chanfrein, rainure à la fraise 3 tailles, rainure en T, queue d'aronde.
+chanfrein, rainure à la fraise 3 tailles, rainure en T, queue d'aronde, **perçage** (pointage + foret avec
+débourrage) et **taraudage M10** (pointage, perçage Ø8,5, taraud avec sortie en rotation inverse, filets visibles).
 
 - **Réglages** : matériau de la pièce, outil ARS / carbure, Vc, fz, sens d'avance (opposition / avalant),
   arrosage ; calcul détaillé de n, Vf, débit de copeaux, puissance et temps de coupe, avec alertes.
-- **Fiche** de chaque opération (but, outil, gamme opératoire, astuces, erreurs fréquentes), **Cours** (9 chapitres),
-  **Astuces** d'atelier et **Quiz** (25 questions, 10 tirées au hasard, avec explications).
+- **Fiche** de chaque opération (but, outil, gamme opératoire, astuces, erreurs fréquentes), **Cours** (10 chapitres),
+  **Astuces** d'atelier et **Quiz** (32 questions, 10 tirées au hasard, avec explications).
 
 Textes modifiables dans `fraisage/js/donnees.js`.

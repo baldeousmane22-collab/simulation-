@@ -106,6 +106,26 @@ export const OPERATIONS = {
     etapes: ['Ébauche : rainure droite Ø12, profondeur 10 mm', 'Changer d\'outil : fraise à queue d\'aronde 60°', 'Descendre la fraise hors de la pièce à la profondeur finale', 'Usiner les flancs (passe centrale ou flanc par flanc)', 'Contrôler avec deux piges et un micromètre (cote sur piges)'],
     astuces: ['Le contrôle se fait sur piges : on mesure la cote entre deux rouleaux calibrés.', 'Avance très faible : les dents de la fraise sont fines et pointues.', 'Ébaucher au plus près pour soulager la fraise à queue d\'aronde.'],
     erreurs: ['Angle de la fraise mal choisi → la glissière ne s\'emboîte pas.']
+  },
+  percage: {
+    nom: 'Perçage (pointage + foret)', court: 'Perçage', icone: '⊙', machine: 'verticale', piece: 'trous', axial: true,
+    outil: '1) Foret à centrer Ø5  2) Foret hélicoïdal ARS Ø10, 2 lèvres', outilPrincipal: 'foret Ø10', D: 10, Z: 2, fz: 0.08, kVc: 0.9,
+    ap: '20 mm (trous borgnes)', ae: 10, diam: 'Ø10 mm, 4 trous', outilDefaut: 'ars',
+    but: 'Percer 4 trous borgnes Ø10, profondeur 20 mm, positionnés par coordonnées sur la fraiseuse.',
+    principe: 'Le foret tourne et descend dans l\'axe de la broche : c\'est un usinage <b>axial</b>. Sur fraiseuse, les trous sont positionnés très précisément avec les verniers (ou la CN) : pas besoin de traçage.',
+    etapes: ['Prendre l\'origine pièce (coin ou centre) avec un palpeur ou une tangente', 'Pointer chaque trou au foret à centrer : le foret ne déviera pas', 'Monter le foret Ø10 dans le mandrin de perçage', 'Percer avec débourrage (remonter tous les 1 à 1,5 × D pour évacuer les copeaux)', 'Respecter la profondeur avec la butée ou le vernier (la pointe à 118° ajoute 0,3 × D)', 'Ébavurer l\'entrée des trous (fraisure ou ébavureur)'],
+    astuces: ['Toujours pointer avant de percer : la pointe du foret (âme) ne coupe pas bien et « glisse ».', 'Pour un gros trou (> Ø12), faire un avant-trou d\'environ le diamètre de l\'âme du foret.', 'Débourrer souvent dans l\'acier : un foret bourré de copeaux chauffe et casse.', 'Lubrifier : huile de coupe ou arrosage, surtout dans l\'acier et l\'inox.', 'La profondeur se mesure sur la partie cylindrique : ajouter 0,3 × D pour la pointe.'],
+    erreurs: ['Pas de pointage → trou décalé ou foret dévié.', 'Avance trop forte en sortie d\'un trou débouchant → le foret « visse » et casse.', 'Foret mal affûté (lèvres inégales) → trou trop grand.']
+  },
+  taraudage: {
+    nom: 'Taraudage M10 (perçage + taraud)', court: 'Taraudage', icone: '🔩', machine: 'verticale', piece: 'trous', axial: true,
+    outil: '1) Foret à centrer  2) Foret Ø8,5  3) Taraud machine M10 × 1,5', outilPrincipal: 'taraud M10 × 1,5', D: 10, d0: 8.5, Z: 1, fz: 1.5, pas: 1.5, kVc: 0.35,
+    ap: 'perçage 22 mm, filets 18 mm', ae: 10, diam: 'M10 × 1,5, 2 trous', outilDefaut: 'ars',
+    but: 'Réaliser 2 trous taraudés M10 × 1,5 sur 18 mm de profondeur utile.',
+    principe: 'Le taraud taille les filets dans un trou percé au <b>diamètre de perçage = diamètre nominal − pas</b> (10 − 1,5 = 8,5 mm). Il avance d\'un pas par tour, puis ressort en <b>rotation inverse</b>.',
+    etapes: ['Pointer les trous au foret à centrer', 'Percer Ø8,5 plus profond que la longueur filetée (au moins 2 à 3 pas de plus)', 'Chanfreiner l\'entrée du trou (fraisure 90°) : le taraud s\'engage mieux', 'Monter le taraud dans un porte-taraud (compensateur ou débrayable)', 'Tarauder : avance = pas × n (G84 en CN), vitesse lente, huile de coupe', 'Arrivé à la profondeur, inverser la rotation (M4) pour sortir le taraud', 'Contrôler avec un tampon fileté « entre / n\'entre pas »'],
+    astuces: ['Diamètre de perçage = diamètre nominal − pas (M6 → 5 ; M8 → 6,8 ; M10 → 8,5 ; M12 → 10,2).', 'Vc de taraudage faible : environ 1/3 de la Vc de perçage.', 'Percer plus profond que la longueur filetée : le taraud ne doit jamais toucher le fond (casse).', 'Taraud cassé = pièce souvent perdue : huile de coupe, porte-taraud à limiteur de couple.', 'En trou borgne, préférer un taraud à goujures hélicoïdales (les copeaux remontent).'],
+    erreurs: ['Avant-trou trop petit → taraud bloqué et cassé.', 'Avance différente du pas → filets arrachés ou taraud cassé.', 'Taraud qui touche le fond du trou borgne → casse.']
   }
 };
 
@@ -155,7 +175,16 @@ export const COURS = [
     <li>Arrêter la broche pour mesurer.</li>
     <li>Vérifier le serrage de la pièce et de l'outil avant la mise en marche.</li>
     <li>Retirer la clé de l'étau et la clé de serrage avant de démarrer.</li>
-    <li>Connaître l'emplacement de l'arrêt d'urgence.</li></ul>` }
+    <li>Connaître l'emplacement de l'arrêt d'urgence.</li></ul>` },
+  { titre: '10. Perçage et taraudage sur fraiseuse', html: `<p>La fraiseuse sert aussi à <b>percer</b> et <b>tarauder</b> : les trous sont positionnés au vernier ou en CN avec une grande précision.</p>
+    <table class="voc">
+    <tr><td>Foret à centrer</td><td>Pointage : petit cône qui guide le foret.</td></tr>
+    <tr><td>Foret hélicoïdal</td><td>2 lèvres, pointe à 118°. Vf = f × n (f en mm/tr).</td></tr>
+    <tr><td>Débourrage</td><td>Remontées régulières pour vider les copeaux (cycle G83).</td></tr>
+    <tr><td class="f">d perçage = D − pas</td><td>Diamètre de l'avant-trou d'un taraudage (M10 × 1,5 → Ø8,5).</td></tr>
+    <tr><td class="f">Vf = pas × n</td><td>Avance imposée du taraud (cycle G84), sortie en rotation inverse (M4).</td></tr>
+    <tr><td>Tampon fileté</td><td>Contrôle du taraudage : côté « entre » et côté « n'entre pas ».</td></tr></table>
+    <div class="encadre">Exemple : taraud M10, Vc = 9 m/min → n = 1000 × 9 / (π × 10) ≈ 286 tr/min ; Vf = 1,5 × 286 ≈ 430 mm/min.</div>` }
 ];
 
 /* Astuces générales de l'atelier */
@@ -163,6 +192,7 @@ export const ASTUCES = [
   { theme: 'Réglage', liste: ['Faire la tangente avec un papier à cigarette humidifié collé sur la pièce : quand il s\'arrache, la fraise est à 0,03 mm.', 'Rattraper toujours le jeu du vernier dans le même sens (tourner au-delà puis revenir).', 'Bloquer les axes qui ne bougent pas pendant la passe (console, chariot) : moins de vibrations.'] },
   { theme: 'Outils', liste: ['Une fraise qui « chante » (vibre) : réduire n, augmenter un peu fz, ou réduire le porte-à-faux.', 'Copeaux bleus en acier avec du carbure = normal ; avec de l\'ARS = Vc trop élevée.', 'Pour l\'aluminium : fraises à 2 ou 3 dents, très affûtées, et lubrification pour éviter le collage.', 'Nettoyer le cône de broche et le cône du porte-outil avant chaque montage.'] },
   { theme: 'Conditions de coupe', liste: ['Commencer par le bas de la plage de Vc conseillée, puis augmenter si tout va bien.', 'Si la fraise s\'use vite : Vc trop élevée. Si elle casse : fz ou ap trop élevés.', 'En rainurage pleine fraise, diminuer l\'avance d\'environ 30 %.'] },
+  { theme: 'Perçage et taraudage', liste: ['Pointer, percer, chanfreiner, tarauder : toujours dans cet ordre.', 'Diamètre de perçage avant taraudage = nominal − pas.', 'Huile de coupe au taraudage, même quand on usine à sec le reste de la pièce.', 'Pour l\'aluminium, débourrer moins souvent mais lubrifier pour éviter le collage.'] },
   { theme: 'Qualité', liste: ['Mauvais état de surface : vérifier l\'usure, réduire fz, augmenter Vc, travailler en avalant (CN).', 'Toujours ébavurer après usinage : une bavure fausse les mesures.', 'Mesurer la pièce à température ambiante : l\'acier chaud est plus grand.'] }
 ];
 
@@ -192,5 +222,12 @@ export const QUIZ = [
   { q: 'Pourquoi ne coupe-t-on pas avec la pointe d\'une fraise à chanfreiner ?', r: ['La vitesse de coupe y est nulle', 'Elle est trop large', 'Elle est en plastique', 'Elle est trop rapide'], b: 0, e: 'Au centre, le rayon est nul donc Vc = 0 : la pointe frotte et casse.' },
   { q: 'Le contrôle d\'une queue d\'aronde se fait :', r: ['Avec deux piges calibrées et un micromètre', 'Au mètre ruban', 'À l\'œil', 'Au comparateur seul sur le dessus'], b: 0, e: 'On mesure la cote sur piges, puis on calcule la largeur.' },
   { q: 'Avant de mesurer une pièce sur la fraiseuse, il faut :', r: ['Arrêter la broche', 'Augmenter l\'avance', 'Retirer les lunettes', 'Laisser tourner pour gagner du temps'], b: 0, e: 'Règle de sécurité : jamais de mesure outil en rotation.' },
+  { q: 'Avant de percer sur fraiseuse, on commence par :', r: ['Un pointage au foret à centrer', 'Le taraudage', 'Un chanfrein à 45° sur l\'arête', 'Le surfaçage du dessous'], b: 0, e: 'Le pointage guide le foret, qui ne dévie pas.' },
+  { q: 'Diamètre de perçage avant un taraudage M10 × 1,5 :', r: ['8,5 mm', '10 mm', '11,5 mm', '7 mm'], b: 0, e: 'd = D − pas = 10 − 1,5 = 8,5 mm.' },
+  { q: 'Avance d\'un taraud : n = 300 tr/min, M10 × 1,5. Vf = ?', r: ['450 mm/min', '300 mm/min', '200 mm/min', '4500 mm/min'], b: 0, e: 'Vf = pas × n = 1,5 × 300 = 450 mm/min.' },
+  { q: 'Pourquoi fait-on du débourrage au perçage ?', r: ['Pour évacuer les copeaux et refroidir le foret', 'Pour aller plus vite', 'Pour agrandir le trou', 'Pour affûter le foret'], b: 0, e: 'Un foret bourré de copeaux chauffe, coince et casse.' },
+  { q: 'Comment sort le taraud du trou ?', r: ['En rotation inverse (M4)', 'En rotation normale, plus vite', 'Broche arrêtée, à la main', 'En remontée rapide G0'], b: 0, e: 'Il se dévisse : rotation inverse, à la même avance (pas × n).' },
+  { q: 'Le contrôle d\'un trou taraudé se fait avec :', r: ['Un tampon fileté entre / n\'entre pas', 'Un mètre ruban', 'Une règle', 'Un rapporteur'], b: 0, e: 'Le côté « entre » doit se visser, le côté « n\'entre pas » non.' },
+  { q: 'Angle de pointe d\'un foret hélicoïdal standard :', r: ['118°', '90°', '60°', '180°'], b: 0, e: 'La pointe standard fait 118° (130 à 140° pour les aciers durs).' },
   { q: 'Enlever les copeaux autour de la fraise se fait :', r: ['Machine arrêtée, avec un pinceau ou un crochet', 'À la main, machine en marche', 'Avec un gant près de la fraise', 'En soufflant avec la bouche'], b: 0, e: 'Les copeaux coupent et sont chauds : pinceau, crochet, machine arrêtée.' }
 ];

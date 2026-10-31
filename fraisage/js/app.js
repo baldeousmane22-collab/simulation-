@@ -11,7 +11,7 @@ const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;
 const fmt = (v, d = 0) => Number(v).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
 
 /* Profondeur de passe maximale (mm) utilisée pour le débit et la puissance */
-const AP = { surfacage: 3, roulant: 2, epaulement: 6, rainure: 5, poche: 4, contournage: 5, chanfrein: 4, disque: 6, rainureT: 8, aronde: 10 };
+const AP = { surfacage: 3, roulant: 2, epaulement: 6, rainure: 5, poche: 4, contournage: 5, chanfrein: 4, disque: 6, rainureT: 8, aronde: 10, percage: 20, taraudage: 18 };
 const P_MACHINE = 7.5;  // puissance de la broche (kW)
 const N_MAX = 6000;    // fréquence de rotation maximale (tr/min)
 
@@ -76,8 +76,8 @@ function pageParams() {
       <div class="bascule" id="p-outil">${Object.entries(OUTILS_MAT).map(([k, t]) => `<button type="button" data-v="${k}" class="${k === etat.outil ? 'actif' : ''}">${esc(t)}</button>`).join('')}</div></div>
     <div class="param"><label for="p-vc"><span>Vitesse de coupe Vc</span><span id="v-vc"></span></label>
       <div class="ligne"><input type="range" id="p-vc" min="0.5" max="1.6" step="0.05" value="${etat.kVc}"></div></div>
-    <div class="param"><label for="p-fz"><span>Avance par dent fz</span><span id="v-fz"></span></label>
-      <div class="ligne"><input type="range" id="p-fz" min="0.4" max="2" step="0.05" value="${etat.kFz}"></div></div>
+    ${o.pas ? `<div class="param"><label><span>Avance du taraud</span><span id="v-fz"></span></label><p class="note">Imposée : le taraud avance d'un pas (${fmt(o.pas, 1)} mm) à chaque tour.</p></div>` : `<div class="param"><label for="p-fz"><span>${o.axial ? 'Avance par dent fz (f = fz × 2 lèvres)' : 'Avance par dent fz'}</span><span id="v-fz"></span></label>
+      <div class="ligne"><input type="range" id="p-fz" min="0.4" max="2" step="0.05" value="${etat.kFz}"></div></div>`}
     ${lineaire ? `<div class="param"><label><span>Sens d'avance de la fraise sur la pièce</span><span id="v-mode"></span></label>
       <div class="bascule" id="p-dir"><button type="button" data-v="1" class="${etat.dir > 0 ? 'actif' : ''}">➡️ Vers la droite</button><button type="button" data-v="-1" class="${etat.dir < 0 ? 'actif' : ''}">⬅️ Vers la gauche</button></div></div>` : ''}
     <div class="param"><label><span>Arrosage (liquide de coupe)</span><span></span></label>
@@ -110,15 +110,15 @@ function longueurUsinee() {
 let res = {};
 function calculer() {
   const o = OPERATIONS[etat.op], m = MATIERES[etat.matiere];
-  const vc0 = m.vc[etat.outil], Vc = vc0 * etat.kVc, fz0 = o.fz * m.kfz, fz = fz0 * etat.kFz;
+  const vc0 = m.vc[etat.outil] * (o.kVc || 1), Vc = vc0 * etat.kVc, fz0 = o.pas ? o.pas : o.fz * m.kfz, fz = o.pas ? o.pas : fz0 * etat.kFz;
   let n = 1000 * Vc / (Math.PI * o.D);
   const nCalc = n;
   n = Math.min(n, N_MAX);
-  const Vf = fz * o.Z * n, ap = AP[etat.op], ae = o.ae, Q = ap * ae * Vf / 1000, Pc = Q * m.kc / 60000, Pm = Pc / 0.8;
+  const Vf = fz * o.Z * n, ap = AP[etat.op], ae = o.ae, A = o.axial ? Math.PI / 4 * (o.D ** 2 - (o.d0 || 0) ** 2) : ap * ae, Q = A * Vf / 1000, Pc = Q * m.kc / 60000, Pm = Pc / 0.8;
   const Lu = longueurUsinee(), tc = Lu / Vf;
   res = { Vc, fz, n, Vf, Q, Pc, Pm, tc };
   $('#v-vc').textContent = `${fmt(Vc)} m/min`;
-  $('#v-fz').textContent = `${fmt(fz, 3)} mm/dent`;
+  $('#v-fz').textContent = o.pas ? `${fmt(fz, 2)} mm/tr` : o.axial ? `${fmt(fz, 3)} mm/dent → f = ${fmt(fz * o.Z, 2)} mm/tr` : `${fmt(fz, 3)} mm/dent`;
   const vm = $('#v-mode'); if (vm) vm.textContent = '';
   $('#resume').innerHTML = [
     ['Fréquence de rotation n', `${fmt(n)} tr/min`], ['Vitesse d\'avance Vf', `${fmt(Vf)} mm/min`],
@@ -130,19 +130,19 @@ function calculer() {
   if (Pm > P_MACHINE) al.push(`Puissance nécessaire ${fmt(Pm, 2)} kW > ${P_MACHINE} kW de la machine : réduire ap, fz ou Vc.`);
   if (etat.kVc > 1.3) al.push('Vc trop élevée : l\'outil va s\'user très vite (copeaux bleus, arêtes brûlées).');
   if (etat.kVc < 0.65) al.push('Vc trop faible : risque d\'arête rapportée (matière collée sur l\'outil) et mauvais état de surface.');
-  if (etat.kFz > 1.5) al.push('fz trop élevée : risque de casse de dent, vibrations.');
-  if (etat.kFz < 0.6) al.push('fz trop faible : la dent frotte au lieu de couper (écrouissage, usure).');
+  if (etat.kFz > 1.5 && !o.pas) al.push(o.axial ? 'Avance trop forte : le foret risque de casser ou de « visser » dans la matière.' : 'fz trop élevée : risque de casse de dent, vibrations.');
+  if (etat.kFz < 0.6 && !o.pas) al.push('fz trop faible : la dent frotte au lieu de couper (écrouissage, usure).');
   if (etat.op === 'surfacage' && etat.outil === 'ars') al.push('Les fraises à surfacer à plaquettes sont en carbure : l\'ARS est donné ici pour comparaison.');
   $('#alertes').innerHTML = al.map(a => `<div class="alerte">⚠️ ${esc(a)}</div>`).join('');
   $('#calculs').innerHTML = `<table class="tab-calc"><tr><th>Grandeur</th><th>Calcul</th><th>Résultat</th></tr>
     <tr><td>Vc <span class="g">(conseillée ${fmt(vc0)})</span></td><td class="an">${esc(m.nom)}, outil ${etat.outil === 'ars' ? 'ARS' : 'carbure'}</td><td class="r">${fmt(Vc)} m/min</td></tr>
     <tr><td>n</td><td class="f">1000 × ${fmt(Vc)} / (π × ${o.D})</td><td class="r">${fmt(nCalc)} tr/min</td></tr>
-    <tr><td>Vf</td><td class="f">${fmt(fz, 3)} × ${o.Z} × ${fmt(n)}</td><td class="r">${fmt(Vf)} mm/min</td></tr>
-    <tr><td>Q</td><td class="f">${ap} × ${ae} × ${fmt(Vf)} / 1000</td><td class="r">${fmt(Q, 1)} cm³/min</td></tr>
+    <tr><td>Vf</td><td class="f">${o.pas ? `pas × n = ${fmt(fz, 1)} × ${fmt(n)}` : `${fmt(fz, 3)} × ${o.Z} × ${fmt(n)}`}</td><td class="r">${fmt(Vf)} mm/min</td></tr>
+    <tr><td>Q</td><td class="f">${o.axial ? (o.d0 ? `π/4 × (${o.D}² − ${fmt(o.d0, 1)}²)` : `π × ${o.D}² / 4`) + ` × ${fmt(Vf)} / 1000` : `${ap} × ${ae} × ${fmt(Vf)} / 1000`}</td><td class="r">${fmt(Q, 1)} cm³/min</td></tr>
     <tr><td>Pc</td><td class="f">${fmt(Q, 1)} × ${m.kc} / 60 000</td><td class="r">${fmt(Pc, 2)} kW</td></tr>
     <tr><td>Pm</td><td class="f">Pc / η = ${fmt(Pc, 2)} / 0,8</td><td class="r">${fmt(Pm, 2)} kW</td></tr>
     <tr><td>tc</td><td class="f">${fmt(Lu)} / ${fmt(Vf)}</td><td class="r">${fmt(tc, 2)} min</td></tr></table>
-    <p class="note">D = ${o.D} mm, Z = ${o.Z} dents, ap = ${ap} mm (passe la plus forte), ae = ${ae} mm, kc = ${m.kc} N/mm², η = 0,8. L'animation est accélérée ; le temps réel est le temps de coupe calculé.</p>`;
+    <p class="note">${o.axial ? `Outil principal : ${esc(o.outilPrincipal)}, D = ${o.D} mm, profondeur ${ap} mm` : `D = ${o.D} mm, Z = ${o.Z} dents, ap = ${ap} mm (passe la plus forte), ae = ${ae} mm`}, kc = ${m.kc} N/mm², η = 0,8. L'animation est accélérée ; le temps réel est le temps de coupe calculé.</p>`;
   scene.toursParSec = Math.max(0.6, Math.min(3, n / 300));
   scene.couleurCopeaux(m.copeau);
   hud();
@@ -162,7 +162,7 @@ function pageFiche() {
     <p><b>But :</b> ${esc(o.but)}</p>
     <p>${o.principe}</p>
     <div class="carte-op"><div>Machine<b>Fraiseuse ${o.machine}</b></div><div>Outil<b>${esc(o.outil)}</b></div>
-      <div>Profondeur de passe ap<b>${esc(o.ap)}</b></div><div>Engagement ae<b>${o.ae} mm</b></div></div>
+      <div>${o.axial ? 'Profondeur' : 'Profondeur de passe ap'}<b>${esc(o.ap)}</b></div><div>${o.axial ? 'Diamètre' : 'Engagement ae'}<b>${o.axial ? esc(o.diam) : o.ae + ' mm'}</b></div></div>
     <h3>Gamme opératoire</h3><ol class="etapes">${o.etapes.map(e => `<li>${esc(e)}</li>`).join('')}</ol>
     <h3>💡 Astuces</h3><ul>${o.astuces.map(e => `<li>${esc(e)}</li>`).join('')}</ul>
     <h3>⚠️ Erreurs fréquentes</h3><ul>${o.erreurs.map(e => `<li>${esc(e)}</li>`).join('')}</ul></div>`;

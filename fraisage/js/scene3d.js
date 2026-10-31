@@ -6,7 +6,8 @@
    pièce. La matière est enlevée en direct :
    - opérations rectilignes : la section de la pièce (profil) change au
      passage de la fraise (gère les contre-dépouilles : T, queue d'aronde) ;
-   - poche et contournage : carte des hauteurs creusée par la fraise.
+   - poche et contournage : carte des hauteurs creusée par la fraise ;
+   - perçage et taraudage : trous qui se creusent, filets qui apparaissent.
    Repère de la pièce (mm) : x longueur (−60…60), y hauteur (0…40),
    z largeur (−30…30, +z côté opérateur). Unités de la scène : mm.
    ===================================================================== */
@@ -29,7 +30,11 @@ const OUT = {
   chanfrein: { nom: 'Fraise à chanfreiner 90°', R: 10 },
   disque80: { nom: 'Fraise 3 tailles Ø80 × 10', R: 40, horiz: true },
   t24: { nom: 'Fraise à rainure en T Ø24', R: 12 },
-  aronde: { nom: 'Fraise à queue d\'aronde 60°', R: 12.5 }
+  aronde: { nom: 'Fraise à queue d\'aronde 60°', R: 12.5 },
+  centre: { nom: 'Foret à centrer Ø5', R: 2.5 },
+  foret10: { nom: 'Foret hélicoïdal Ø10', R: 5 },
+  foret85: { nom: 'Foret hélicoïdal Ø8,5', R: 4.25 },
+  taraud: { nom: 'Taraud machine M10 × 1,5', R: 5 }
 };
 
 /* ---------- Profils (sections de la pièce, points [z, y]) ---------- */
@@ -67,7 +72,15 @@ const DEFS = {
     { outil: 'f12', z: 0, y: 30, prof: fenteT(6, 30), nom: 'ébauche : passe 2, ap = 5 mm', cote: 0 },
     { outil: 'aronde', z: 0, y: 30, prof: [[-30, 0], [30, 0], [30, H], [TA, H], [12.5, 30], [-12.5, 30], [-TA, H], [-30, H]], nom: 'fraise à queue d\'aronde', cote: 0 }] },
   poche: { carte: true, outil: 'f10', niveaux: [36, 32], cote: 0 },
-  contournage: { carte: true, outil: 'f16', niveaux: [35, 30], cote: 1 }
+  contournage: { carte: true, outil: 'f16', niveaux: [35, 30], cote: 1 },
+  /* Trous : étapes successives (outil, profondeur de la pointe sous le dessus, débourrage) */
+  percage: { trous: [[-35, -12], [35, -12], [35, 12], [-35, 12]], r: 5, etapes: [
+    { outil: 'centre', prof: 2, type: 'pointage', lab: 'Pointage au foret à centrer' },
+    { outil: 'foret10', prof: 20 + 3, debourrage: 8, type: 'percage', lab: 'Perçage Ø10 avec débourrage' }] },
+  taraudage: { trous: [[-30, 0], [30, 0]], r: 4.25, filet: true, etapes: [
+    { outil: 'centre', prof: 2, type: 'pointage', lab: 'Pointage au foret à centrer' },
+    { outil: 'foret85', prof: 22 + 2.6, debourrage: 9, type: 'percage', lab: 'Perçage Ø8,5 (= 10 − 1,5)' },
+    { outil: 'taraud', prof: 18, type: 'taraud', lab: 'Taraudage M10 : avance = pas × n' }] }
 };
 
 /* Trajets de la poche et du contournage (plan x, z) */
@@ -332,6 +345,23 @@ export class Fraisage {
       const ec = this._cyl(24, 0, 10, mM, 6); ec.rotation.x = Math.PI / 2; ec.position.set(0, 0, 140); g.add(ec);
       // repère de couleur sur le moyeu : rend la rotation bien visible
       const rep = this._box(-3, 3, 14, 24, -e / 2 - 1, e / 2 + 1, matMetal(0xf59e0b, 0.4, 0.3)); g.add(rep);
+    } else if (cle === 'centre') {
+      const p = new THREE.Mesh(new THREE.ConeGeometry(2.5, 1.5, 20), mF); p.rotation.x = Math.PI; p.position.y = 0.75; p.userData.info = info; g.add(p);
+      g.add(this._cyl(2.5, 1.5, 6, mF, 20, info));
+      const c = new THREE.Mesh(new THREE.CylinderGeometry(6, 2.5, 4, 24), mF); c.position.y = 8; g.add(c);
+      g.add(this._cyl(6, 10, 45, mF, 24)); mandrin(45);
+    } else if (cle === 'foret10' || cle === 'foret85') {
+      const R = o.R, hp = 0.6 * R, lc = 52;
+      const p = new THREE.Mesh(new THREE.ConeGeometry(R, hp, 24), mF); p.rotation.x = Math.PI; p.position.y = hp / 2; p.userData.info = info; g.add(p);
+      vert(fraiseGeom(R, lc, 2, 5.5), mF, hp);
+      g.add(this._cyl(R, hp + lc, 72, mF, 24));
+      g.add(this._cyl(16, 72, 84, mM)); g.add(this._cyl(22, 84, 110, mM));      // mandrin de perçage
+    } else if (cle === 'taraud') {
+      vert(fraiseGeom(5, 24, 4, 0, (t) => t < 0.15 ? 0.82 + 1.2 * t : 1), mF, 0);
+      const helice = new THREE.Curve(); helice.getPoint = (u, v = new THREE.Vector3()) => v.set(4.9 * Math.cos(u * 32 * Math.PI), 2 + u * 22, 4.9 * Math.sin(u * 32 * Math.PI));
+      const fil = new THREE.Mesh(new THREE.TubeGeometry(helice, 240, 0.45, 5), mF); fil.userData.info = info; g.add(fil);
+      g.add(this._cyl(4, 24, 60, mF, 20)); g.add(this._box(-3.2, 3.2, 60, 68, -3.2, 3.2, mF));
+      g.add(this._cyl(18, 66, 96, mM)); g.add(this._cyl(24, 96, 110, mM));      // porte-taraud
     } else if (cle === 'chanfrein') {
       vert(fraiseGeom(10, 10, 4, 0, (t) => Math.max(0.06, t)), mF); g.add(this._cyl(8, 10, 50, mF, 24)); mandrin(50);
     } else if (cle === 't24') {
@@ -390,7 +420,7 @@ export class Fraisage {
         if (this.dir < 0) V.x = -V.x * 0.6;
       } else {
         const a = Math.random() * Math.PI * 2, rr = o.R * (0.7 + Math.random() * 0.35);
-        P.set(rr * Math.cos(a), YT + 2 + Math.random() * 4, rr * Math.sin(a));
+        P.set(rr * Math.cos(a), YT + 2 + (this.decalCop || 0) + Math.random() * 4, rr * Math.sin(a));
         V.set(Math.cos(a), 0, Math.sin(a)).multiplyScalar(40 + Math.random() * 50);
         V.addScaledVector(new THREE.Vector3(-Math.sin(a), 0, Math.cos(a)), -60); // tangente (rotation horaire)
         V.y = 50 + Math.random() * 70;
@@ -462,6 +492,62 @@ export class Fraisage {
     const [f0, f1] = d > 0 ? [-L / 2, s] : [s, L / 2], [b0, b1] = d > 0 ? [s, L / 2] : [-L / 2, s];
     this.mFait.visible = f1 - f0 > 0.01; this.mFait.position.x = f0; this.mFait.scale.x = Math.max(0.01, f1 - f0);
     this.mBrut.visible = b1 - b0 > 0.01; this.mBrut.position.x = b0; this.mBrut.scale.x = Math.max(0.01, b1 - b0);
+  }
+
+  /* ---------- Pièce : trous (perçage, taraudage) ---------- */
+  _pieceTrous(def) {
+    const brut = matMetal(0x8a939f, 0.62, 0.45), usine = matMetal(0xdfe5ec, 0.22, 0.9);
+    const info = { titre: 'Pièce', texte: 'Pièce 120 × 60 × 40 mm, dessus déjà surfacé. Les trous se creusent au passage de l\'outil.' };
+    const E = 28, r = def.r;                                       // épaisseur de la couche percée
+    const forme = new THREE.Shape([[-L / 2, -W / 2], [L / 2, -W / 2], [L / 2, W / 2], [-L / 2, W / 2]].map(([x, z]) => new THREE.Vector2(x, -z)));
+    for (const [x, z] of def.trous) { const t = new THREE.Path(); t.absarc(x, -z, r, 0, Math.PI * 2, true); forme.holes.push(t); }
+    const g = new THREE.ExtrudeGeometry(forme, { depth: E, bevelEnabled: false, curveSegments: 28 });
+    g.rotateX(-Math.PI / 2); g.translate(0, H - E, 0);             // (x, y) → (x, −z) ; extrusion vers le haut
+    const couche = new THREE.Mesh(g, [usine, brut]); couche.userData.info = info;
+    const bas = this._box(-L / 2, L / 2, 0, H - E, -W / 2, W / 2, brut, info);
+    this.pieceG.add(couche, bas);
+    this.trous = def.trous.map(([x, z]) => {
+      const grp = new THREE.Group(); grp.position.set(x, 0, z); this.pieceG.add(grp);
+      const anneau = new THREE.Mesh(new THREE.RingGeometry(2.5, r, 28), usine); anneau.rotation.x = -Math.PI / 2; anneau.position.y = H;
+      const centre = new THREE.Mesh(new THREE.CircleGeometry(2.5, 24), usine); centre.rotation.x = -Math.PI / 2; centre.position.y = H;
+      const geoCone = (R, h) => { const c = new THREE.ConeGeometry(R, h, 28, 1, true); c.rotateX(Math.PI); c.translate(0, -h / 2, 0); return c; };
+      const pointe = new THREE.Mesh(geoCone(2.5, 1.5), new THREE.MeshStandardMaterial({ color: 0xe5e9ef, metalness: 0.85, roughness: 0.25, side: THREE.BackSide }));
+      pointe.position.y = H;
+      const fond = new THREE.Mesh(geoCone(r, 0.6 * r), new THREE.MeshStandardMaterial({ color: 0xc9d0d8, metalness: 0.85, roughness: 0.3, side: THREE.BackSide }));
+      grp.add(anneau, centre, pointe, fond);
+      let filet = null;
+      if (def.filet) {
+        const h = new THREE.Curve(), tours = 20 / 1.5;
+        h.getPoint = (u, v = new THREE.Vector3()) => v.set((r + 0.05) * Math.cos(u * tours * 2 * Math.PI), H - u * 20, (r + 0.05) * Math.sin(u * tours * 2 * Math.PI));
+        filet = new THREE.Mesh(new THREE.TubeGeometry(h, 400, 0.42, 5), new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.9, roughness: 0.2 }));
+        filet.userData.info = { titre: 'Filetage M10 × 1,5', texte: 'Filets taillés par le taraud. Pas = 1,5 mm : 1 tour de taraud = 1,5 mm de descente.' };
+        grp.add(filet);
+      }
+      return { anneau, centre, pointe, fond, filet, r };
+    });
+    this._razTrous();
+  }
+
+  _razTrous() { this.etatTrous = this.trous.map(() => ({ pointe: false, prof: 0, filet: 0 })); this._majTrous(); }
+
+  _majTrous() {
+    this.trous.forEach((o, k) => {
+      const e = this.etatTrous[k], perce = e.prof > 0.05;
+      o.anneau.visible = !perce; o.centre.visible = !perce && !e.pointe; o.pointe.visible = !perce && e.pointe;
+      o.fond.visible = perce; o.fond.position.y = H - e.prof;
+      if (o.filet) { const n = o.filet.geometry.index.count, f = Math.min(1, e.filet / 20); o.filet.visible = f > 0.01; o.filet.geometry.setDrawRange(0, Math.floor(n * f / 6) * 6); }
+    });
+  }
+
+  /* Effet d'une position de l'outil sur les trous (pointe de l'outil en p.y) */
+  _creuser(s, p) {
+    if (s.trou == null || !this.etatTrous) return false;
+    const e = this.etatTrous[s.trou], d = H - p.y;
+    if (d <= 0) return false;
+    if (s.etape === 'pointage') { if (!e.pointe) { e.pointe = true; return true; } return false; }
+    if (s.etape === 'percage') { const pr = d - 0.6 * OUT[s.outil].R; if (pr > e.prof) { e.prof = pr; return true; } return false; }
+    if (s.etape === 'taraud' && d > e.filet) { e.filet = d; return true; }
+    return false;
   }
 
   /* ---------- Pièce : carte des hauteurs (poche, contournage) ---------- */
@@ -541,11 +627,40 @@ export class Fraisage {
     let cur = null, outil = null;
     const ajoute = (type, vers, lab, o = {}) => {
       const de = cur || vers, d = Math.hypot(vers.x - de.x, vers.y - de.y, vers.z - de.z);
-      const v = type === 'rapide' ? 110 : type === 'plonge' ? 6 : type === 'descente' ? 30 : (def.carte ? 32 : 22);
+      const v = o.v || (type === 'rapide' ? 110 : type === 'plonge' ? 6 : type === 'descente' ? 30 : (def.carte ? 32 : 22));
       segs.push({ type, de: { ...de }, vers: { ...vers }, dur: o.dur ?? Math.max(0.25, d / v), lab, outil, ...o });
       cur = { ...vers };
     };
-    if (!def.carte) {
+    if (def.trous) {
+      const sur = H + 12;
+      def.etapes.forEach((e) => {
+        if (!cur) cur = { x: def.trous[0][0], y: sur, z: def.trous[0][1] };
+        if (outil && e.outil !== outil) { const haut = { ...cur, y: sur + 25 }; ajoute('rapide', haut, 'Dégagement pour le changement d\'outil'); outil = e.outil; ajoute('change', haut, 'Changement d\'outil : ' + OUT[e.outil].nom, { dur: 1.8 }); }
+        outil = e.outil;
+        def.trous.forEach(([x, z], k) => {
+          const o = { trou: k, etape: e.type, coupe: true }, n = `trou ${k + 1}/${def.trous.length}`;
+          ajoute('rapide', { x, y: sur, z }, `Positionnement sur le ${n}`);
+          ajoute('descente', { x, y: H + 2, z }, 'Approche rapide à 2 mm de la surface');
+          if (e.type === 'taraud') {
+            ajoute('travail', { x, y: H - e.prof, z }, `${e.lab} — ${n}`, { ...o, v: 7 });
+            ajoute('travail', { x, y: H + 2, z }, 'Sortie du taraud : rotation inversée (M4)', { inverse: true, v: 9 });
+          } else if (e.debourrage) {
+            let z0 = 0;
+            while (z0 < e.prof - 1e-6) {
+              const z1 = Math.min(e.prof, z0 + e.debourrage);
+              ajoute('travail', { x, y: H - z1, z }, `${e.lab} — ${n}`, { ...o, v: 10 });
+              if (z1 < e.prof) { ajoute('rapide', { x, y: H + 2, z }, 'Débourrage : remontée pour évacuer les copeaux'); ajoute('descente', { x, y: H - z1 + 0.5, z }, 'Redescente rapide au fond du trou'); }
+              z0 = z1;
+            }
+          } else ajoute('travail', { x, y: H - e.prof, z }, `${e.lab} — ${n}`, { ...o, v: 6 });
+          ajoute('rapide', { x, y: sur, z }, 'Remontée hors du trou');
+        });
+      });
+      const e0 = def.etapes[0], depart = { x: def.trous[0][0], y: H + 12, z: def.trous[0][1] };
+      ajoute('rapide', depart, 'Retour au point de départ');
+      if (outil !== e0.outil) { outil = e0.outil; ajoute('change', depart, 'Changement d\'outil : ' + OUT[e0.outil].nom, { dur: 1.2 }); }
+      segs.forEach(sg => { sg.faits = 0; });
+    } else if (!def.carte) {
       def.passes.forEach((p, k) => {
         const R = OUT[p.outil].R, xa = this.dir * -(L / 2 + R + 8), sur = OUT[p.outil].horiz ? H + R + 15 : H + 15;
         if (!cur) cur = { x: xa, y: sur, z: p.z };
@@ -598,17 +713,17 @@ export class Fraisage {
 
   /* ---------- Construction d'une opération ---------- */
   construire(cle, dir = 1) {
-    this.cle = cle; this.dir = DEFS[cle].carte ? 1 : dir;
+    this.cle = cle; this.dir = DEFS[cle].passes ? dir : 1;
     const def = DEFS[cle];
     // vider la pièce
-    this.pieceG.traverse(o => { if (o !== this.pieceG) { o.geometry?.dispose(); o.material?.dispose(); } });
+    this.pieceG.traverse(o => { if (o !== this.pieceG) { o.geometry?.dispose(); [].concat(o.material || []).forEach(m => m.dispose()); } });
     this.geos?.forEach(g => g.dispose()); this.geos = null;
     this.pieceG.clear();
     for (const k in this.outils) this.outils[k].traverse(o => { o.geometry?.dispose(); o.material?.dispose(); });
     this.outils = {}; this.outilCourant = null;
     for (const e of this.etiquettes) e.el.remove();
     this.etiquettes = [];
-    const premier = def.carte ? def.outil : def.passes[0].outil, horiz = !!OUT[premier].horiz;
+    const premier = def.trous ? def.etapes[0].outil : def.carte ? def.outil : def.passes[0].outil, horiz = !!OUT[premier].horiz;
     const machineChange = !this.bati || this.bati.userData.horiz !== horiz;
     this._construireBati(horiz);
     if (machineChange && this.cle0) this.recentrer();
@@ -618,10 +733,10 @@ export class Fraisage {
       this.porte = new THREE.Group(); this.rotor = new THREE.Group(); this.porte.add(this.rotor); this.racine.add(this.porte);
     }
     this.porte.position.set(0, YT, 0);
-    this.carte = null;
-    if (def.carte) this._pieceCarte(); else this._pieceProfils(def);
+    this.carte = null; this.trous = null; this.etatTrous = null; this.decalCop = 0;
+    if (def.trous) this._pieceTrous(def); else if (def.carte) this._pieceCarte(); else this._pieceProfils(def);
     this.segs = this._trajet(cle);
-    this.t = 0; this.segIdx = -1; this.segIdxCache = 0; this.dernierT = 0;
+    this.t = 0; this.segIdx = -1; this.segIdxCache = 0; this.dernierT = 0; this.idxTrou = 0;
     this._mettreOutil(premier);
     this._etiq(this.porte, [OUT[premier].horiz ? 50 : 30, OUT[premier].horiz ? 30 : 60, OUT[premier].horiz ? 20 : 0], 'Fraise', 'menant');
     this._etiq(this.pieceG, [L / 2 - 8, H + 4, W / 2], 'Pièce', 'mene');
@@ -645,7 +760,7 @@ export class Fraisage {
   _animer(dt) {
     const pauseFin = 2.5, cycle = this.duree + pauseFin;
     let t = this.t + dt;
-    if (t >= cycle) { t -= cycle; if (this.carte) this._razCarte(); this.dernierT = 0; this.segIdxCache = 0; }
+    if (t >= cycle) { t -= cycle; if (this.carte) this._razCarte(); if (this.trous) this._razTrous(); this.idxTrou = 0; this.dernierT = 0; this.segIdxCache = 0; }
     // enlèvement de matière (carte) : échantillonnage entre l'instant précédent et maintenant
     let coupe = false;
     if (this.carte) {
@@ -664,9 +779,20 @@ export class Fraisage {
     }
     this.t = t; this.dernierT = t;
     const { i, s, p } = this._position(Math.min(t, this.duree - 1e-6));
+    if (this.trous) {
+      // segments franchis depuis la dernière image : appliquer leur position finale
+      let change = false;
+      if ((this.idxTrou ?? 0) > i) this.idxTrou = 0;
+      for (let k = this.idxTrou ?? 0; k < i; k++) if (this._creuser(this.segs[k], this.segs[k].vers)) change = true;
+      this.idxTrou = i;
+      if (s.type === 'travail' && this._creuser(s, p)) change = true;
+      if (change) this._majTrous();
+      coupe = s.coupe && s.type === 'travail' && p.y < H;
+      this.decalCop = Math.max(0, H - p.y);
+    }
     if (s.outil && s.type === 'change') { if (t - s.t0 > s.dur / 2) this._mettreOutil(s.outil); }
     else if (s.outil) this._mettreOutil(s.outil);
-    if (!this.carte) {
+    if (!this.carte && !this.trous) {
       this._majProfils(s, p.x);
       coupe = s.passe != null && Math.abs(p.x) < L / 2 + OUT[this.outilCourant].R * 0.8;
     }
@@ -676,7 +802,7 @@ export class Fraisage {
     this.table.position.x = -p.x;
     // rotation de la fraise (arrêtée pendant le changement d'outil)
     const tourne = s.type !== 'change' && t < this.duree;
-    const w = tourne ? this.toursParSec * Math.PI * 2 * dt : 0;
+    const w = tourne ? this.toursParSec * Math.PI * 2 * dt * (s.inverse ? -1 : 1) : 0;
     if (OUT[this.outilCourant]?.horiz) { this.rotor.rotation.set(0, 0, this.rotor.rotation.z + w); }
     else { this.rotor.rotation.set(0, this.rotor.rotation.y - w, 0); }
     this._emettre(dt, coupe && tourne);

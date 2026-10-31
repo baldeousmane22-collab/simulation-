@@ -151,6 +151,6 @@ jobs:
 
             **Installation** : téléchargez `Fraisage.apk` sur le téléphone, ouvrez-le,
             puis autorisez l'installation depuis cette source si Android le demande.
-            L'appli fonctionne hors connexion (10 opérations de fraisage animées en 3D, conditions de coupe, cours, astuces, quiz).
+            L'appli fonctionne hors connexion (12 opérations de fraisage, perçage et taraudage animées en 3D, conditions de coupe, cours, astuces, quiz).
 
             Version web : https://baldeousmane22-collab.github.io/simulation-/fraisage/
