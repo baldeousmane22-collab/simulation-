@@ -282,4 +282,7 @@ débourrage) et **taraudage M10** (pointage, perçage Ø8,5, taraud avec sortie 
 - **Fiche** de chaque opération (but, outil, gamme opératoire, astuces, erreurs fréquentes), **Cours** (10 chapitres),
   **Astuces** d'atelier et **Quiz** (32 questions, 10 tirées au hasard, avec explications).
 
+- **Plein écran** (bouton ⛶) : la 3D occupe tout l'écran avec une barre de commandes (opération précédente /
+  suivante, liste des opérations, sens d'avance, arrosage, outil ARS / carbure), vitesse, pause, recommencer.
+
 Textes modifiables dans `fraisage/js/donnees.js`.

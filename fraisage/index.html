@@ -37,6 +37,14 @@
     <div class="hud" id="hud"></div>
     <div class="phase" id="phase"><div class="barre"><i id="progres"></i></div><span id="phase-txt"></span></div>
     <label class="vitesse">🐢 <input type="range" id="vitesse" min="0.2" max="4" step="0.1" value="1" aria-label="Vitesse de l'animation"> 🐇</label>
+    <div class="commandes" id="commandes" aria-label="Commandes en plein écran">
+      <button type="button" class="btn-cmd" id="c-prec" title="Opération précédente" aria-label="Opération précédente">◀</button>
+      <select id="c-op" aria-label="Opération"></select>
+      <button type="button" class="btn-cmd" id="c-suiv" title="Opération suivante" aria-label="Opération suivante">▶</button>
+      <button type="button" class="btn-cmd" id="c-sens" title="Sens d'avance">➡️</button>
+      <button type="button" class="btn-cmd" id="c-arr" title="Arrosage" aria-label="Arrosage">💧</button>
+      <button type="button" class="btn-cmd" id="c-mat" title="Matériau de l'outil">Carbure</button>
+    </div>
     <div class="info3d" id="info3d" hidden></div>
     <div class="aide3d">1 doigt : tourner · 2 doigts : zoomer / déplacer · toucher une pièce : son nom</div>
   </section>

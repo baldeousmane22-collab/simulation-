@@ -83,7 +83,32 @@ function pageParams() {
       <div class="bascule" id="p-dir"><button type="button" data-v="1" class="${etat.dir > 0 ? 'actif' : ''}">➡️ Vers la droite</button><button type="button" data-v="-1" class="${etat.dir < 0 ? 'actif' : ''}">⬅️ Vers la gauche</button></div></div>` : ''}
     <div class="param"><label><span>Arrosage (liquide de coupe)</span><span></span></label>
       <div class="bascule" id="p-arr"><button type="button" data-v="1" class="${scene.arrosage ? 'actif' : ''}">💧 Oui</button><button type="button" data-v="0" class="${scene.arrosage ? '' : 'actif'}">Non</button></div></div>`;
+  majCommandes();
 }
+
+/* ---------- Barre de commandes du plein écran ---------- */
+const CLES = Object.keys(OPERATIONS);
+$('#c-op').innerHTML = CLES.map(k => `<option value="${k}">${OPERATIONS[k].icone} ${esc(OPERATIONS[k].court)}</option>`).join('');
+function majCommandes() {
+  const o = OPERATIONS[etat.op], lineaire = o.piece === 'profil';
+  $('#c-op').value = etat.op;
+  const bs = $('#c-sens');
+  bs.hidden = !lineaire;
+  bs.innerHTML = (etat.dir > 0 ? '➡️' : '⬅️') + '<span class="txt"> Avance</span>';
+  bs.setAttribute('aria-label', `Sens d'avance : vers la ${etat.dir > 0 ? 'droite' : 'gauche'}`);
+  const ba = $('#c-arr');
+  ba.classList.toggle('actif', scene.arrosage);
+  ba.setAttribute('aria-pressed', scene.arrosage);
+  $('#c-mat').innerHTML = etat.outil === 'ars' ? 'ARS' : 'Carb<span class="txt">ure</span>';
+  $('#c-mat').setAttribute('aria-label', 'Matériau de l\'outil : ' + (etat.outil === 'ars' ? 'acier rapide' : 'carbure'));
+}
+const decaler = (d) => choisirOp(CLES[(CLES.indexOf(etat.op) + d + CLES.length) % CLES.length]);
+$('#c-prec').addEventListener('click', () => decaler(-1));
+$('#c-suiv').addEventListener('click', () => decaler(1));
+$('#c-op').addEventListener('change', (e) => choisirOp(e.target.value));
+$('#c-sens').addEventListener('click', () => { etat.dir = -etat.dir; etat.trajet = scene.construire(etat.op, etat.dir); pageParams(); calculer(); });
+$('#c-arr').addEventListener('click', () => { scene.arrosage = !scene.arrosage; pageParams(); });
+$('#c-mat').addEventListener('click', () => { etat.outil = etat.outil === 'ars' ? 'carbure' : 'ars'; etat.kVc = 1; pageParams(); calculer(); });
 $('#params').addEventListener('input', (e) => {
   if (e.target.id === 'p-vc') etat.kVc = parseFloat(e.target.value);
   else if (e.target.id === 'p-fz') etat.kFz = parseFloat(e.target.value);

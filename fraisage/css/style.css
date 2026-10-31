@@ -107,6 +107,19 @@ h3 { font-size: 15px; margin: 14px 0 6px; color: #fde68a; }
 .score { font-size: 17px; font-weight: 700; margin: 8px 0; }
 
 body.plein .panneau, body.plein .entete { display: none; }
+/* Barre de commandes : visible seulement en plein écran */
+.commandes { display: none; position: absolute; left: 50%; transform: translateX(-50%); bottom: max(10px, env(safe-area-inset-bottom)); gap: 6px; align-items: center;
+  background: rgba(15, 23, 42, .88); border: 1px solid var(--bord); border-radius: 14px; padding: 5px 6px; max-width: calc(100% - 12px); flex-wrap: nowrap; justify-content: center; }
+body.plein .commandes { display: flex; }
+.btn-cmd { min-width: 38px; height: 36px; border-radius: 999px; border: 1px solid var(--bord); background: var(--carte); padding: 0 10px; font-size: 14px; white-space: nowrap; }
+.btn-cmd.actif { background: var(--bleu); border-color: var(--bleu); }
+.commandes select { height: 36px; background: var(--fond); color: var(--texte); border: 1px solid var(--bord); border-radius: 999px; padding: 0 10px; font: inherit; font-size: 14px; flex: 1 1 auto; min-width: 0; max-width: 220px; }
+body.plein .phase { bottom: 104px; }
+body.plein .vitesse { bottom: 58px; }
+body.plein .aide3d { display: none; }
+body.plein .outils { top: max(8px, env(safe-area-inset-top)); right: max(8px, env(safe-area-inset-right)); }
+body.plein .nom-type { display: block; top: max(8px, env(safe-area-inset-top)); }
+body.plein .hud { top: max(34px, calc(env(safe-area-inset-top) + 28px)); }
 
 /* Téléphone en portrait : 3D en haut, panneau en dessous */
 @media (max-width: 820px) and (orientation: portrait), (max-width: 600px) {
@@ -125,6 +138,8 @@ body.plein .panneau, body.plein .entete { display: none; }
 }
 /* Téléphone en paysage */
 @media (max-height: 500px) and (orientation: landscape) {
+  body.plein .phase { bottom: 100px; }
+  body.plein .vitesse { bottom: 10px; }
   .panneau { width: 46%; }
   .entete .titre { display: none; }
   .aide3d { display: none; }
@@ -153,6 +168,13 @@ details.chap[open] summary { border-bottom: 1px solid var(--bord); margin-bottom
 @media (max-width: 820px) and (orientation: portrait), (max-width: 600px) {
   .phase { bottom: 44px; }
   .hud { top: 54px; }
+  body.plein .hud { top: 54px; }
+  body.plein .commandes { gap: 4px; width: calc(100% - 12px); }
+  .btn-cmd { min-width: 34px; padding: 0 8px; }
+  .btn-cmd .txt { display: none; }
+  body.plein .vitesse { bottom: 60px; right: 50%; transform: translateX(50%); }
+  body.plein .phase { bottom: 100px; }
+  body.plein .nom-type { display: none; }
   .outils { gap: 4px; }
   .btn-rond { width: 36px; height: 36px; font-size: 16px; }
   #v-mode { white-space: normal; text-align: right; }
