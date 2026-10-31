@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Accouplements 3D</title>
+  <meta name="description" content="Simulation 3D des types d'accouplement (rigide, crabots, pneu, broches, lames, denture, chaîne, grille, Oldham, cardan, soufflet) et de leurs défauts d'alignement.">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Accouplements">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<section id="accueil" class="ecran actif" aria-label="Accueil">
+  <div class="accueil-contenu">
+    <img src="icons/icon-192.png" width="96" height="96" alt="" class="logo">
+    <h1>Les accouplements</h1>
+    <p class="sous-titre">Cours et simulation 3D — Brevet technique, mécanique</p>
+    <button type="button" class="btn-geant" data-aller="cours"><span>📘</span> Cours</button>
+    <div class="grille-accueil">
+      <button type="button" data-aller="sim"><span>🎛️</span>Simulation 3D</button>
+      <button type="button" data-aller="defauts"><span>⤡</span>Défauts d'alignement</button>
+      <button type="button" data-aller="comparer"><span>📊</span>Comparer les types</button>
+      <button type="button" data-aller="quiz"><span>📝</span>Quiz</button>
+    </div>
+    <p class="pied">IRAM Boké — formation des mécaniciens</p>
+  </div>
+</section>
+
+<section id="cours" class="ecran" aria-label="Cours sur les accouplements">
+  <header class="barre-cours">
+    <button type="button" class="btn-rond" id="cours-retour" aria-label="Retour">←</button>
+    <div class="titre-cours" id="cours-titre">Cours : les accouplements</div>
+    <button type="button" class="btn-rond" id="cours-accueil" aria-label="Accueil">🏠</button>
+  </header>
+  <div class="cours-corps" id="cours-corps"></div>
+  <footer class="barre-cours bas" id="cours-nav" hidden>
+    <button type="button" class="btn-secondaire" id="cours-prec">◀ Précédent</button>
+    <button type="button" class="btn-principal" id="cours-3d">🎛️ Voir en 3D</button>
+    <button type="button" class="btn-secondaire" id="cours-suiv">Suivant ▶</button>
+  </footer>
+</section>
+
+<main id="app">
+  <section id="vue3d" aria-label="Vue 3D de l'accouplement">
+    <canvas id="canvas3d" aria-label="Accouplement en 3D : glisser pour tourner, pincer pour zoomer, deux doigts pour déplacer"></canvas>
+
+    <div class="hud">
+      <div class="hud-titre" id="hud-titre">—</div>
+      <div class="badge" id="hud-statut">—</div>
+      <div class="hud-ligne" id="hud-valeurs">—</div>
+      <div class="hud-ligne" id="hud-vib">—</div>
+    </div>
+    <div class="legende-axes" id="legende-axes"><span class="pt vert"></span>axe moteur <span class="pt orange"></span>axe machine <span id="hud-exag"></span></div>
+
+    <div class="outils">
+      <button type="button" class="btn-rond" id="b-accueil" title="Accueil" aria-label="Accueil">🏠</button>
+      <button type="button" class="btn-rond" id="b-marche" title="Marche / arrêt" aria-label="Marche / arrêt">⏸</button>
+      <button type="button" class="btn-rond" id="b-eclate" title="Vue éclatée" aria-label="Vue éclatée" aria-pressed="false">💥</button>
+      <button type="button" class="btn-rond" id="b-transp" title="Carter / manchon transparent" aria-label="Carter transparent" aria-pressed="true">🔍</button>
+      <button type="button" class="btn-rond" id="b-axes" title="Afficher les axes" aria-label="Axes" aria-pressed="true">📏</button>
+      <button type="button" class="btn-rond" id="b-vue" title="Changer de vue (face, dessus, axe)" aria-label="Changer de vue">🎥</button>
+      <button type="button" class="btn-rond" id="b-centre" title="Recentrer" aria-label="Recentrer">⟳</button>
+    </div>
+    <div class="toast" id="toast" role="status" hidden></div>
+  </section>
+
+  <section id="panneau" aria-label="Commandes et explications">
+    <nav class="onglets" role="tablist">
+      <button type="button" class="actif" data-onglet="o-types">Types</button>
+      <button type="button" data-onglet="o-defauts">Défauts</button>
+      <button type="button" data-onglet="o-fiche">Fiche</button>
+      <button type="button" data-onglet="o-comparer">Comparer</button>
+      <button type="button" data-onglet="o-quiz">Quiz</button>
+    </nav>
+
+    <div class="onglet actif" id="o-types">
+      <div class="grille-types" id="grille-types"></div>
+      <label class="curseur">Vitesse : <b id="v-vitesse">1500 tr/min</b>
+        <input type="range" id="c-vitesse" min="0" max="3000" step="50" value="1500">
+      </label>
+      <p class="aide">La rotation affichée est ralentie. Touchez une pièce en 3D pour voir son nom. 💥 sépare les moyeux pour voir l'élément intermédiaire.</p>
+      <div class="carte" id="resume-type"></div>
+    </div>
+
+    <div class="onglet" id="o-defauts">
+      <div class="grille-defauts" id="grille-defauts"></div>
+      <label class="case"><input type="checkbox" id="c-demo"> Démonstration automatique (enchaîne les défauts)</label>
+      <div class="carte" id="explication"></div>
+
+      <h3>Réglage du désalignement</h3>
+      <label class="curseur">Décalage parallèle (radial) : <b id="v-r">0</b> <small id="t-r"></small>
+        <input type="range" id="c-r" min="0" max="1" step="0.01" value="0">
+      </label>
+      <label class="curseur">Désalignement angulaire : <b id="v-a">0</b> <small id="t-a"></small>
+        <input type="range" id="c-a" min="0" max="1" step="0.01" value="0">
+      </label>
+      <label class="curseur">Écart axial (par rapport à la cote) : <b id="v-x">0</b> <small id="t-x"></small>
+        <input type="range" id="c-x" min="-1" max="1" step="0.01" value="0">
+      </label>
+      <p class="aide" id="note-type"></p>
+      <label class="curseur ligne">Exagération de l'affichage 3D :
+        <select id="c-exag">
+          <option value="auto">auto</option><option value="1">×1 (réel)</option><option value="5">×5</option>
+          <option value="10">×10</option><option value="20">×20</option><option value="40">×40</option>
+        </select>
+      </label>
+
+      <h3>Diagnostic</h3>
+      <div class="diag" id="diag"></div>
+      <canvas id="c-vib" class="graphe" height="190" aria-label="Signal vibratoire et spectre"></canvas>
+      <div id="bloc-cardan" hidden>
+        <h3>Vitesse de sortie du cardan</h3>
+        <canvas id="c-cardan" class="graphe" height="150" aria-label="Vitesse de sortie du cardan sur un tour"></canvas>
+        <p class="aide" id="txt-cardan"></p>
+      </div>
+    </div>
+
+    <div class="onglet" id="o-fiche"><div id="fiche"></div></div>
+
+    <div class="onglet" id="o-comparer">
+      <p class="aide">Tolérances indicatives à 1500 tr/min (toujours suivre la notice du constructeur).</p>
+      <div class="tableau-defile"><table id="tab-comparer"></table></div>
+    </div>
+
+    <div class="onglet" id="o-quiz"><div id="quiz"></div></div>
+  </section>
+</main>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
