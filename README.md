@@ -263,3 +263,22 @@ votre clé privée. Chaque code ne marche que sur l'appareil indiqué (si le cli
 faudra un nouveau code). Réglages (numéro WhatsApp du vendeur, durée de la démo) : en haut de `broyage/js/licence.js`.
 Limite : le code source étant public, un informaticien pourrait retirer la vérification ; passer le dépôt en privé
 renforce la protection.
+
+---
+
+# Fraisage 3D (opérations de fraisage animées)
+
+- **Lien web** : https://baldeousmane22-collab.github.io/simulation-/fraisage/
+- **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/fraisage/Fraisage.apk
+
+Fraiseuse à console en 3D : la fraise tourne, la table / le chariot / la console déplacent la pièce, la matière
+est enlevée en direct (copeaux, arrosage, changement d'outil). **10 opérations** : surfaçage en bout (fraise à
+surfacer), surfaçage en roulant (fraiseuse horizontale), épaulement, rainure droite, poche, contournage,
+chanfrein, rainure à la fraise 3 tailles, rainure en T, queue d'aronde.
+
+- **Réglages** : matériau de la pièce, outil ARS / carbure, Vc, fz, sens d'avance (opposition / avalant),
+  arrosage ; calcul détaillé de n, Vf, débit de copeaux, puissance et temps de coupe, avec alertes.
+- **Fiche** de chaque opération (but, outil, gamme opératoire, astuces, erreurs fréquentes), **Cours** (9 chapitres),
+  **Astuces** d'atelier et **Quiz** (25 questions, 10 tirées au hasard, avec explications).
+
+Textes modifiables dans `fraisage/js/donnees.js`.

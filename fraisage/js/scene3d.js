@@ -1,0 +1,690 @@
+/* =====================================================================
+   scene3d.js — Fraiseuse animée en 3D (Three.js embarqué)
+   ---------------------------------------------------------------------
+   Comme sur une fraiseuse à console : la fraise tourne à poste fixe et
+   c'est la table (X), le chariot (Y) et la console (Z) qui déplacent la
+   pièce. La matière est enlevée en direct :
+   - opérations rectilignes : la section de la pièce (profil) change au
+     passage de la fraise (gère les contre-dépouilles : T, queue d'aronde) ;
+   - poche et contournage : carte des hauteurs creusée par la fraise.
+   Repère de la pièce (mm) : x longueur (−60…60), y hauteur (0…40),
+   z largeur (−30…30, +z côté opérateur). Unités de la scène : mm.
+   ===================================================================== */
+
+import * as THREE from '../vendor/three.min.js';
+import { OrbitControls, RoomEnvironment } from '../vendor/three.min.js';
+
+const L = 120, W = 60, H = 40;          // pièce brute
+const YT = 150;                          // hauteur fixe du bout de la fraise (ou de l'axe en horizontal)
+const BRIDE = 30;                        // dessus de la table → dessous de la pièce (étau + cales)
+
+/* ---------- Outils (fraises) ---------- */
+const OUT = {
+  surfacer: { nom: 'Fraise à surfacer Ø80', R: 40 },
+  cyl63: { nom: 'Fraise cylindrique Ø63', R: 31.5, horiz: true },
+  f20: { nom: 'Fraise 2 tailles Ø20', R: 10 },
+  f16: { nom: 'Fraise 2 tailles Ø16', R: 8 },
+  f12: { nom: 'Fraise 2 tailles Ø12', R: 6 },
+  f10: { nom: 'Fraise 2 tailles Ø10 (coupe au centre)', R: 5 },
+  chanfrein: { nom: 'Fraise à chanfreiner 90°', R: 10 },
+  disque80: { nom: 'Fraise 3 tailles Ø80 × 10', R: 40, horiz: true },
+  t24: { nom: 'Fraise à rainure en T Ø24', R: 12 },
+  aronde: { nom: 'Fraise à queue d\'aronde 60°', R: 12.5 }
+};
+
+/* ---------- Profils (sections de la pièce, points [z, y]) ---------- */
+const BASE = [[-30, 0], [30, 0], [30, H], [-30, H]];
+const dessus = (y) => [[-30, 0], [30, 0], [30, y], [-30, y]];
+const fenteT = (a, y) => [[-30, 0], [30, 0], [30, H], [a, H], [a, y], [-a, y], [-a, H], [-30, H]];
+const TA = 6.73;   // demi-largeur en haut de la queue d'aronde 60° (12,5 − 10 / tan 60°)
+
+/* Passes : outil, position de la fraise (z, y = bout ou axe), profil obtenu, côté de la matière */
+const DEFS = {
+  surfacage: { passes: [
+    { outil: 'surfacer', z: 8, y: 37, prof: dessus(37), nom: 'ébauche ap = 3 mm', cote: 0 },
+    { outil: 'surfacer', z: 8, y: 36, prof: dessus(36), nom: 'finition ap = 1 mm', cote: 0 }] },
+  roulant: { passes: [
+    { outil: 'cyl63', z: 0, y: 38 + 31.5, prof: dessus(38), nom: 'ébauche ap = 2 mm', cote: 'h', av: 11 },
+    { outil: 'cyl63', z: 0, y: 37 + 31.5, prof: dessus(37), nom: 'finition ap = 1 mm', cote: 'h', av: 8 }] },
+  epaulement: { passes: [
+    { outil: 'f20', z: 25, y: 34, prof: [[-30, 0], [30, 0], [30, 34], [15, 34], [15, H], [-30, H]], nom: 'passe 1, ap = 6 mm', cote: -1 },
+    { outil: 'f20', z: 25, y: 28, prof: [[-30, 0], [30, 0], [30, 28], [15, 28], [15, H], [-30, H]], nom: 'passe 2, ap = 6 mm', cote: -1 }] },
+  rainure: { passes: [
+    { outil: 'f16', z: 0, y: 35, prof: fenteT(8, 35), nom: 'passe 1, ap = 5 mm', cote: 0 },
+    { outil: 'f16', z: 0, y: 30, prof: fenteT(8, 30), nom: 'passe 2, ap = 5 mm', cote: 0 }] },
+  chanfrein: { passes: [
+    { outil: 'chanfrein', z: 33, y: 33, prof: [[-30, 0], [30, 0], [30, 36], [26, H], [-30, H]], nom: 'chanfrein côté opérateur', cote: -1 },
+    { outil: 'chanfrein', z: -33, y: 33, prof: [[-30, 0], [30, 0], [30, 36], [26, H], [-26, H], [-30, 36]], nom: 'chanfrein côté colonne', cote: 1 }] },
+  disque: { passes: [
+    { outil: 'disque80', z: 0, y: 34 + 40, prof: fenteT(5, 34), nom: 'passe 1, ap = 6 mm', cote: 'h', av: 21 },
+    { outil: 'disque80', z: 0, y: 28 + 40, prof: fenteT(5, 28), nom: 'passe 2, ap = 6 mm', cote: 'h', av: 21 }] },
+  rainureT: { passes: [
+    { outil: 'f12', z: 0, y: 30, prof: fenteT(6, 30), nom: 'col : passe 1, ap = 10 mm', cote: 0 },
+    { outil: 'f12', z: 0, y: 20, prof: fenteT(6, 20), nom: 'col : passe 2, ap = 10 mm', cote: 0 },
+    { outil: 't24', z: 0, y: 20, prof: [[-30, 0], [30, 0], [30, H], [6, H], [6, 28], [12, 28], [12, 20], [-12, 20], [-12, 28], [-6, 28], [-6, H], [-30, H]], nom: 'fraise en T', cote: 0 }] },
+  aronde: { passes: [
+    { outil: 'f12', z: 0, y: 35, prof: fenteT(6, 35), nom: 'ébauche : passe 1, ap = 5 mm', cote: 0 },
+    { outil: 'f12', z: 0, y: 30, prof: fenteT(6, 30), nom: 'ébauche : passe 2, ap = 5 mm', cote: 0 },
+    { outil: 'aronde', z: 0, y: 30, prof: [[-30, 0], [30, 0], [30, H], [TA, H], [12.5, 30], [-12.5, 30], [-TA, H], [-30, H]], nom: 'fraise à queue d\'aronde', cote: 0 }] },
+  poche: { carte: true, outil: 'f10', niveaux: [36, 32], cote: 0 },
+  contournage: { carte: true, outil: 'f16', niveaux: [35, 30], cote: 1 }
+};
+
+/* Trajets de la poche et du contournage (plan x, z) */
+function trajetPoche() {
+  return [[-25, -10], [25, -10], [25, -10 / 3], [-25, -10 / 3], [-25, 10 / 3], [25, 10 / 3], [25, 10], [-25, 10], [-25, -10], [25, -10], [25, 10], [-25, 10]];
+}
+function trajetContour() {
+  const p = [[80, 30], [42, 30]], arc = (cx, cz, a0, a1) => { for (let i = 1; i <= 8; i++) { const a = a0 + (a1 - a0) * i / 8; p.push([cx + 18 * Math.cos(a), cz + 18 * Math.sin(a)]); } };
+  p.push([-42, 30]); arc(-42, 12, Math.PI / 2, Math.PI);
+  p.push([-60, -12]); arc(-42, -12, Math.PI, 1.5 * Math.PI);
+  p.push([42, -30]); arc(42, -12, 1.5 * Math.PI, 2 * Math.PI);
+  p.push([60, 12]); arc(42, 12, 0, Math.PI / 2);
+  p.push([20, 30]);
+  return p;
+}
+
+/* Mode de fraisage selon le côté de la matière et le sens d'avance (M3 : sens horaire vu de dessus) */
+export function modeFraisage(cote, dir) {
+  if (cote === 0) return 'mixte (opposition d\'un côté, avalant de l\'autre)';
+  if (cote === 'h') return dir < 0 ? 'en avalant' : 'en opposition';
+  return cote === dir ? 'en avalant' : 'en opposition';
+}
+
+/* ---------- Géométries ---------- */
+/* Corps de fraise à goujures : extrusion d'un contour denté, torsadé (hélice) et éventuellement conique */
+function fraiseGeom(R, h, nT, twist = 0, conicite = null) {
+  const s = new THREE.Shape(), N = nT * 12;
+  for (let i = 0; i <= N; i++) {
+    const a = i / N * Math.PI * 2, ph = (a * nT / (Math.PI * 2)) % 1;
+    const r = ph < 0.55 ? R : ph < 0.65 ? R * (1 - 0.3 * (ph - 0.55) / 0.1) : R * (0.7 + 0.3 * (ph - 0.65) / 0.35);
+    if (i === 0) s.moveTo(r * Math.cos(a), r * Math.sin(a)); else s.lineTo(r * Math.cos(a), r * Math.sin(a));
+  }
+  const g = new THREE.ExtrudeGeometry(s, { depth: h, bevelEnabled: false, steps: (twist || conicite) ? 10 : 1 });
+  if (twist || conicite) {
+    const pos = g.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      let x = pos.getX(i), y = pos.getY(i); const t = pos.getZ(i) / h;
+      const a = twist * t, c = Math.cos(a), sn = Math.sin(a), k = conicite ? conicite(t) : 1;
+      [x, y] = [(x * c - y * sn) * k, (x * sn + y * c) * k];
+      pos.setXY(i, x, y);
+    }
+  }
+  g.computeVertexNormals();
+  return g;
+}
+
+const matMetal = (c, rough = 0.35, metal = 0.75) => new THREE.MeshStandardMaterial({ color: c, metalness: metal, roughness: rough });
+const COUL = { fraise: 0xd9dee6, carbure: 0x8f98a3, or: 0xd8b04a, mandrin: 0x3f4b5c, machine: 0x24506a, machine2: 0x1d4258, fonte: 0x4b5563, table: 0x6b7785, etau: 0x3b5d7a };
+
+export class Fraisage {
+  constructor(canvas, calque, surToucher) {
+    this.canvas = canvas;
+    this.calque = calque;
+    this.surToucher = surToucher;
+    const r = this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    r.toneMapping = THREE.ACESFilmicToneMapping;
+    r.outputColorSpace = THREE.SRGBColorSpace;
+    r.toneMappingExposure = 0.9;
+    this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(0x0b1220);
+    const pmrem = new THREE.PMREMGenerator(r);
+    this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    pmrem.dispose();
+    this.camera = new THREE.PerspectiveCamera(40, 1, 1, 20000);
+    this.controls = new OrbitControls(this.camera, canvas);
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.12;
+    this.controls.screenSpacePanning = true;
+    this.controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+    this.scene.add(new THREE.HemisphereLight(0xffffff, 0x334155, 0.8));
+    const sol = new THREE.DirectionalLight(0xffffff, 1.4);
+    sol.position.set(1, 2, 3);
+    this.camera.add(sol);
+    this.scene.add(this.camera);
+
+    this.racine = new THREE.Group();
+    this.scene.add(this.racine);
+    this.etiquettes = [];
+    this.vitesse = 1;
+    this.pause = false;
+    this.montrerEtiq = true;
+    this.arrosage = true;
+    this.toursParSec = 2;
+    this.dir = 1;
+    this.t = 0;
+    this.segIdx = -1;
+    this.outils = {};
+    this._construireMachineMobile();
+    this._copeaux();
+    this._tactile();
+    this._redim();
+    new ResizeObserver(() => this._redim()).observe(canvas.parentElement);
+    let t0 = performance.now();
+    const boucle = (t) => {
+      const dt = Math.min(0.05, (t - t0) / 1000); t0 = t;
+      if (!this.pause && this.segs) this._animer(dt * this.vitesse);
+      this.controls.update();
+      this.renderer.render(this.scene, this.camera);
+      this._placerEtiquettes();
+      requestAnimationFrame(boucle);
+    };
+    requestAnimationFrame(boucle);
+  }
+
+  _redim() {
+    const el = this.canvas.parentElement, w = el.clientWidth || 1, h = el.clientHeight || 1;
+    this.renderer.setSize(w, h, false);
+    const ancien = this.camera.aspect;
+    this.camera.aspect = w / h;
+    this.camera.updateProjectionMatrix();
+    if (this.cle && Math.abs(ancien - w / h) > 0.05) this.recentrer();   // nouvelle forme d'écran : recadrer
+  }
+
+  _tactile() {
+    const debut = { x: 0, y: 0, t: 0, id: -1 };
+    let nb = 0;
+    this.canvas.addEventListener('pointerdown', (e) => { nb++; if (nb === 1) Object.assign(debut, { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId }); });
+    const fin = (e) => {
+      nb = Math.max(0, nb - 1);
+      if (e.type !== 'pointerup' || e.pointerId !== debut.id) return;
+      const dx = e.clientX - debut.x, dy = e.clientY - debut.y;
+      if (dx * dx + dy * dy < 100 && performance.now() - debut.t < 450) this._toucher(e.clientX, e.clientY);
+    };
+    this.canvas.addEventListener('pointerup', fin);
+    this.canvas.addEventListener('pointercancel', fin);
+  }
+
+  _toucher(cx, cy) {
+    const rc = this.canvas.getBoundingClientRect();
+    const ray = new THREE.Raycaster();
+    ray.setFromCamera(new THREE.Vector2((cx - rc.left) / rc.width * 2 - 1, -(cy - rc.top) / rc.height * 2 + 1), this.camera);
+    let info = null;
+    for (const h of ray.intersectObjects(this.racine.children, true)) {
+      let o = h.object;
+      while (o && !o.userData.info) o = o.parent;
+      if (o) { info = o.userData.info; break; }
+    }
+    this.surToucher?.(info);
+  }
+
+  _etiq(objet, local, texte, classe = '') {
+    const el = document.createElement('div');
+    el.className = 'etiq3d ' + classe;
+    el.textContent = texte;
+    this.calque.appendChild(el);
+    this.etiquettes.push({ el, objet, local: new THREE.Vector3(...local) });
+  }
+
+  _placerEtiquettes() {
+    const w = this.canvas.clientWidth, h = this.canvas.clientHeight, v = new THREE.Vector3();
+    for (const e of this.etiquettes) {
+      if (!this.montrerEtiq) { e.el.style.display = 'none'; continue; }
+      v.copy(e.local); e.objet.localToWorld(v); v.project(this.camera);
+      if (v.z > 1 || v.z < -1) { e.el.style.display = 'none'; continue; }
+      e.el.style.display = '';
+      e.el.style.transform = `translate(${(v.x * 0.5 + 0.5) * w}px, ${(-v.y * 0.5 + 0.5) * h}px) translate(-50%, -50%)`;
+    }
+  }
+
+  recentrer() {
+    const horiz = this.bati?.userData.horiz, c = new THREE.Vector3(0, horiz ? YT - 40 : YT - 22, 0), R = this.camera.aspect < 1 ? 165 : 125;
+    const fv = this.camera.fov * Math.PI / 180, fh = 2 * Math.atan(Math.tan(fv / 2) * this.camera.aspect);
+    const dist = R / Math.sin(Math.min(fv, fh) / 2);
+    this.controls.target.copy(c);
+    this.camera.position.copy(c).addScaledVector((horiz ? new THREE.Vector3(1, 0.85, 0.75) : new THREE.Vector3(0.6, 0.62, 1)).normalize(), dist);
+    this.controls.minDistance = 60;
+    this.controls.maxDistance = dist * 3;
+    this.camera.near = 2; this.camera.far = dist * 20;
+    this.camera.updateProjectionMatrix();
+    this.controls.update();
+  }
+
+  _box(x0, x1, y0, y1, z0, z1, mat, info) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), mat);
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+    if (info) m.userData.info = info;
+    return m;
+  }
+  _cyl(r, y0, y1, mat, seg = 32, info) {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, y1 - y0, seg), mat);
+    m.position.y = (y0 + y1) / 2;
+    if (info) m.userData.info = info;
+    return m;
+  }
+
+  /* Console, chariot, table, étau et pièce : ce sont eux qui se déplacent */
+  _construireMachineMobile() {
+    const fonte = matMetal(COUL.machine, 0.55, 0.35), fonte2 = matMetal(COUL.machine2, 0.55, 0.35), acier = matMetal(COUL.table, 0.4, 0.7), etau = matMetal(COUL.etau, 0.45, 0.5);
+    this.genou = new THREE.Group(); this.selle = new THREE.Group(); this.table = new THREE.Group(); this.pieceG = new THREE.Group();
+    this.racine.add(this.genou); this.genou.add(this.selle); this.selle.add(this.table); this.table.add(this.pieceG);
+    this.genou.add(this._box(-120, 120, -330, -70, -220, 80, fonte, { titre: 'Console', texte: 'Elle monte et descend le long de la colonne : c\'est elle qui règle la profondeur de passe.' }));
+    const vol = this._cyl(34, 0, 10, acier); vol.rotation.x = Math.PI / 2; vol.position.set(0, -140, 85); this.genou.add(vol);
+    this.selle.add(this._box(-110, 110, -70, -30, -95, 95, fonte2, { titre: 'Chariot transversal', texte: 'Il déplace la table vers l\'opérateur ou vers la colonne (axe Y de la machine).' }));
+    this.table.add(this._box(-240, 240, -30, 0, -80, 80, acier, { titre: 'Table', texte: 'Table à rainures en T, mouvement longitudinal (axe X). C\'est son déplacement qui donne l\'avance Vf.' }));
+    const sombre = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+    for (const z of [-50, 0, 50]) this.table.add(this._box(-240, 240, -0.4, 0.3, z - 7, z + 7, sombre));
+    const man = this._cyl(30, 0, 8, acier); man.rotation.z = Math.PI / 2; man.position.set(250, -15, 0); this.table.add(man);
+    const poig = this._cyl(4, 0, 30, acier); poig.rotation.z = Math.PI / 2; poig.position.set(268, 5, 0); this.table.add(poig);
+    // Étau
+    const infoEtau = { titre: 'Étau', texte: 'Maintient la pièce. Le mors fixe (côté colonne) sert de référence ; la pièce repose sur des cales parallèles.' };
+    this.etau = new THREE.Group(); this.table.add(this.etau);
+    this.etau.add(this._box(-60, 60, 0, 18, -80, 80, etau, infoEtau));
+    this.etau.add(this._box(-55, 55, 18, 55, -46, -30, etau, infoEtau));
+    this.etau.add(this._box(-55, 55, 18, 55, 30, 46, etau, infoEtau));
+    this.etau.add(this._box(-52, 52, 18, 30, 46, 70, etau, infoEtau));
+    const vis = this._cyl(7, 0, 50, acier); vis.rotation.x = Math.PI / 2; vis.position.set(0, 10, 100); this.etau.add(vis);
+    const bras = this._cyl(3, -28, 28, acier); bras.rotation.z = Math.PI / 2; bras.position.set(0, 10, 125); this.etau.add(bras);
+    const cales = matMetal(0x94a3b8, 0.3, 0.8);
+    for (const z of [-24, 24]) this.etau.add(this._box(-62, 62, 18, BRIDE, z - 4, z + 4, cales, { titre: 'Cales parallèles', texte: 'Elles surélèvent la pièce pour qu\'elle dépasse des mors et reste parallèle à la table.' }));
+    this.pieceG.position.y = BRIDE;
+  }
+
+  /* Bâti fixe : colonne + tête verticale ou arbre horizontal */
+  _construireBati(horiz) {
+    if (this.bati && this.bati.userData.horiz === horiz) return;
+    if (this.bati) { this.bati.traverse(o => { o.geometry?.dispose(); o.material?.dispose(); }); this.racine.remove(this.bati); }
+    const b = this.bati = new THREE.Group(); b.userData.horiz = horiz;
+    const fonte = matMetal(COUL.machine, 0.55, 0.35), fonte2 = matMetal(COUL.machine2, 0.55, 0.35), acier = matMetal(0x9aa6b4, 0.3, 0.8);
+    b.add(this._box(-110, 110, -460, 440, -380, -220, fonte, { titre: 'Colonne (bâti)', texte: 'Partie fixe de la machine. La console coulisse sur ses glissières.' }));
+    b.add(this._box(-190, 190, -500, -460, -400, 160, fonte2));
+    if (!horiz) {
+      b.add(this._box(-60, 60, 360, 430, -220, -50, fonte2));
+      b.add(this._box(-58, 58, 300, 430, -60, 60, fonte, { titre: 'Tête verticale', texte: 'Elle porte la broche. La broche tourne grâce au moteur (mouvement de coupe).' }));
+      b.add(this._cyl(32, YT + 110, 300, acier, 32, { titre: 'Broche', texte: 'Elle entraîne la fraise en rotation (sens horaire M3). Le porte-outil est serré dans son cône.' }));
+      const mot = this._cyl(42, 430, 520, matMetal(0x334155, 0.6, 0.3)); mot.position.z = -10; b.add(mot);
+    } else {
+      b.add(this._box(-55, 55, 440, 500, -380, 150, fonte2, { titre: 'Bélier', texte: 'Bras qui porte la lunette au-dessus de la table.' }));
+      b.add(this._box(-42, 42, YT - 30, 440, 110, 136, fonte, { titre: 'Lunette (support d\'arbre)', texte: 'Elle soutient le bout de l\'arbre porte-fraise : moins de flexion et de vibrations.' }));
+      const nez = this._cyl(45, 0, 25, acier, 32, { titre: 'Nez de broche', texte: 'La broche horizontale entraîne l\'arbre porte-fraise.' });
+      nez.rotation.x = Math.PI / 2; nez.position.set(0, YT, -207); b.add(nez);
+    }
+    this.racine.add(b);
+  }
+
+  /* Modèle 3D d'une fraise (bout ou axe à l'origine locale) */
+  _outil(cle) {
+    if (this.outils[cle]) return this.outils[cle];
+    const g = new THREE.Group(), o = OUT[cle];
+    const mF = matMetal(COUL.fraise, 0.25, 0.85), mC = matMetal(COUL.carbure, 0.3, 0.8), mM = matMetal(COUL.mandrin, 0.4, 0.7), mOr = matMetal(COUL.or, 0.3, 0.8);
+    const info = { titre: o.nom, texte: 'Outil de coupe. Touchez l\'onglet « Fiche » pour ses conditions d\'utilisation.' };
+    const vert = (geom, mat, y = 0) => { geom.rotateX(-Math.PI / 2); const m = new THREE.Mesh(geom, mat); m.position.y = y; m.userData.info = info; g.add(m); return m; };
+    const mandrin = (y0) => { g.add(this._cyl(20, y0, 96, mM)); g.add(this._cyl(26, 96, 110, mM)); };
+    if (cle === 'surfacer') {
+      g.add(this._cyl(36, 5, 38, matMetal(0x334155, 0.4, 0.6), 40, info));
+      for (let k = 0; k < 5; k++) {
+        const a = k * Math.PI * 2 / 5, p = new THREE.Mesh(new THREE.BoxGeometry(9, 9, 3.5), mOr);
+        p.position.set(35.5 * Math.cos(a), 4.5, 35.5 * Math.sin(a)); p.rotation.y = -a + Math.PI / 2; p.userData.info = { titre: 'Plaquette carbure', texte: 'Plaquette amovible revêtue : on la tourne ou on la change quand elle est usée.' };
+        g.add(p);
+        const l = new THREE.Mesh(new THREE.BoxGeometry(14, 22, 8), matMetal(0x0f172a, 0.8, 0.2));
+        l.position.set(30 * Math.cos(a + 0.3), 18, 30 * Math.sin(a + 0.3)); l.rotation.y = -a; g.add(l);
+      }
+      g.add(this._cyl(16, 38, 70, mM)); mandrin(70);
+    } else if (o.horiz) {
+      const e = cle === 'disque80' ? 10 : 70, geo = cle === 'disque80' ? fraiseGeom(40, 10, 16, 0) : fraiseGeom(31.5, 70, 8, 0.9);
+      geo.translate(0, 0, -e / 2);
+      const m = new THREE.Mesh(geo, mF); m.userData.info = info; g.add(m);
+      const arbre = this._cyl(13, -200, 135, acier(), 24, { titre: 'Arbre porte-fraise', texte: 'Il entraîne la fraise par une clavette ; les bagues positionnent la fraise sur l\'arbre.' });
+      arbre.rotation.x = Math.PI / 2; arbre.position.set(0, 0, -32.5); g.add(arbre);
+      const bag = matMetal(0x7c8796, 0.3, 0.8);
+      for (const [z0, z1] of [[-200, -e / 2], [e / 2, 108]]) { const c = this._cyl(19, z0, z1, bag, 28, { titre: 'Bagues d\'entretoise', texte: 'Elles positionnent la fraise le long de l\'arbre.' }); c.rotation.x = Math.PI / 2; c.position.set(0, 0, (z0 + z1) / 2); g.add(c); }
+      const ec = this._cyl(24, 0, 10, mM, 6); ec.rotation.x = Math.PI / 2; ec.position.set(0, 0, 140); g.add(ec);
+      // repère de couleur sur le moyeu : rend la rotation bien visible
+      const rep = this._box(-3, 3, 14, 24, -e / 2 - 1, e / 2 + 1, matMetal(0xf59e0b, 0.4, 0.3)); g.add(rep);
+    } else if (cle === 'chanfrein') {
+      vert(fraiseGeom(10, 10, 4, 0, (t) => Math.max(0.06, t)), mF); g.add(this._cyl(8, 10, 50, mF, 24)); mandrin(50);
+    } else if (cle === 't24') {
+      vert(fraiseGeom(12, 8, 6, 0.25), mF); g.add(this._cyl(4.6, 8, 30, mF, 20, info)); g.add(this._cyl(8, 30, 60, mF, 24)); mandrin(60);
+    } else if (cle === 'aronde') {
+      vert(fraiseGeom(12.5, 10, 6, 0, (t) => 1 - t * (1 - TA / 12.5)), mF); g.add(this._cyl(4.4, 10, 28, mF, 20, info)); g.add(this._cyl(8, 28, 60, mF, 24)); mandrin(60);
+    } else {
+      const R = o.R, lc = Math.max(22, R * 2.6), carb = cle === 'f20' || cle === 'f10';
+      vert(fraiseGeom(R, lc, cle === 'f16' || cle === 'f12' ? 3 : 4, 1.1), carb ? mC : mF);
+      g.add(this._cyl(R * 0.97, lc, lc + 22, carb ? mC : mF, 24)); mandrin(lc + 22);
+    }
+    function acier() { return matMetal(0xa3adba, 0.3, 0.85); }
+    g.userData.cle = cle;
+    this.outils[cle] = g;
+    return g;
+  }
+
+  _mettreOutil(cle) {
+    if (this.outilCourant === cle) return;
+    this.outilCourant = cle;
+    this.rotor.clear();
+    this.rotor.add(this._outil(cle));
+  }
+
+  /* ---------- Copeaux et arrosage ---------- */
+  _copeaux() {
+    const N = 220;
+    this.matCop = new THREE.MeshStandardMaterial({ color: 0x6b7fc4, metalness: 0.8, roughness: 0.35, side: THREE.DoubleSide });
+    this.cop = new THREE.InstancedMesh(new THREE.BoxGeometry(2.2, 0.35, 1.2), this.matCop, N);
+    this.cop.frustumCulled = false;
+    this.copEtat = Array.from({ length: N }, () => ({ vie: 0, p: new THREE.Vector3(), v: new THREE.Vector3(), r: new THREE.Euler(), w: new THREE.Vector3() }));
+    const NA = 160;
+    this.arr = new THREE.InstancedMesh(new THREE.SphereGeometry(0.9, 6, 4), new THREE.MeshStandardMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.7, roughness: 0.1 }), NA);
+    this.arr.frustumCulled = false;
+    this.arrEtat = Array.from({ length: NA }, () => ({ vie: 0, p: new THREE.Vector3(), v: new THREE.Vector3() }));
+    this.scene.add(this.cop, this.arr);
+    this.factice = new THREE.Object3D();
+    this.copIdx = 0; this.arrIdx = 0; this.aEmettre = 0; this.aArroser = 0;
+    const gb = new THREE.CylinderGeometry(1.8, 3, 36, 12); gb.rotateX(Math.PI / 2);
+    this.buse = new THREE.Mesh(gb, matMetal(0x1f2937, 0.6, 0.3));
+    this.scene.add(this.buse);
+  }
+
+  couleurCopeaux(c) { this.matCop.color.setHex(c); }
+
+  _emettre(dt, coupe) {
+    const o = OUT[this.outilCourant], P = new THREE.Vector3(), V = new THREE.Vector3();
+    if (coupe) this.aEmettre += dt * 90;
+    while (this.aEmettre >= 1) {
+      this.aEmettre -= 1;
+      const c = this.copEtat[this.copIdx]; this.copIdx = (this.copIdx + 1) % this.copEtat.length;
+      if (o.horiz) {
+        const a = -Math.PI / 2 + (Math.random() - 0.3) * 0.6;
+        P.set(o.R * Math.cos(a), YT + o.R * Math.sin(a) + 2, (Math.random() - 0.5) * (this.outilCourant === 'disque80' ? 10 : 60));
+        V.set(60 + Math.random() * 60, 40 + Math.random() * 60, (Math.random() - 0.5) * 30);
+        if (this.dir < 0) V.x = -V.x * 0.6;
+      } else {
+        const a = Math.random() * Math.PI * 2, rr = o.R * (0.7 + Math.random() * 0.35);
+        P.set(rr * Math.cos(a), YT + 2 + Math.random() * 4, rr * Math.sin(a));
+        V.set(Math.cos(a), 0, Math.sin(a)).multiplyScalar(40 + Math.random() * 50);
+        V.addScaledVector(new THREE.Vector3(-Math.sin(a), 0, Math.cos(a)), -60); // tangente (rotation horaire)
+        V.y = 50 + Math.random() * 70;
+      }
+      c.p.copy(P); c.v.copy(V); c.vie = 1.2 + Math.random() * 0.6;
+      c.r.set(Math.random() * 6, Math.random() * 6, Math.random() * 6); c.w.set(Math.random() * 20 - 10, Math.random() * 20 - 10, Math.random() * 20 - 10);
+    }
+    const f = this.factice;
+    for (let i = 0; i < this.copEtat.length; i++) {
+      const c = this.copEtat[i];
+      if (c.vie > 0) {
+        c.vie -= dt; c.v.y -= 400 * dt; c.v.multiplyScalar(1 - 0.6 * dt); c.p.addScaledVector(c.v, dt);
+        c.r.x += c.w.x * dt; c.r.y += c.w.y * dt; c.r.z += c.w.z * dt;
+        f.position.copy(c.p); f.rotation.copy(c.r); f.scale.setScalar(c.vie > 0 ? 1 : 0);
+      } else f.scale.setScalar(0);
+      f.updateMatrix(); this.cop.setMatrixAt(i, f.matrix);
+    }
+    this.cop.instanceMatrix.needsUpdate = true;
+    // Arrosage : jet de liquide de coupe depuis la buse vers la zone de coupe
+    this.buse.visible = this.arrosage;
+    const src = new THREE.Vector3(o.horiz ? o.R + 25 : o.R + 28, YT + (o.horiz ? 10 : 50), o.horiz ? 0 : 30);
+    const cible = new THREE.Vector3(o.horiz ? o.R * 0.5 : o.R * 0.6, o.horiz ? YT - o.R * 0.75 : YT + 3, o.horiz ? 0 : 6);
+    this.buse.position.copy(src).addScaledVector(src.clone().sub(cible).normalize(), 18);
+    this.buse.lookAt(cible);
+    if (this.arrosage) this.aArroser += dt * 120;
+    while (this.aArroser >= 1) {
+      this.aArroser -= 1;
+      const g = this.arrEtat[this.arrIdx]; this.arrIdx = (this.arrIdx + 1) % this.arrEtat.length;
+      g.p.copy(src); g.v.copy(cible).sub(src).multiplyScalar(2.2).add(new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).multiplyScalar(14));
+      g.vie = 0.5;
+    }
+    for (let i = 0; i < this.arrEtat.length; i++) {
+      const g = this.arrEtat[i];
+      if (g.vie > 0) { g.vie -= dt; g.v.y -= 200 * dt; g.p.addScaledVector(g.v, dt); f.position.copy(g.p); f.scale.setScalar(1); }
+      else f.scale.setScalar(0);
+      f.rotation.set(0, 0, 0); f.updateMatrix(); this.arr.setMatrixAt(i, f.matrix);
+    }
+    this.arr.instanceMatrix.needsUpdate = true;
+  }
+
+  /* ---------- Pièce : profils extrudés ---------- */
+  _pieceProfils(def) {
+    const brut = matMetal(0x8a939f, 0.62, 0.45), usine = matMetal(0xdfe5ec, 0.22, 0.9);
+    const info = { titre: 'Pièce', texte: 'Pièce brute 120 × 60 × 40 mm. Les surfaces usinées apparaissent brillantes.' };
+    const profs = [BASE, ...def.passes.map(p => p.prof)];
+    this.geos = profs.map(pr => {
+      const s = new THREE.Shape(pr.map(([z, y]) => new THREE.Vector2(-z, y)));
+      const g = new THREE.ExtrudeGeometry(s, { depth: 1, bevelEnabled: false });
+      g.rotateY(Math.PI / 2);
+      return g;
+    });
+    this.mFait = new THREE.Mesh(this.geos[0], usine); this.mBrut = new THREE.Mesh(this.geos[0], brut);
+    this.mFait.userData.info = info; this.mBrut.userData.info = info;
+    this.matBrut = brut; this.matUsine = usine;
+    this.pieceG.add(this.mFait, this.mBrut);
+  }
+
+  _majProfils(seg, x) {
+    const k = seg.passe;
+    if (k == null) {
+      const c = seg.faits;
+      this.mFait.geometry = this.geos[c]; this.mFait.material = c ? this.matUsine : this.matBrut;
+      this.mFait.position.x = -L / 2; this.mFait.scale.x = L; this.mFait.visible = true; this.mBrut.visible = false;
+      return;
+    }
+    const d = this.dir, s = Math.max(-L / 2, Math.min(L / 2, x + d * (seg.av || 0)));
+    this.mFait.geometry = this.geos[k + 1]; this.mFait.material = this.matUsine;
+    this.mBrut.geometry = this.geos[k]; this.mBrut.material = k ? this.matUsine : this.matBrut;
+    const [f0, f1] = d > 0 ? [-L / 2, s] : [s, L / 2], [b0, b1] = d > 0 ? [s, L / 2] : [-L / 2, s];
+    this.mFait.visible = f1 - f0 > 0.01; this.mFait.position.x = f0; this.mFait.scale.x = Math.max(0.01, f1 - f0);
+    this.mBrut.visible = b1 - b0 > 0.01; this.mBrut.position.x = b0; this.mBrut.scale.x = Math.max(0.01, b1 - b0);
+  }
+
+  /* ---------- Pièce : carte des hauteurs (poche, contournage) ---------- */
+  _pieceCarte() {
+    const nx = L + 1, nz = W + 1;
+    this.carte = { nx, nz, h: new Float32Array(nx * nz) };
+    const nb = nx * nz, bords = [];
+    for (let i = 0; i < nx; i++) bords.push(i);                                // z = −30
+    for (let j = 0; j < nz; j++) bords.push(j * nx + nx - 1);                 // x = +60
+    for (let i = nx - 1; i >= 0; i--) bords.push((nz - 1) * nx + i);         // z = +30
+    for (let j = nz - 1; j >= 0; j--) bords.push(j * nx);                     // x = −60
+    this.carte.bords = bords;
+    const pos = new Float32Array((nb + bords.length * 2) * 3), col = new Float32Array(pos.length), idx = [];
+    for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+      const v = j * nx + i; pos[v * 3] = -L / 2 + i; pos[v * 3 + 2] = -W / 2 + j;
+      if (i < nx - 1 && j < nz - 1) { const a = v, b = v + 1, c = v + nx, d = v + nx + 1; idx.push(a, c, b, b, c, d); }
+    }
+    bords.forEach((v, k) => {
+      const t = nb + k * 2;
+      for (const q of [t, t + 1]) { pos[q * 3] = pos[v * 3]; pos[q * 3 + 2] = pos[v * 3 + 2]; }
+      if (k < bords.length - 1) idx.push(t, t + 1, t + 2, t + 2, t + 1, t + 3);
+    });
+    // géométrie non indexée : une normale par face → arêtes nettes (parois verticales propres)
+    this.carte.base = pos; this.carte.baseCol = col; this.carte.map = Uint32Array.from(idx);
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(idx.length * 3), 3));
+    g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(idx.length * 3), 3));
+    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, metalness: 0.75, roughness: 0.35, side: THREE.DoubleSide }));
+    m.userData.info = { titre: 'Pièce', texte: 'Pièce brute 120 × 60 × 40 mm. Les surfaces usinées apparaissent brillantes.' };
+    this.carte.mesh = m;
+    this.pieceG.add(m);
+    this._razCarte();
+  }
+
+  _razCarte() { this.carte.h.fill(H); this._majCarte(); }
+
+  _majCarte() {
+    const { nx, nz, h, bords, mesh, base, baseCol, map } = this.carte, nb = nx * nz;
+    const brut = [0.42, 0.46, 0.52], usine = [0.86, 0.9, 0.95];
+    for (let v = 0; v < nb; v++) { base[v * 3 + 1] = h[v]; baseCol.set(h[v] < H - 0.01 ? usine : brut, v * 3); }
+    bords.forEach((v, k) => {
+      const t = nb + k * 2;
+      base[t * 3 + 1] = h[v]; base[t * 3 + 4] = 0;
+      baseCol.set(h[v] < H - 0.01 ? usine : brut, t * 3); baseCol.set(brut, t * 3 + 3);
+    });
+    const pos = mesh.geometry.attributes.position, col = mesh.geometry.attributes.color, P = pos.array, C = col.array;
+    for (let k = 0; k < map.length; k++) {
+      const a = map[k] * 3, b = k * 3;
+      P[b] = base[a]; P[b + 1] = base[a + 1]; P[b + 2] = base[a + 2];
+      C[b] = baseCol[a]; C[b + 1] = baseCol[a + 1]; C[b + 2] = baseCol[a + 2];
+    }
+    pos.needsUpdate = true; col.needsUpdate = true;
+    mesh.geometry.computeVertexNormals();
+    mesh.geometry.computeBoundingSphere();
+  }
+
+  /* La fraise balaye le segment (xa, za) → (xb, zb) : toutes les cases à moins de R du segment sont creusées */
+  _couperCarte(xa, za, xb, zb, y, R) {
+    if (y >= H) return false;
+    const { nx, nz, h } = this.carte;
+    let change = false;
+    const i0 = Math.max(0, Math.floor(Math.min(xa, xb) + L / 2 - R)), i1 = Math.min(nx - 1, Math.ceil(Math.max(xa, xb) + L / 2 + R));
+    const j0 = Math.max(0, Math.floor(Math.min(za, zb) + W / 2 - R)), j1 = Math.min(nz - 1, Math.ceil(Math.max(za, zb) + W / 2 + R));
+    const ux = xb - xa, uz = zb - za, l2 = ux * ux + uz * uz, R2 = R * R + 1e-3;
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      const px = -L / 2 + i - xa, pz = -W / 2 + j - za;
+      const t = l2 > 0 ? Math.max(0, Math.min(1, (px * ux + pz * uz) / l2)) : 0;
+      const dx = px - t * ux, dz = pz - t * uz;
+      if (dx * dx + dz * dz <= R2) { const v = j * nx + i; if (h[v] > y) { h[v] = y; change = true; } }
+    }
+    return change;
+  }
+
+  /* ---------- Trajectoire de la fraise ---------- */
+  _trajet(cle) {
+    const def = DEFS[cle], segs = [];
+    let cur = null, outil = null;
+    const ajoute = (type, vers, lab, o = {}) => {
+      const de = cur || vers, d = Math.hypot(vers.x - de.x, vers.y - de.y, vers.z - de.z);
+      const v = type === 'rapide' ? 110 : type === 'plonge' ? 6 : type === 'descente' ? 30 : (def.carte ? 32 : 22);
+      segs.push({ type, de: { ...de }, vers: { ...vers }, dur: o.dur ?? Math.max(0.25, d / v), lab, outil, ...o });
+      cur = { ...vers };
+    };
+    if (!def.carte) {
+      def.passes.forEach((p, k) => {
+        const R = OUT[p.outil].R, xa = this.dir * -(L / 2 + R + 8), sur = OUT[p.outil].horiz ? H + R + 15 : H + 15;
+        if (!cur) cur = { x: xa, y: sur, z: p.z };
+        if (outil && p.outil !== outil) { const haut = { ...cur, y: Math.max(cur.y, sur) + 25 }; ajoute('rapide', haut, 'Dégagement pour le changement d\'outil'); outil = p.outil; ajoute('change', haut, 'Changement d\'outil : ' + OUT[p.outil].nom, { dur: 1.8 }); }
+        outil = p.outil;
+        ajoute('rapide', { x: xa, y: sur, z: p.z }, 'Approche rapide hors de la pièce');
+        ajoute('descente', { x: xa, y: p.y, z: p.z }, 'Prise de passe : ' + p.nom);
+        ajoute('travail', { x: -xa, y: p.y, z: p.z }, `Usinage passe ${k + 1}/${def.passes.length} — ${p.nom}`, { passe: k, cote: p.cote, av: p.av || 0 });
+        ajoute('rapide', { x: -xa, y: sur, z: p.z }, 'Dégagement de la fraise');
+      });
+      const p0 = def.passes[0], R0 = OUT[p0.outil].R, depart = { x: this.dir * -(L / 2 + R0 + 8), y: OUT[p0.outil].horiz ? H + R0 + 15 : H + 15, z: p0.z };
+      ajoute('rapide', depart, 'Retour au point de départ');
+      if (outil !== p0.outil) { outil = p0.outil; ajoute('change', depart, 'Changement d\'outil : ' + OUT[p0.outil].nom, { dur: 1.2 }); }
+      let faits = 0;
+      for (const s of segs) { s.faits = faits; if (s.passe != null) faits = s.passe + 1; }
+    } else {
+      outil = def.outil;
+      const chemin = cle === 'poche' ? trajetPoche() : trajetContour(), sur = H + 12;
+      def.niveaux.forEach((y, n) => {
+        const [x0, z0] = chemin[0];
+        if (!cur) cur = { x: x0, y: sur, z: z0 };
+        ajoute('rapide', { x: x0, y: sur, z: z0 }, 'Approche rapide');
+        if (cle === 'poche') { ajoute('descente', { x: x0, y: H + 1, z: z0 }, 'Approche de la surface'); ajoute('plonge', { x: x0, y, z: z0 }, `Plongée à ${H - y} mm (fraise à coupe au centre)`, { coupe: true }); }
+        else ajoute('descente', { x: x0, y, z: z0 }, `Descente hors de la pièce à ${H - y} mm`);
+        for (let i = 1; i < chemin.length; i++) {
+          const fin = cle === 'poche' && i >= 8;
+          ajoute('travail', { x: chemin[i][0], y, z: chemin[i][1] }, cle === 'poche' ? (fin ? `Niveau ${n + 1}/2 — passe de contour (finition des flancs)` : `Niveau ${n + 1}/2 — balayage en zigzag`) : `Niveau ${n + 1}/2 — contournage en avalant (sens horaire)`, { coupe: true, cote: def.cote });
+        }
+        ajoute('rapide', { ...cur, y: sur }, 'Dégagement de la fraise');
+      });
+      const [x0, z0] = chemin[0];
+      ajoute('rapide', { x: x0, y: sur, z: z0 }, 'Retour au point de départ');
+      segs.forEach(s => { s.faits = 0; });
+    }
+    let t = 0;
+    for (const s of segs) { s.t0 = t; t += s.dur; }
+    this.duree = t;
+    return segs;
+  }
+
+  _position(t) {
+    const segs = this.segs;
+    let i = Math.min(this.segIdxCache || 0, segs.length - 1);
+    if (t < segs[i].t0) i = 0;
+    while (i < segs.length - 1 && t >= segs[i].t0 + segs[i].dur) i++;
+    this.segIdxCache = i;
+    const s = segs[i], u = Math.max(0, Math.min(1, (t - s.t0) / s.dur)), e = s.type === 'rapide' ? u * u * (3 - 2 * u) : u;
+    return { i, s, p: { x: s.de.x + (s.vers.x - s.de.x) * e, y: s.de.y + (s.vers.y - s.de.y) * e, z: s.de.z + (s.vers.z - s.de.z) * e } };
+  }
+
+  /* ---------- Construction d'une opération ---------- */
+  construire(cle, dir = 1) {
+    this.cle = cle; this.dir = DEFS[cle].carte ? 1 : dir;
+    const def = DEFS[cle];
+    // vider la pièce
+    this.pieceG.traverse(o => { if (o !== this.pieceG) { o.geometry?.dispose(); o.material?.dispose(); } });
+    this.geos?.forEach(g => g.dispose()); this.geos = null;
+    this.pieceG.clear();
+    for (const k in this.outils) this.outils[k].traverse(o => { o.geometry?.dispose(); o.material?.dispose(); });
+    this.outils = {}; this.outilCourant = null;
+    for (const e of this.etiquettes) e.el.remove();
+    this.etiquettes = [];
+    const premier = def.carte ? def.outil : def.passes[0].outil, horiz = !!OUT[premier].horiz;
+    const machineChange = !this.bati || this.bati.userData.horiz !== horiz;
+    this._construireBati(horiz);
+    if (machineChange && this.cle0) this.recentrer();
+    this.cle0 = cle;
+    this._construireMachineMobileEtiquettes();
+    if (!this.porte) {
+      this.porte = new THREE.Group(); this.rotor = new THREE.Group(); this.porte.add(this.rotor); this.racine.add(this.porte);
+    }
+    this.porte.position.set(0, YT, 0);
+    this.carte = null;
+    if (def.carte) this._pieceCarte(); else this._pieceProfils(def);
+    this.segs = this._trajet(cle);
+    this.t = 0; this.segIdx = -1; this.segIdxCache = 0; this.dernierT = 0;
+    this._mettreOutil(premier);
+    this._etiq(this.porte, [OUT[premier].horiz ? 50 : 30, OUT[premier].horiz ? 30 : 60, OUT[premier].horiz ? 20 : 0], 'Fraise', 'menant');
+    this._etiq(this.pieceG, [L / 2 - 8, H + 4, W / 2], 'Pièce', 'mene');
+    if (horiz) this._etiq(this.porte, [0, 18, 85], 'Arbre porte-fraise');
+    this._animer(0);
+    return { segs: this.segs, duree: this.duree };
+  }
+
+  _construireMachineMobileEtiquettes() {
+    this._etiq(this.table, [200, 6, 72], 'Table');
+    this._etiq(this.etau, [-50, 50, 52], 'Étau');
+    this._etiq(this.genou, [110, -180, 80], 'Console');
+    if (this.bati.userData.horiz) this._etiq(this.bati, [0, 380, 124], 'Lunette');
+    else this._etiq(this.bati, [0, 285, 34], 'Broche');
+  }
+
+  nomOutil() { return OUT[this.outilCourant]?.nom || ''; }
+
+  sensAvance(dir) { if (this.cle) this.construire(this.cle, dir); }
+
+  _animer(dt) {
+    const pauseFin = 2.5, cycle = this.duree + pauseFin;
+    let t = this.t + dt;
+    if (t >= cycle) { t -= cycle; if (this.carte) this._razCarte(); this.dernierT = 0; this.segIdxCache = 0; }
+    // enlèvement de matière (carte) : échantillonnage entre l'instant précédent et maintenant
+    let coupe = false;
+    if (this.carte) {
+      const R = OUT[this.outilCourant || DEFS[this.cle].outil].R;
+      let change = false, prec = null;
+      const t0 = Math.min(this.dernierT, t), pas = Math.max(0.005, (t - t0) / Math.ceil((t - t0) / 0.05 || 1));
+      for (let ts = t0; ts <= t + 1e-6; ts += pas) {
+        const { s, p } = this._position(Math.min(ts, this.duree - 1e-6));
+        if (s.coupe) {
+          const a = prec && prec.y === p.y ? prec : p;
+          if (this._couperCarte(a.x, a.z, p.x, p.z, Math.max(a.y, p.y), R)) change = true;
+        }
+        prec = s.coupe ? p : null;
+      }
+      if (change) { this._majCarte(); coupe = true; }
+    }
+    this.t = t; this.dernierT = t;
+    const { i, s, p } = this._position(Math.min(t, this.duree - 1e-6));
+    if (s.outil && s.type === 'change') { if (t - s.t0 > s.dur / 2) this._mettreOutil(s.outil); }
+    else if (s.outil) this._mettreOutil(s.outil);
+    if (!this.carte) {
+      this._majProfils(s, p.x);
+      coupe = s.passe != null && Math.abs(p.x) < L / 2 + OUT[this.outilCourant].R * 0.8;
+    }
+    // déplacement de la console (hauteur), du chariot (z) et de la table (x)
+    this.genou.position.y = YT - BRIDE - p.y;
+    this.selle.position.z = -p.z;
+    this.table.position.x = -p.x;
+    // rotation de la fraise (arrêtée pendant le changement d'outil)
+    const tourne = s.type !== 'change' && t < this.duree;
+    const w = tourne ? this.toursParSec * Math.PI * 2 * dt : 0;
+    if (OUT[this.outilCourant]?.horiz) { this.rotor.rotation.set(0, 0, this.rotor.rotation.z + w); }
+    else { this.rotor.rotation.set(0, this.rotor.rotation.y - w, 0); }
+    this._emettre(dt, coupe && tourne);
+    const fini = t >= this.duree, cleSeg = fini ? -2 : i;
+    if (cleSeg !== this.segIdx) {
+      this.segIdx = cleSeg;
+      this.surPhase?.(fini ? { lab: 'Opération terminée — contrôle de la pièce', type: 'fin' } : s, i, s.cote !== undefined && !fini ? modeFraisage(s.cote, this.dir) : '');
+    }
+    this.p = p;
+  }
+}

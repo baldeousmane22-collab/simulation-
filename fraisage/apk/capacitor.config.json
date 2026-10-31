@@ -1,0 +1,8 @@
+{
+  "appId": "fr.formation.fraisage",
+  "appName": "Fraisage 3D",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#0f172a"
+  }
+}
