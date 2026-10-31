@@ -25,13 +25,24 @@ const sauver = () => { try { localStorage.setItem('fraisage-etat', JSON.stringif
 
 const info = $('#info3d');
 let minuterieInfo;
-const scene = new Fraisage($('#canvas3d'), $('#etiquettes'), (i) => {
+const surToucher = (i) => {
   clearTimeout(minuterieInfo);
   if (!i) { info.hidden = true; return; }
   info.innerHTML = `<b>${esc(i.titre)}</b>${esc(i.texte)}`;
   info.hidden = false;
   minuterieInfo = setTimeout(() => { info.hidden = true; }, 6000);
-});
+};
+/* Sans WebGL (vieux téléphone, 3D désactivée) : message, mais calculs, cours, astuces et quiz restent utilisables */
+let scene;
+try { scene = new Fraisage($('#canvas3d'), $('#etiquettes'), surToucher); }
+catch (err) {
+  const m = document.createElement('div');
+  m.className = 'sans3d';
+  m.textContent = 'La vue 3D n\'est pas disponible sur cet appareil (WebGL désactivé ou non pris en charge). Les calculs, le cours, les astuces et le quiz restent utilisables. Essayez Chrome, Firefox ou Safari à jour.';
+  $('#zone3d').appendChild(m);
+  scene = { arrosage: true, montrerEtiq: true, pause: false, vitesse: 1, toursParSec: 1, t: 0, duree: 0,
+    construire: () => ({ segs: [], duree: 0 }), nomOutil: () => '', couleurCopeaux() {}, recentrer() {} };
+}
 let modeActuel = '';
 scene.surPhase = (s, i, mode) => {
   const el = $('#phase-txt');

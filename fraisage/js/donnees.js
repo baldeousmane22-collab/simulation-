@@ -139,10 +139,10 @@ export const OPERATIONS = {
   },
   denture: {
     nom: 'Taillage d\'une roue dentée (fraise-module + diviseur)', court: 'Denture', icone: '⚙️', machine: 'horizontale + diviseur', piece: 'denture',
-    outil: 'Fraise-module m 2,5 n° 4 (fraise de forme, 12 dents) + diviseur universel', D: 60, Z: 12, fz: 0.04, ap: '5,63 mm (h = 2,25 × m)', ae: 4, outilDefaut: 'ars',
+    outil: 'Fraise-module m 2,5 n° 2 (fraise de forme, 12 dents) + diviseur universel', D: 60, Z: 12, fz: 0.04, ap: '5,63 mm (h = 2,25 × m)', ae: 4, outilDefaut: 'ars',
     but: 'Tailler une roue droite Z = 16 dents, module m = 2,5 (d = 40 mm, da = 45 mm, largeur 20 mm) sur fraiseuse horizontale.',
-    principe: 'La <b>fraise-module</b> a exactement la forme du creux entre deux dents. Elle taille un creux à chaque passe ; entre deux passes, le <b>diviseur</b> fait tourner la roue de 1/Z de tour. Diviseur 40 : 1 → <b>n manivelle = 40 / Z = 40 / 16 = 2 tours 1/2</b> (2 tours + 12 trous sur le cercle de 24 trous).',
-    etapes: ['Calculer la roue : d = m × Z = 40 ; da = d + 2m = 45 ; df = d − 2,5m = 33,75 ; h = 2,25m = 5,63 mm', 'Tourner l\'ébauche au Ø45 (da) et la monter sur un mandrin entre diviseur et contre-pointe', 'Choisir la fraise-module : module 2,5 et n° de fraise selon Z (n° 4 pour 14 à 16 dents)', 'Centrer la fraise sur l\'axe de la roue (tangente sur les deux côtés ou au comparateur)', 'Faire la tangente sur le Ø45, puis monter la console de h = 5,63 mm', 'Tailler le premier creux, revenir, diviser (2 tours 1/2), tailler le suivant… jusqu\'à 16 creux', 'Contrôler l\'épaisseur de la dent au pied à coulisse à dents (ou cote sur k dents)'],
+    principe: 'La <b>fraise-module</b> a exactement la forme du creux entre deux dents. Elle taille un creux à chaque passe ; entre deux passes, le <b>diviseur</b> fait tourner la roue de 1/Z de tour. Diviseur 40 : 1 → <b>n manivelle = 40 / Z = 40 / 16 = 2 tours 1/2</b> (2 tours + 10 trous sur le cercle de 20 trous).',
+    etapes: ['Calculer la roue : d = m × Z = 40 ; da = d + 2m = 45 ; df = d − 2,5m = 33,75 ; h = 2,25m = 5,63 mm', 'Tourner l\'ébauche au Ø45 (da) et la monter sur un mandrin entre diviseur et contre-pointe', 'Choisir la fraise-module : module 2,5 et n° de fraise selon Z (n° 2 pour 14 à 16 dents)', 'Centrer la fraise sur l\'axe de la roue (tangente sur les deux côtés ou au comparateur)', 'Faire la tangente sur le Ø45, puis monter la console de h = 5,63 mm', 'Tailler le premier creux, revenir, diviser (2 tours 1/2), tailler le suivant… jusqu\'à 16 creux', 'Contrôler l\'épaisseur de la dent au pied à coulisse à dents (ou cote sur k dents)'],
     astuces: ['Toujours tourner la manivelle dans le même sens et ne jamais revenir en arrière : on rattrape le jeu du diviseur.', 'Utiliser l\'alidade (les deux branches du secteur) pour ne pas recompter les trous à chaque division.', 'Le n° de fraise-module dépend du nombre de dents (8 fraises par module) : n° 1 pour 12-13 dents… n° 8 pour 135 dents et plus.', 'Bloquer la broche du diviseur pendant la coupe, la débloquer pour diviser.', 'Faire une première passe légère sur tout le tour pour vérifier la division avant de passer à la profondeur totale.'],
     erreurs: ['Erreur de division → dents inégales, roue inutilisable.', 'Fraise mal centrée → dents dissymétriques.', 'Mauvais n° de fraise → profil de dent incorrect, engrènement bruyant.']
   }
@@ -218,7 +218,7 @@ export const COURS = [
     <tr><td class="f">p = π × m</td><td>Pas de la denture.</td></tr>
     <tr><td class="f">n = 40 / Z</td><td>Tours de manivelle du diviseur (rapport 40 : 1) entre deux dents.</td></tr></table>
     <p>La <b>fraise-module</b> est une fraise de forme : il en existe 8 par module (n° 1 à 8) selon le nombre de dents à tailler.</p>
-    <div class="encadre">Exemple : Z = 16 → n = 40 / 16 = 2,5 → 2 tours + 12 trous sur un cercle de 24 trous. Z = 30 → 40/30 = 1 tour + 1/3 → 1 tour + 6 trous sur le cercle de 18.</div>` }
+    <div class="encadre">Exemple : Z = 16 → n = 40 / 16 = 2,5 → 2 tours + 10 trous sur le cercle de 20 trous. Z = 30 → 40/30 = 1 tour + 1/3 → 1 tour + 6 trous sur le cercle de 18.</div>` }
 ];
 
 /* Astuces générales de l'atelier */

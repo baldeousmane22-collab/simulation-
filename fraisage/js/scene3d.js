@@ -39,7 +39,7 @@ const OUT = {
   foret18: { nom: 'Foret hélicoïdal Ø18', R: 9 },
   tete24: { nom: 'Tête à aléser réglée à Ø24,4 (ébauche)', R: 12.2 },
   tete25: { nom: 'Tête à aléser réglée à Ø25 (finition)', R: 12.5 },
-  module: { nom: 'Fraise-module m 2,5 n° 4 (14 à 16 dents)', R: 30, horiz: true }
+  module: { nom: 'Fraise-module m 2,5 n° 2 (14 à 16 dents)', R: 30, horiz: true }
 };
 
 /* Roue dentée : Z dents, module m, largeur b, profil en développante (α = 20°) */
@@ -556,7 +556,7 @@ export class Fraisage {
     this.mFait.userData.info = info; this.mBrut.userData.info = info;
     this.matBrut = brut; this.matUsine = usine;
     this.rotRoue.add(this.mFait, this.mBrut);
-    const infoDiv = { titre: 'Diviseur universel', texte: `Rapport 40 : 1. Pour ${Z} dents : 40 / ${Z} = 2 tours + 1/2 tour de manivelle entre deux dents (2 tours + 12 trous sur le cercle de 24 trous).` };
+    const infoDiv = { titre: 'Diviseur universel', texte: `Rapport 40 : 1. Pour ${Z} dents : 40 / ${Z} = 2 tours + 1/2 tour de manivelle entre deux dents (2 tours + 10 trous sur le cercle de 20 trous).` };
     const axeX = (m, x0, x1) => { m.rotation.z = Math.PI / 2; m.position.x = (x0 + x1) / 2; return m; };
     // mandrin porte-pièce et mandrin 3 mors (tournent avec la roue)
     this.rotRoue.add(axeX(this._cyl(8, -52, 64, acier, 24, { titre: 'Mandrin porte-pièce', texte: 'Arbre sur lequel la roue est serrée, entre le diviseur et la contre-pointe.' }), -52, 64));
@@ -566,7 +566,7 @@ export class Fraisage {
     this.pieceG.add(this._box(-130, -72, -yAxe, -38, -42, 42, fonte, infoDiv));
     this.pieceG.add(axeX(this._cyl(30, -112, -70, fonte, 32, infoDiv), -112, -70));
     this.pieceG.add(axeX(this._cyl(40, -118, -112, sombre, 40, infoDiv), -118, -112));
-    for (let k = 0; k < 24; k++) { const a = k * Math.PI / 12, t = axeX(this._cyl(1.6, -119, -117.5, acier, 8), -119, -117.5); t.position.y = 32 * Math.sin(a); t.position.z = 32 * Math.cos(a); this.pieceG.add(t); }
+    for (let k = 0; k < 20; k++) { const a = k * Math.PI / 10, t = axeX(this._cyl(1.6, -119, -117.5, acier, 8), -119, -117.5); t.position.y = 32 * Math.sin(a); t.position.z = 32 * Math.cos(a); this.pieceG.add(t); }
     this.manivelle = new THREE.Group(); this.manivelle.position.x = -122; this.pieceG.add(this.manivelle);
     this.manivelle.add(this._box(-2, 2, -3, 34, -3, 3, acier, { titre: 'Manivelle du diviseur', texte: infoDiv.texte }));
     const bouton = axeX(this._cyl(4, -14, -2, mOrange(), 16), -14, -2); bouton.position.y = 32; this.manivelle.add(bouton);
