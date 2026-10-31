@@ -30,6 +30,7 @@
     <div class="outils">
       <button type="button" class="btn-rond" id="b-pause" title="Pause / lecture" aria-label="Pause">⏸</button>
       <button type="button" class="btn-rond" id="b-rejouer" title="Recommencer l'opération" aria-label="Recommencer">⏮</button>
+      <button type="button" class="btn-rond" id="b-hud" title="Afficher les paramètres sur la 3D" aria-label="Paramètres sur la 3D" aria-pressed="false">📊</button>
       <button type="button" class="btn-rond" id="b-etiq" title="Étiquettes" aria-label="Étiquettes" aria-pressed="true">🏷️</button>
       <button type="button" class="btn-rond" id="b-centre" title="Recentrer la vue" aria-label="Recentrer">🎯</button>
       <button type="button" class="btn-rond" id="b-plein" title="Plein écran" aria-label="Plein écran">⛶</button>
@@ -50,6 +51,7 @@
   </section>
 
   <aside class="panneau">
+    <div class="infos" id="infos" aria-live="polite"></div>
     <div class="onglets" role="tablist">
       <button type="button" role="tab" data-onglet="reglages" class="actif" aria-selected="true">🎛️ Réglages</button>
       <button type="button" role="tab" data-onglet="fiche">📋 Fiche</button>

@@ -178,8 +178,11 @@ function calculer() {
 function hud() {
   const o = OPERATIONS[etat.op];
   if (!$('#hud')) return;
-  $('#hud').innerHTML = `<div>${esc(scene.nomOutil() || o.outil)}</div><div>n = <b>${fmt(res.n || 0)}</b> tr/min · Vf = <b>${fmt(res.Vf || 0)}</b> mm/min</div>` +
+  const outil = esc(scene.nomOutil() || o.outil), n = fmt(res.n || 0), vf = fmt(res.Vf || 0);
+  $('#hud').innerHTML = `<div>${outil}</div><div>n = <b>${n}</b> tr/min · Vf = <b>${vf}</b> mm/min</div>` +
     (modeActuel ? `<div>Fraisage <b>${esc(modeActuel)}</b></div>` : '');
+  $('#infos').innerHTML = `<span>🔧 ${outil}</span><span>n = <b>${n}</b> tr/min</span><span>Vf = <b>${vf}</b> mm/min</span>` +
+    (modeActuel ? `<span>Fraisage <b>${esc(modeActuel)}</b></span>` : '');
 }
 
 /* ---------- Fiche de l'opération ---------- */
@@ -241,6 +244,12 @@ document.querySelector('.onglets').addEventListener('click', (e) => {
 });
 $('#b-pause').addEventListener('click', (e) => { scene.pause = !scene.pause; e.currentTarget.textContent = scene.pause ? '▶' : '⏸'; });
 $('#b-rejouer').addEventListener('click', () => { etat.trajet = scene.construire(etat.op, etat.dir); });
+$('#b-hud').addEventListener('click', (e) => {
+  const v = document.body.classList.toggle('hud-visible');
+  e.currentTarget.setAttribute('aria-pressed', v);
+  try { localStorage.setItem('fraisage-hud', v ? '1' : '0'); } catch (err) { /* rien */ }
+});
+try { if (localStorage.getItem('fraisage-hud') === '1') { document.body.classList.add('hud-visible'); $('#b-hud').setAttribute('aria-pressed', 'true'); } } catch (err) { /* rien */ }
 $('#b-etiq').addEventListener('click', (e) => { scene.montrerEtiq = !scene.montrerEtiq; e.currentTarget.setAttribute('aria-pressed', scene.montrerEtiq); });
 $('#b-centre').addEventListener('click', () => scene.recentrer());
 const enPleinEcran = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
