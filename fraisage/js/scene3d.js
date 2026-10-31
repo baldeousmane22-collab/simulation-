@@ -384,6 +384,7 @@ export class Fraisage {
     this.outilCourant = cle;
     this.rotor.clear();
     this.rotor.add(this._outil(cle));
+    this.surOutil?.(OUT[cle].nom);
   }
 
   /* ---------- Copeaux et arrosage ---------- */
@@ -738,7 +739,7 @@ export class Fraisage {
     this.segs = this._trajet(cle);
     this.t = 0; this.segIdx = -1; this.segIdxCache = 0; this.dernierT = 0; this.idxTrou = 0;
     this._mettreOutil(premier);
-    this._etiq(this.porte, [OUT[premier].horiz ? 50 : 30, OUT[premier].horiz ? 30 : 60, OUT[premier].horiz ? 20 : 0], 'Fraise', 'menant');
+    this._etiq(this.porte, [OUT[premier].horiz ? 50 : 30, OUT[premier].horiz ? 30 : 60, OUT[premier].horiz ? 20 : 0], def.trous ? 'Outil' : 'Fraise', 'menant');
     this._etiq(this.pieceG, [L / 2 - 8, H + 4, W / 2], 'Pièce', 'mene');
     if (horiz) this._etiq(this.porte, [0, 18, 85], 'Arbre porte-fraise');
     this._animer(0);

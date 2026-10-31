@@ -4,7 +4,7 @@
    ===================================================================== */
 
 import { MATIERES, OUTILS_MAT, OPERATIONS, COURS, ASTUCES, QUIZ } from './donnees.js';
-import { Fraisage } from './scene3d.js';
+import { Fraisage, modeFraisage } from './scene3d.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -39,6 +39,7 @@ scene.surPhase = (s, i, mode) => {
   el.className = s.type === 'fin' ? 'fin' : s.type === 'change' ? 'change' : (s.passe != null || s.coupe) ? 'coupe' : '';
   modeActuel = mode; hud();
 };
+scene.surOutil = () => hud();
 setInterval(() => {
   if (!scene.duree) return;
   $('#progres').style.width = Math.min(100, scene.t / scene.duree * 100).toFixed(1) + '%';
@@ -119,7 +120,8 @@ function calculer() {
   res = { Vc, fz, n, Vf, Q, Pc, Pm, tc };
   $('#v-vc').textContent = `${fmt(Vc)} m/min`;
   $('#v-fz').textContent = o.pas ? `${fmt(fz, 2)} mm/tr` : o.axial ? `${fmt(fz, 3)} mm/dent → f = ${fmt(fz * o.Z, 2)} mm/tr` : `${fmt(fz, 3)} mm/dent`;
-  const vm = $('#v-mode'); if (vm) vm.textContent = '';
+  const vm = $('#v-mode');
+  if (vm) vm.textContent = [...new Set((etat.trajet?.segs || []).filter(sg => sg.cote !== undefined).map(sg => modeFraisage(sg.cote, etat.dir)))].join(' puis ');
   $('#resume').innerHTML = [
     ['Fréquence de rotation n', `${fmt(n)} tr/min`], ['Vitesse d\'avance Vf', `${fmt(Vf)} mm/min`],
     ['Débit de copeaux Q', `${fmt(Q, 1)} cm³/min`], ['Puissance moteur', `${fmt(Pm, 2)} kW`],
@@ -208,7 +210,7 @@ $('#p-quiz').addEventListener('click', (e) => {
 /* ---------- Onglets et outils 3D ---------- */
 document.querySelector('.onglets').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-onglet]'); if (!b) return;
-  document.querySelectorAll('.onglets button').forEach(x => x.classList.toggle('actif', x === b));
+  document.querySelectorAll('.onglets button').forEach(x => { x.classList.toggle('actif', x === b); x.setAttribute('aria-selected', x === b); });
   document.querySelectorAll('.page').forEach(p => p.classList.toggle('actif', p.id === 'p-' + b.dataset.onglet));
   document.querySelector('.contenu').scrollTop = 0;
 });
@@ -241,6 +243,7 @@ $('#b-plein').addEventListener('click', async () => {
 const surChangement = () => { if (!enPleinEcran() && document.body.classList.contains('plein')) modePlein(false); };
 document.addEventListener('fullscreenchange', surChangement);
 document.addEventListener('webkitfullscreenchange', surChangement);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.body.classList.contains('plein') && !enPleinEcran()) modePlein(false); });
 $('#vitesse').addEventListener('input', (e) => { scene.vitesse = parseFloat(e.target.value); });
 
 if (location.search.includes('debug')) window.__scene = scene;
