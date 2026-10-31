@@ -270,6 +270,7 @@ renforce la protection.
 
 - **Lien web** : https://baldeousmane22-collab.github.io/simulation-/fraisage/
 - **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/fraisage/Fraisage.apk
+- **QR codes** (à scanner avec l'appareil photo du téléphone) : [fraisage/qr-codes.png](fraisage/qr-codes.png)
 
 Fraiseuse à console en 3D : la fraise tourne, la table / le chariot / la console déplacent la pièce, la matière
 est enlevée en direct (copeaux, arrosage, changement d'outil). **16 opérations** : surfaçage en bout (fraise à
