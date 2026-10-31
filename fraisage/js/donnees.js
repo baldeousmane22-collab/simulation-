@@ -126,6 +126,25 @@ export const OPERATIONS = {
     etapes: ['Pointer les trous au foret à centrer', 'Percer Ø8,5 plus profond que la longueur filetée (au moins 2 à 3 pas de plus)', 'Chanfreiner l\'entrée du trou (fraisure 90°) : le taraud s\'engage mieux', 'Monter le taraud dans un porte-taraud (compensateur ou débrayable)', 'Tarauder : avance = pas × n (G84 en CN), vitesse lente, huile de coupe', 'Arrivé à la profondeur, inverser la rotation (M4) pour sortir le taraud', 'Contrôler avec un tampon fileté « entre / n\'entre pas »'],
     astuces: ['Diamètre de perçage = diamètre nominal − pas (M6 → 5 ; M8 → 6,8 ; M10 → 8,5 ; M12 → 10,2).', 'Vc de taraudage faible : environ 1/3 de la Vc de perçage.', 'Percer plus profond que la longueur filetée : le taraud ne doit jamais toucher le fond (casse).', 'Taraud cassé = pièce souvent perdue : huile de coupe, porte-taraud à limiteur de couple.', 'En trou borgne, préférer un taraud à goujures hélicoïdales (les copeaux remontent).'],
     erreurs: ['Avant-trou trop petit → taraud bloqué et cassé.', 'Avance différente du pas → filets arrachés ou taraud cassé.', 'Taraud qui touche le fond du trou borgne → casse.']
+  },
+  alesage: {
+    nom: 'Alésage à la tête à aléser', court: 'Alésage', icone: '◉', machine: 'verticale', piece: 'trous', axial: true,
+    outil: '1) Foret à centrer  2) Foret Ø18  3) Tête à aléser (ébauche Ø24,4 puis finition Ø25)', outilPrincipal: 'tête à aléser Ø25', D: 25, d0: 18, Z: 1, fz: 0.08, kVc: 0.8,
+    ap: '25 mm', ae: 3.5, diam: 'Ø25 H7 (tolérance 0 / +0,021 mm)', outilDefaut: 'carbure',
+    but: 'Réaliser un alésage précis Ø25 H7 de 25 mm de profondeur, bien positionné et bien cylindrique (logement de roulement, de bague ou d\'axe).',
+    principe: 'Un foret ne donne ni un diamètre précis ni un bon état de surface. On perce un <b>avant-trou</b>, puis la <b>tête à aléser</b> agrandit le trou : sa plaquette tourne sur un cercle dont on règle le rayon au <b>vernier</b> (au centième). Il reste <b>3,5 mm au rayon</b> à enlever.',
+    etapes: ['Prendre l\'origine (axe de l\'alésage) au palpeur ou au comparateur', 'Pointer puis percer l\'avant-trou Ø18 avec débourrage', 'Monter la tête à aléser, régler le diamètre d\'ébauche (Ø24,4)', 'Aléser en ébauche, avance régulière', 'Mesurer à l\'alésomètre (ou micromètre d\'intérieur), calculer la correction', 'Régler la tête au diamètre final (+0,3 mm au rayon) et passer en finition', 'Remonter broche arrêtée, plaquette tournée vers l\'opérateur, puis contrôler au tampon lisse H7'],
+    astuces: ['Sur la tête à aléser, le vernier se règle au RAYON ou au DIAMÈTRE selon le modèle : vérifier la graduation avant de régler !', 'Laisser 0,2 à 0,4 mm au diamètre pour la finition : la plaquette coupe bien et l\'état de surface est meilleur.', 'Barre d\'alésage la plus courte et la plus grosse possible : moins de vibrations.', 'Faire une passe « à vide » (même réglage) pour voir si la barre fléchit : si elle enlève encore de la matière, il y a de la flexion.', 'Bloquer la table et le chariot pendant l\'alésage : la position ne doit pas bouger.'],
+    erreurs: ['Remonter broche en rotation → rayure en hélice dans l\'alésage.', 'Erreur de graduation (rayon / diamètre) → alésage trop grand, pièce perdue.', 'Barre trop longue → alésage conique ou vibrations (broutage).']
+  },
+  denture: {
+    nom: 'Taillage d\'une roue dentée (fraise-module + diviseur)', court: 'Denture', icone: '⚙️', machine: 'horizontale + diviseur', piece: 'denture',
+    outil: 'Fraise-module m 2,5 n° 4 (fraise de forme, 12 dents) + diviseur universel', D: 60, Z: 12, fz: 0.04, ap: '5,63 mm (h = 2,25 × m)', ae: 4, outilDefaut: 'ars',
+    but: 'Tailler une roue droite Z = 16 dents, module m = 2,5 (d = 40 mm, da = 45 mm, largeur 20 mm) sur fraiseuse horizontale.',
+    principe: 'La <b>fraise-module</b> a exactement la forme du creux entre deux dents. Elle taille un creux à chaque passe ; entre deux passes, le <b>diviseur</b> fait tourner la roue de 1/Z de tour. Diviseur 40 : 1 → <b>n manivelle = 40 / Z = 40 / 16 = 2 tours 1/2</b> (2 tours + 12 trous sur le cercle de 24 trous).',
+    etapes: ['Calculer la roue : d = m × Z = 40 ; da = d + 2m = 45 ; df = d − 2,5m = 33,75 ; h = 2,25m = 5,63 mm', 'Tourner l\'ébauche au Ø45 (da) et la monter sur un mandrin entre diviseur et contre-pointe', 'Choisir la fraise-module : module 2,5 et n° de fraise selon Z (n° 4 pour 14 à 16 dents)', 'Centrer la fraise sur l\'axe de la roue (tangente sur les deux côtés ou au comparateur)', 'Faire la tangente sur le Ø45, puis monter la console de h = 5,63 mm', 'Tailler le premier creux, revenir, diviser (2 tours 1/2), tailler le suivant… jusqu\'à 16 creux', 'Contrôler l\'épaisseur de la dent au pied à coulisse à dents (ou cote sur k dents)'],
+    astuces: ['Toujours tourner la manivelle dans le même sens et ne jamais revenir en arrière : on rattrape le jeu du diviseur.', 'Utiliser l\'alidade (les deux branches du secteur) pour ne pas recompter les trous à chaque division.', 'Le n° de fraise-module dépend du nombre de dents (8 fraises par module) : n° 1 pour 12-13 dents… n° 8 pour 135 dents et plus.', 'Bloquer la broche du diviseur pendant la coupe, la débloquer pour diviser.', 'Faire une première passe légère sur tout le tour pour vérifier la division avant de passer à la profondeur totale.'],
+    erreurs: ['Erreur de division → dents inégales, roue inutilisable.', 'Fraise mal centrée → dents dissymétriques.', 'Mauvais n° de fraise → profil de dent incorrect, engrènement bruyant.']
   }
 };
 
@@ -184,7 +203,22 @@ export const COURS = [
     <tr><td class="f">d perçage = D − pas</td><td>Diamètre de l'avant-trou d'un taraudage (M10 × 1,5 → Ø8,5).</td></tr>
     <tr><td class="f">Vf = pas × n</td><td>Avance imposée du taraud (cycle G84), sortie en rotation inverse (M4).</td></tr>
     <tr><td>Tampon fileté</td><td>Contrôle du taraudage : côté « entre » et côté « n'entre pas ».</td></tr></table>
-    <div class="encadre">Exemple : taraud M10, Vc = 9 m/min → n = 1000 × 9 / (π × 10) ≈ 286 tr/min ; Vf = 1,5 × 286 ≈ 430 mm/min.</div>` }
+    <div class="encadre">Exemple : taraud M10, Vc = 9 m/min → n = 1000 × 9 / (π × 10) ≈ 286 tr/min ; Vf = 1,5 × 286 ≈ 430 mm/min.</div>` },
+  { titre: '11. Alésage sur fraiseuse', html: `<p>L'<b>alésage</b> donne un trou précis (tolérance H7, ±0,01 mm) et bien positionné, ce qu'un foret ne permet pas.</p>
+    <ul><li>Avant-trou au foret (3 à 5 mm plus petit au diamètre).</li>
+    <li><b>Tête à aléser</b> : la plaquette tourne sur un cercle de rayon réglable au vernier (au centième).</li>
+    <li>Ébauche, mesure à l'alésomètre, correction, finition avec une petite surépaisseur (0,2 à 0,4 mm).</li>
+    <li>Contrôle au <b>tampon lisse</b> « entre / n'entre pas » ou à l'alésomètre.</li></ul>
+    <div class="encadre">Ø25 H7 : cote mini 25,000 mm, cote maxi 25,021 mm.</div>` },
+  { titre: '12. Taillage d\'engrenages au diviseur', html: `<table class="voc">
+    <tr><td class="f">d = m × Z</td><td>Diamètre primitif (m = module, Z = nombre de dents).</td></tr>
+    <tr><td class="f">da = d + 2m</td><td>Diamètre de tête (diamètre de l'ébauche).</td></tr>
+    <tr><td class="f">df = d − 2,5m</td><td>Diamètre de pied.</td></tr>
+    <tr><td class="f">h = 2,25 × m</td><td>Hauteur de dent = profondeur de passe.</td></tr>
+    <tr><td class="f">p = π × m</td><td>Pas de la denture.</td></tr>
+    <tr><td class="f">n = 40 / Z</td><td>Tours de manivelle du diviseur (rapport 40 : 1) entre deux dents.</td></tr></table>
+    <p>La <b>fraise-module</b> est une fraise de forme : il en existe 8 par module (n° 1 à 8) selon le nombre de dents à tailler.</p>
+    <div class="encadre">Exemple : Z = 16 → n = 40 / 16 = 2,5 → 2 tours + 12 trous sur un cercle de 24 trous. Z = 30 → 40/30 = 1 tour + 1/3 → 1 tour + 6 trous sur le cercle de 18.</div>` }
 ];
 
 /* Astuces générales de l'atelier */
@@ -193,6 +227,7 @@ export const ASTUCES = [
   { theme: 'Outils', liste: ['Une fraise qui « chante » (vibre) : réduire n, augmenter un peu fz, ou réduire le porte-à-faux.', 'Copeaux bleus en acier avec du carbure = normal ; avec de l\'ARS = Vc trop élevée.', 'Pour l\'aluminium : fraises à 2 ou 3 dents, très affûtées, et lubrification pour éviter le collage.', 'Nettoyer le cône de broche et le cône du porte-outil avant chaque montage.'] },
   { theme: 'Conditions de coupe', liste: ['Commencer par le bas de la plage de Vc conseillée, puis augmenter si tout va bien.', 'Si la fraise s\'use vite : Vc trop élevée. Si elle casse : fz ou ap trop élevés.', 'En rainurage pleine fraise, diminuer l\'avance d\'environ 30 %.'] },
   { theme: 'Perçage et taraudage', liste: ['Pointer, percer, chanfreiner, tarauder : toujours dans cet ordre.', 'Diamètre de perçage avant taraudage = nominal − pas.', 'Huile de coupe au taraudage, même quand on usine à sec le reste de la pièce.', 'Pour l\'aluminium, débourrer moins souvent mais lubrifier pour éviter le collage.'] },
+  { theme: 'Alésage et denture', liste: ['Tête à aléser : vérifier si le vernier est gradué au rayon ou au diamètre.', 'Remonter la barre d\'alésage broche arrêtée.', 'Diviseur : tourner toujours dans le même sens, utiliser l\'alidade.', 'Contrôler la première dent avant de tailler toute la roue.'] },
   { theme: 'Qualité', liste: ['Mauvais état de surface : vérifier l\'usure, réduire fz, augmenter Vc, travailler en avalant (CN).', 'Toujours ébavurer après usinage : une bavure fausse les mesures.', 'Mesurer la pièce à température ambiante : l\'acier chaud est plus grand.'] }
 ];
 
@@ -229,5 +264,12 @@ export const QUIZ = [
   { q: 'Comment sort le taraud du trou ?', r: ['En rotation inverse (M4)', 'En rotation normale, plus vite', 'Broche arrêtée, à la main', 'En remontée rapide G0'], b: 0, e: 'Il se dévisse : rotation inverse, à la même avance (pas × n).' },
   { q: 'Le contrôle d\'un trou taraudé se fait avec :', r: ['Un tampon fileté entre / n\'entre pas', 'Un mètre ruban', 'Une règle', 'Un rapporteur'], b: 0, e: 'Le côté « entre » doit se visser, le côté « n\'entre pas » non.' },
   { q: 'Angle de pointe d\'un foret hélicoïdal standard :', r: ['118°', '90°', '60°', '180°'], b: 0, e: 'La pointe standard fait 118° (130 à 140° pour les aciers durs).' },
+  { q: 'Pourquoi aléser un trou au lieu de le percer seulement ?', r: ['Pour obtenir un diamètre précis (H7) et un bon état de surface', 'Pour aller plus vite', 'Parce que le foret est trop petit', 'Pour faire un filetage'], b: 0, e: 'Le foret ne garantit ni la cote ni la cylindricité ; l\'alésage si.' },
+  { q: 'Comment remonte-t-on l\'outil après une passe d\'alésage de finition ?', r: ['Broche arrêtée, pour ne pas rayer l\'alésage', 'En rotation rapide', 'En avance maximale', 'On ne remonte pas'], b: 0, e: 'Une plaquette qui tourne en remontant laisse une rayure hélicoïdale.' },
+  { q: 'Roue de module 2,5 et 16 dents : diamètre primitif d = ?', r: ['40 mm', '45 mm', '16 mm', '6,4 mm'], b: 0, e: 'd = m × Z = 2,5 × 16 = 40 mm.' },
+  { q: 'Même roue (m = 2,5 ; Z = 16) : diamètre de l\'ébauche da = ?', r: ['45 mm', '40 mm', '42,5 mm', '50 mm'], b: 0, e: 'da = d + 2m = 40 + 5 = 45 mm.' },
+  { q: 'Profondeur de passe pour tailler une denture de module 2 :', r: ['4,5 mm (h = 2,25 × m)', '2 mm', '6,28 mm', '1 mm'], b: 0, e: 'h = 2,25 × m = 2,25 × 2 = 4,5 mm.' },
+  { q: 'Diviseur 40 : 1, roue de 20 dents. Tours de manivelle entre 2 dents :', r: ['2 tours', '20 tours', '1/2 tour', '40 tours'], b: 0, e: 'n = 40 / Z = 40 / 20 = 2 tours.' },
+  { q: 'La fraise-module est choisie selon :', r: ['Le module et le nombre de dents de la roue', 'La couleur de la pièce', 'La vitesse de la broche seulement', 'La longueur de la table'], b: 0, e: '8 fraises par module, chacune pour une plage de nombres de dents.' },
   { q: 'Enlever les copeaux autour de la fraise se fait :', r: ['Machine arrêtée, avec un pinceau ou un crochet', 'À la main, machine en marche', 'Avec un gant près de la fraise', 'En soufflant avec la bouche'], b: 0, e: 'Les copeaux coupent et sont chauds : pinceau, crochet, machine arrêtée.' }
 ];

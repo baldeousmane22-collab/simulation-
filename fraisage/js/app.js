@@ -11,7 +11,7 @@ const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;
 const fmt = (v, d = 0) => Number(v).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
 
 /* Profondeur de passe maximale (mm) utilisée pour le débit et la puissance */
-const AP = { surfacage: 3, roulant: 2, epaulement: 6, rainure: 5, poche: 4, contournage: 5, chanfrein: 4, disque: 6, rainureT: 8, aronde: 10, percage: 20, taraudage: 18 };
+const AP = { surfacage: 3, roulant: 2, epaulement: 6, rainure: 5, poche: 4, contournage: 5, chanfrein: 4, disque: 6, rainureT: 8, aronde: 10, percage: 20, taraudage: 18, alesage: 3.5, denture: 5.6 };
 const P_MACHINE = 7.5;  // puissance de la broche (kW)
 const N_MAX = 6000;    // fréquence de rotation maximale (tr/min)
 

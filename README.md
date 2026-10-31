@@ -272,15 +272,17 @@ renforce la protection.
 - **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/fraisage/Fraisage.apk
 
 Fraiseuse à console en 3D : la fraise tourne, la table / le chariot / la console déplacent la pièce, la matière
-est enlevée en direct (copeaux, arrosage, changement d'outil). **12 opérations** : surfaçage en bout (fraise à
+est enlevée en direct (copeaux, arrosage, changement d'outil). **14 opérations** : surfaçage en bout (fraise à
 surfacer), surfaçage en roulant (fraiseuse horizontale), épaulement, rainure droite, poche, contournage,
 chanfrein, rainure à la fraise 3 tailles, rainure en T, queue d'aronde, **perçage** (pointage + foret avec
-débourrage) et **taraudage M10** (pointage, perçage Ø8,5, taraud avec sortie en rotation inverse, filets visibles).
+débourrage), **taraudage M10** (pointage, perçage Ø8,5, taraud avec sortie en rotation inverse, filets visibles),
+**alésage Ø25 H7** (avant-trou, tête à aléser en ébauche puis finition) et **taillage d'une roue dentée** Z 16, m 2,5
+(fraise-module sur fraiseuse horizontale, diviseur 40 : 1 qui tourne de 2 tours 1/2 entre chaque dent).
 
 - **Réglages** : matériau de la pièce, outil ARS / carbure, Vc, fz, sens d'avance (opposition / avalant),
   arrosage ; calcul détaillé de n, Vf, débit de copeaux, puissance et temps de coupe, avec alertes.
-- **Fiche** de chaque opération (but, outil, gamme opératoire, astuces, erreurs fréquentes), **Cours** (10 chapitres),
-  **Astuces** d'atelier et **Quiz** (32 questions, 10 tirées au hasard, avec explications).
+- **Fiche** de chaque opération (but, outil, gamme opératoire, astuces, erreurs fréquentes), **Cours** (12 chapitres),
+  **Astuces** d'atelier et **Quiz** (39 questions, 10 tirées au hasard, avec explications).
 
 - **Plein écran** (bouton ⛶) : la 3D occupe tout l'écran avec une barre de commandes (opération précédente /
   suivante, liste des opérations, sens d'avance, arrosage, outil ARS / carbure), vitesse, pause, recommencer.
