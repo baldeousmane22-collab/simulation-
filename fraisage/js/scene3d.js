@@ -620,7 +620,7 @@ export class Fraisage {
       this._diviseur(this.rotCyl, -14, infoDiv, Hh.hAxe);
       // train de roues (vis de table → diviseur)
       const roues = matMetal(0xd8b04a, 0.35, 0.7);
-      for (const [y, z, r] of [[-62, -48, 16], [-62, -78, 11], [-30, -60, 13]]) { const c = this._cyl(r, -6, 6, roues, 24, { titre: 'Train de roues', texte: 'Il relie la vis de la table au diviseur : rapport = 40 × pas de la vis / pas de l\'hélice.' }); c.rotation.z = Math.PI / 2; c.position.set(-128, y, z); this.pieceG.add(c); }
+      for (const [y, z, r] of [[-62, -60, 16], [-62, -89, 11], [-32, -70, 13]]) { const c = this._cyl(r, -6, 6, roues, 24, { titre: 'Train de roues', texte: 'Il relie la vis de la table au diviseur : rapport = 40 × pas de la vis / pas de l\'hélice.' }); c.rotation.z = Math.PI / 2; c.position.set(-128, y, z); this.pieceG.add(c); }
       this.x0 = -Hh.L / 2; this.x1 = Hh.L / 2;
     }
   }
@@ -1027,7 +1027,7 @@ export class Fraisage {
     const posP = def.denture ? [0, ROUE.ra + 8, 12] : def.cyl === 'clavette' ? [-40, 20, 16] : def.cyl === 'helice' ? [0, 26, 20] : [L / 2 - 8, H + 4, W / 2];
     this._etiq(this.pieceG, posP, def.denture ? 'Roue à tailler' : def.cyl === 'clavette' ? 'Arbre Ø30' : def.cyl === 'helice' ? 'Ébauche Ø40' : 'Pièce', 'mene');
     if (def.cyl === 'clavette') this._etiq(this.pieceG, [45, -25, 26], 'Vé + bride');
-    if (def.cyl === 'helice') { this._etiq(this.pieceG, [-110, 45, 0], 'Diviseur'); this._etiq(this.pieceG, [-128, -60, -60], 'Train de roues'); this._etiq(this.table, [-150, 8, 60], 'Table orientée de 30°'); }
+    if (def.cyl === 'helice') { this._etiq(this.pieceG, [-110, 45, 0], 'Diviseur'); this._etiq(this.pieceG, [-128, -45, -75], 'Train de roues'); this._etiq(this.table, [-150, 8, 60], 'Table orientée de 30°'); }
     if (def.denture) { this._etiq(this.pieceG, [-100, 45, 0], 'Diviseur'); this._etiq(this.pieceG, [86, 20, 0], 'Contre-pointe'); }
     if (horiz) this._etiq(this.porte, [0, 18, 85], 'Arbre porte-fraise');
     this._animer(0);
