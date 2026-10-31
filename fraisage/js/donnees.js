@@ -145,6 +145,24 @@ export const OPERATIONS = {
     etapes: ['Calculer la roue : d = m × Z = 40 ; da = d + 2m = 45 ; df = d − 2,5m = 33,75 ; h = 2,25m = 5,63 mm', 'Tourner l\'ébauche au Ø45 (da) et la monter sur un mandrin entre diviseur et contre-pointe', 'Choisir la fraise-module : module 2,5 et n° de fraise selon Z (n° 2 pour 14 à 16 dents)', 'Centrer la fraise sur l\'axe de la roue (tangente sur les deux côtés ou au comparateur)', 'Faire la tangente sur le Ø45, puis monter la console de h = 5,63 mm', 'Tailler le premier creux, revenir, diviser (2 tours 1/2), tailler le suivant… jusqu\'à 16 creux', 'Contrôler l\'épaisseur de la dent au pied à coulisse à dents (ou cote sur k dents)'],
     astuces: ['Toujours tourner la manivelle dans le même sens et ne jamais revenir en arrière : on rattrape le jeu du diviseur.', 'Utiliser l\'alidade (les deux branches du secteur) pour ne pas recompter les trous à chaque division.', 'Le n° de fraise-module dépend du nombre de dents (8 fraises par module) : n° 1 pour 12-13 dents… n° 8 pour 135 dents et plus.', 'Bloquer la broche du diviseur pendant la coupe, la débloquer pour diviser.', 'Faire une première passe légère sur tout le tour pour vérifier la division avant de passer à la profondeur totale.'],
     erreurs: ['Erreur de division → dents inégales, roue inutilisable.', 'Fraise mal centrée → dents dissymétriques.', 'Mauvais n° de fraise → profil de dent incorrect, engrènement bruyant.']
+  },
+  clavette: {
+    nom: 'Rainure de clavette sur arbre', court: 'Clavette', icone: '▬', machine: 'verticale', piece: 'cyl',
+    outil: 'Fraise à rainurer 2 dents Ø8 ARS (coupe au centre)', D: 8, Z: 2, fz: 0.02, ap: '4 × 1 mm (t1 = 4 mm)', ae: 8, outilDefaut: 'ars',
+    but: 'Creuser une rainure de clavette parallèle fermée (forme A) sur un arbre Ø30 : largeur b = 8 mm, profondeur t1 = 4 mm, longueur 30 mm.',
+    principe: 'L\'arbre est posé sur deux <b>vés</b> et bridé. La fraise à rainurer 2 dents coupe au centre : elle <b>plonge</b> de 1 mm puis avance jusqu\'à l\'autre bout, plonge encore, revient… C\'est le <b>fraisage pendulaire</b>. La largeur de la rainure est égale au diamètre de la fraise.',
+    etapes: ['Choisir la clavette selon le Ø de l\'arbre (NF E 22-177) : Ø22 à 30 → b × h = 8 × 7, t1 = 4', 'Poser l\'arbre sur deux vés, le brider (cale en laiton sous la bride)', 'Centrer la fraise sur l\'axe de l\'arbre : tangente des deux côtés (ou palpeur) puis moyenne', 'Repérer les deux bouts de la rainure (longueur − diamètre de la fraise)', 'Fraisage pendulaire : plongées de 0,5 à 1 mm à chaque bout jusqu\'à t1', 'Contrôler la largeur avec la clavette ou une cale, la profondeur au pied à coulisse (cote d − t1 = 26)'],
+    astuces: ['Le centrage sur l\'axe est la clé : une rainure décentrée empêche le montage du moyeu.', 'Pour centrer : tangenter d\'un côté, monter, passer de l\'autre côté, tangenter, puis se placer au milieu des deux lectures.', 'La profondeur t1 se mesure depuis le haut de l\'arbre : on contrôle souvent la cote d − t1.', 'Fraise 2 dents : elle plonge et elle évacue bien les copeaux dans la rainure.', 'Pour une rainure débouchante, on peut aussi utiliser une fraise 3 tailles sur fraiseuse horizontale.'],
+    erreurs: ['Fraise décentrée → clavette qui ne rentre pas dans le moyeu.', 'Plongée trop forte → fraise cassée ou rainure trop large.', 'Arbre mal bridé → il tourne dans les vés, rainure de travers.']
+  },
+  helice: {
+    nom: 'Fraisage hélicoïdal (goujures)', court: 'Hélicoïdal', icone: '🌀', machine: 'universelle (table orientée) + diviseur', piece: 'cyl',
+    outil: 'Fraise convexe R4 Ø70 (fraise de forme, 14 dents) + diviseur relié à la table', D: 70, Z: 14, fz: 0.03, ap: '4 mm', ae: 8, outilDefaut: 'ars',
+    but: 'Tailler 4 goujures hélicoïdales à 30° sur une ébauche Ø40 (comme les goujures d\'une fraise ou d\'un alésoir, ou une roue hélicoïdale).',
+    principe: 'Pendant que la table avance, le <b>diviseur fait tourner la pièce</b> grâce à un <b>train de roues</b> relié à la vis de la table : la fraise trace une <b>hélice</b>. La table est <b>orientée de l\'angle d\'hélice β</b> pour que la fraise soit alignée avec la goujure. Pas de l\'hélice : <b>P = π × D / tan β</b> = π × 40 / tan 30° ≈ 218 mm.',
+    etapes: ['Calculer le pas de l\'hélice : P = π × D / tan β ≈ 218 mm', 'Calculer le rapport du train de roues : i = 40 × pas de la vis de table / P (ex. 40 × 6 / 218 ≈ 1,10)', 'Monter les roues entre la vis de la table et le diviseur', 'Orienter la table de β = 30° (fraiseuse universelle), dans le bon sens selon le sens de l\'hélice (à droite ou à gauche)', 'Monter l\'ébauche entre diviseur et contre-pointe, centrer la fraise', 'Tailler la 1re goujure, revenir, diviser (40 / 4 = 10 tours), tailler la suivante…'],
+    astuces: ['Le sens d\'orientation de la table dépend du sens de l\'hélice : hélice à droite → table tournée dans un sens, à gauche → dans l\'autre.', 'Ajouter une roue intermédiaire pour inverser le sens de rotation de la pièce si besoin.', 'Pour diviser, débrayer le train de roues ou utiliser le plateau à trous, puis rembrayer.', 'Au retour, la pièce tourne en sens inverse : dégager la fraise avant de revenir pour ne pas abîmer la goujure.', 'Faire une passe d\'essai légère pour vérifier l\'angle de l\'hélice.'],
+    erreurs: ['Table orientée du mauvais côté → hélice dans le mauvais sens.', 'Mauvais rapport de roues → pas de l\'hélice faux, angle faux.', 'Jeu dans le train de roues → goujure ondulée.']
   }
 };
 
@@ -218,7 +236,22 @@ export const COURS = [
     <tr><td class="f">p = π × m</td><td>Pas de la denture.</td></tr>
     <tr><td class="f">n = 40 / Z</td><td>Tours de manivelle du diviseur (rapport 40 : 1) entre deux dents.</td></tr></table>
     <p>La <b>fraise-module</b> est une fraise de forme : il en existe 8 par module (n° 1 à 8) selon le nombre de dents à tailler.</p>
-    <div class="encadre">Exemple : Z = 16 → n = 40 / 16 = 2,5 → 2 tours + 10 trous sur le cercle de 20 trous. Z = 30 → 40/30 = 1 tour + 1/3 → 1 tour + 6 trous sur le cercle de 18.</div>` }
+    <div class="encadre">Exemple : Z = 16 → n = 40 / 16 = 2,5 → 2 tours + 10 trous sur le cercle de 20 trous. Z = 30 → 40/30 = 1 tour + 1/3 → 1 tour + 6 trous sur le cercle de 18.</div>` },
+  { titre: '13. Rainure de clavette', html: `<p>La <b>clavette parallèle</b> lie en rotation un arbre et un moyeu. Ses dimensions dépendent du diamètre de l'arbre (NF E 22-177).</p>
+    <table class="voc">
+    <tr><td>Ø 17 à 22</td><td>b × h = 6 × 6, t1 = 3,5</td></tr>
+    <tr><td>Ø 22 à 30</td><td>b × h = 8 × 7, t1 = 4</td></tr>
+    <tr><td>Ø 30 à 38</td><td>b × h = 10 × 8, t1 = 5</td></tr>
+    <tr><td>Forme A</td><td>Bouts ronds : rainure fermée à la fraise 2 dents (fraiseuse verticale).</td></tr>
+    <tr><td>Forme B</td><td>Bouts droits : rainure débouchante, fraise 3 tailles possible.</td></tr></table>
+    <p>Prise de pièce : <b>vés</b> + brides. Méthode : <b>fraisage pendulaire</b> (petites plongées à chaque bout).</p>` },
+  { titre: '14. Fraisage hélicoïdal', html: `<table class="voc">
+    <tr><td class="f">P = π × D / tan β</td><td>Pas de l'hélice (D = diamètre, β = angle d'hélice).</td></tr>
+    <tr><td class="f">i = 40 × p / P</td><td>Rapport du train de roues (p = pas de la vis de table, diviseur 40 : 1).</td></tr>
+    <tr><td>Table orientée de β</td><td>Fraiseuse universelle : la fraise suit la direction de la goujure.</td></tr>
+    <tr><td>Division</td><td>Entre deux goujures : 40 / N tours de manivelle.</td></tr></table>
+    <div class="encadre">Exemple : D = 40, β = 30° → P = π × 40 / 0,577 ≈ 218 mm. Vis de table au pas de 6 : i = 40 × 6 / 218 ≈ 1,10.</div>
+    <p>Applications : goujures de fraises, d'alésoirs et de forets, roues et vis hélicoïdales, cames.</p>` }
 ];
 
 /* Astuces générales de l'atelier */
@@ -228,6 +261,7 @@ export const ASTUCES = [
   { theme: 'Conditions de coupe', liste: ['Commencer par le bas de la plage de Vc conseillée, puis augmenter si tout va bien.', 'Si la fraise s\'use vite : Vc trop élevée. Si elle casse : fz ou ap trop élevés.', 'En rainurage pleine fraise, diminuer l\'avance d\'environ 30 %.'] },
   { theme: 'Perçage et taraudage', liste: ['Pointer, percer, chanfreiner, tarauder : toujours dans cet ordre.', 'Diamètre de perçage avant taraudage = nominal − pas.', 'Huile de coupe au taraudage, même quand on usine à sec le reste de la pièce.', 'Pour l\'aluminium, débourrer moins souvent mais lubrifier pour éviter le collage.'] },
   { theme: 'Alésage et denture', liste: ['Tête à aléser : vérifier si le vernier est gradué au rayon ou au diamètre.', 'Remonter la barre d\'alésage broche arrêtée.', 'Diviseur : tourner toujours dans le même sens, utiliser l\'alidade.', 'Contrôler la première dent avant de tailler toute la roue.'] },
+  { theme: 'Clavette et hélice', liste: ['Clavette : bien centrer la fraise sur l\'axe de l\'arbre (moyenne des deux tangentes).', 'Clavette : cale en laiton sous la bride pour ne pas marquer l\'arbre.', 'Hélice : vérifier le sens de l\'hélice avant d\'orienter la table.', 'Hélice : dégager la fraise avant le retour (la pièce tourne en sens inverse).'] },
   { theme: 'Qualité', liste: ['Mauvais état de surface : vérifier l\'usure, réduire fz, augmenter Vc, travailler en avalant (CN).', 'Toujours ébavurer après usinage : une bavure fausse les mesures.', 'Mesurer la pièce à température ambiante : l\'acier chaud est plus grand.'] }
 ];
 
@@ -271,5 +305,11 @@ export const QUIZ = [
   { q: 'Profondeur de passe pour tailler une denture de module 2 :', r: ['4,5 mm (h = 2,25 × m)', '2 mm', '6,28 mm', '1 mm'], b: 0, e: 'h = 2,25 × m = 2,25 × 2 = 4,5 mm.' },
   { q: 'Diviseur 40 : 1, roue de 20 dents. Tours de manivelle entre 2 dents :', r: ['2 tours', '20 tours', '1/2 tour', '40 tours'], b: 0, e: 'n = 40 / Z = 40 / 20 = 2 tours.' },
   { q: 'La fraise-module est choisie selon :', r: ['Le module et le nombre de dents de la roue', 'La couleur de la pièce', 'La vitesse de la broche seulement', 'La longueur de la table'], b: 0, e: '8 fraises par module, chacune pour une plage de nombres de dents.' },
+  { q: 'Rainure de clavette sur un arbre Ø25 : largeur b de la clavette ?', r: ['8 mm', '25 mm', '4 mm', '12 mm'], b: 0, e: 'Pour Ø22 à 30 : clavette 8 × 7, t1 = 4 mm.' },
+  { q: 'Pour centrer la fraise sur l\'axe d\'un arbre, on :', r: ['Tangente des deux côtés et se place au milieu', 'Vise à l\'œil', 'Prend le bord de la table', 'Mesure la longueur de l\'arbre'], b: 0, e: 'La moyenne des deux tangentes donne l\'axe exact.' },
+  { q: 'Le fraisage pendulaire d\'une rainure de clavette consiste à :', r: ['Plonger un peu à chaque bout et aller-retour jusqu\'à la profondeur', 'Plonger d\'un coup à la profondeur', 'Tourner l\'arbre', 'Usiner avec une fraise 3 tailles'], b: 0, e: 'Petites plongées alternées : la fraise est peu chargée.' },
+  { q: 'Fraisage hélicoïdal : pendant que la table avance, la pièce…', r: ['Tourne, entraînée par un train de roues relié au diviseur', 'Reste fixe', 'Monte', 'Est desserrée'], b: 0, e: 'Avance + rotation synchronisées = hélice.' },
+  { q: 'Pas d\'une hélice : D = 40 mm, β = 45°. P = ?', r: ['≈ 126 mm (π × 40 / tan 45°)', '40 mm', '≈ 218 mm', '45 mm'], b: 0, e: 'tan 45° = 1 → P = π × 40 ≈ 125,7 mm.' },
+  { q: 'Pourquoi oriente-t-on la table de l\'angle d\'hélice ?', r: ['Pour aligner la fraise avec la direction de la goujure', 'Pour aller plus vite', 'Pour refroidir', 'Pour serrer la pièce'], b: 0, e: 'Sinon la fraise déforme la goujure (flancs taillés de travers).' },
   { q: 'Enlever les copeaux autour de la fraise se fait :', r: ['Machine arrêtée, avec un pinceau ou un crochet', 'À la main, machine en marche', 'Avec un gant près de la fraise', 'En soufflant avec la bouche'], b: 0, e: 'Les copeaux coupent et sont chauds : pinceau, crochet, machine arrêtée.' }
 ];

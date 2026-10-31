@@ -8,7 +8,8 @@
      passage de la fraise (gère les contre-dépouilles : T, queue d'aronde) ;
    - poche et contournage : carte des hauteurs creusée par la fraise ;
    - perçage, taraudage, alésage : trous qui se creusent, filets, alésage qui s'agrandit ;
-   - taillage d'engrenage : roue montée sur diviseur, une dent creusée à chaque passe.
+   - taillage d'engrenage : roue montée sur diviseur, une dent creusée à chaque passe ;
+   - rainure de clavette et goujures hélicoïdales : pièce cylindrique creusée en direct.
    Repère de la pièce (mm) : x longueur (−60…60), y hauteur (0…40),
    z largeur (−30…30, +z côté opérateur). Unités de la scène : mm.
    ===================================================================== */
@@ -39,8 +40,16 @@ const OUT = {
   foret18: { nom: 'Foret hélicoïdal Ø18', R: 9 },
   tete24: { nom: 'Tête à aléser réglée à Ø24,4 (ébauche)', R: 12.2 },
   tete25: { nom: 'Tête à aléser réglée à Ø25 (finition)', R: 12.5 },
-  module: { nom: 'Fraise-module m 2,5 n° 2 (14 à 16 dents)', R: 30, horiz: true }
+  module: { nom: 'Fraise-module m 2,5 n° 2 (14 à 16 dents)', R: 30, horiz: true },
+  f8clav: { nom: 'Fraise à rainurer 2 dents Ø8 (coupe au centre)', R: 4 },
+  convexe: { nom: 'Fraise convexe R4 Ø70 (fraise de forme)', R: 35, horiz: true }
 };
+
+/* Arbre à claveter : Ø30, rainure b = 8, t1 = 4, longueur 30 (centres des arrondis à x = ±11) */
+const ARBRE = { R: 15, L: 120, hAxe: 45, b: 8, t1: 4, xc: 11 };
+/* Goujures hélicoïdales : ébauche Ø40 × 50, 4 goujures R4, angle d'hélice 30° → pas P = π D / tan β */
+const HELICE = { R: 20, L: 50, N: 4, beta: 30 * Math.PI / 180, prof: 4, hAxe: 85 };
+HELICE.P = Math.PI * 2 * HELICE.R / Math.tan(HELICE.beta);
 
 /* Roue dentée : Z dents, module m, largeur b, profil en développante (α = 20°) */
 const ALPHA = 20 * Math.PI / 180, inv = (a) => Math.tan(a) - a;
@@ -113,7 +122,9 @@ const DEFS = {
     { outil: 'foret18', prof: 25 + 5.4, debourrage: 10, type: 'percage', lab: 'Avant-trou au foret Ø18' },
     { outil: 'tete24', prof: 25, type: 'alesage', lab: 'Alésage d\'ébauche Ø24,4' },
     { outil: 'tete25', prof: 25, type: 'alesage', lab: 'Alésage de finition Ø25 H7' }] },
-  denture: { denture: true, outil: 'module' }
+  denture: { denture: true, outil: 'module' },
+  clavette: { cyl: 'clavette', outil: 'f8clav' },
+  helice: { cyl: 'helice', outil: 'convexe' }
 };
 
 /* Trajets de la poche et du contournage (plan x, z) */
@@ -368,7 +379,7 @@ export class Fraisage {
       }
       g.add(this._cyl(16, 38, 70, mM)); mandrin(70);
     } else if (o.horiz) {
-      const e = cle === 'disque80' ? 10 : cle === 'module' ? 8 : 70, geo = cle === 'disque80' ? fraiseGeom(40, 10, 16, 0) : cle === 'module' ? fraiseGeom(30, 8, 12, 0) : fraiseGeom(31.5, 70, 8, 0.9);
+      const e = cle === 'disque80' ? 10 : cle === 'module' || cle === 'convexe' ? 8 : 70, geo = cle === 'disque80' ? fraiseGeom(40, 10, 16, 0) : cle === 'module' ? fraiseGeom(30, 8, 12, 0) : cle === 'convexe' ? fraiseGeom(35, 8, 14, 0, null) : fraiseGeom(31.5, 70, 8, 0.9);
       geo.translate(0, 0, -e / 2);
       const m = new THREE.Mesh(geo, mF); m.userData.info = info; g.add(m);
       const arbre = this._cyl(13, -200, 135, acier(), 24, { titre: 'Arbre porte-fraise', texte: 'Il entraîne la fraise par une clavette ; les bagues positionnent la fraise sur l\'arbre.' });
@@ -412,7 +423,7 @@ export class Fraisage {
       vert(fraiseGeom(12.5, 10, 6, 0, (t) => 1 - t * (1 - TA / 12.5)), mF); g.add(this._cyl(4.4, 10, 28, mF, 20, info)); g.add(this._cyl(8, 28, 60, mF, 24)); mandrin(60);
     } else {
       const R = o.R, lc = Math.max(22, R * 2.6), carb = cle === 'f20' || cle === 'f10';
-      vert(fraiseGeom(R, lc, cle === 'f16' || cle === 'f12' ? 3 : 4, 1.1), carb ? mC : mF);
+      vert(fraiseGeom(R, lc, cle === 'f8clav' ? 2 : cle === 'f16' || cle === 'f12' ? 3 : 4, 1.1), carb ? mC : mF);
       g.add(this._cyl(R * 0.97, lc, lc + 22, carb ? mC : mF, 24)); mandrin(lc + 22);
     }
     function acier() { return matMetal(0xa3adba, 0.3, 0.85); }
@@ -537,6 +548,119 @@ export class Fraisage {
     this.mBrut.visible = b1 - b0 > 0.01; this.mBrut.position.x = b0; this.mBrut.scale.x = Math.max(0.01, b1 - b0);
   }
 
+  /* ---------- Pièce cylindrique (arbre, ébauche) : rayon variable r(x, θ) ---------- */
+  /* xs : abscisses, th : angles (rad) ; tw : torsion (rad/mm) → maillage qui suit une hélice */
+  _maillageCylindre(R, xs, th, info, tw = 0) {
+    const nx = xs.length, nt = th.length, N = nx * nt, nv = N + 2 * (nt + 1);
+    const pos = new Float32Array(nv * 3), col = new Float32Array(nv * 3), idx = [];
+    const id = (i, j) => i * nt + (j % nt);
+    for (let i = 0; i < nx - 1; i++) for (let j = 0; j < nt; j++) { const a = id(i, j), b = id(i + 1, j), c = id(i, j + 1), d = id(i + 1, j + 1); idx.push(a, b, c, b, d, c); }
+    const c0 = N, c1 = N + nt + 1;                                  // centres des faces d'extrémité
+    for (let j = 0; j < nt; j++) {
+      idx.push(c0, c0 + 1 + j, c0 + 1 + (j + 1) % nt);
+      idx.push(c1, c1 + 1 + (j + 1) % nt, c1 + 1 + j);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    g.setIndex(idx);
+    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, metalness: 0.75, roughness: 0.35 }));
+    m.userData.info = info;
+    const cyl = { R, nx, nt, xs, th, tw, mesh: m, r: new Float32Array(N).fill(R), ang: (i, j) => th[j] + tw * xs[i] };
+    cyl.maj = () => {
+      const brut = [0.5, 0.54, 0.6], usine = [0.88, 0.91, 0.95];
+      for (let i = 0; i < nx; i++) for (let j = 0; j < nt; j++) {
+        const v = i * nt + j, r = cyl.r[v];
+        const a = th[j] + tw * xs[i]; pos[v * 3] = xs[i]; pos[v * 3 + 1] = r * Math.sin(a); pos[v * 3 + 2] = r * Math.cos(a);
+        col.set(r < R - 0.01 ? usine : brut, v * 3);
+      }
+      for (const [c, i] of [[c0, 0], [c1, nx - 1]]) {
+        pos.set([xs[i], 0, 0], c * 3); col.set(brut, c * 3);
+        for (let j = 0; j < nt; j++) { const v = i * nt + j, q = c + 1 + j; pos.set([pos[v * 3], pos[v * 3 + 1], pos[v * 3 + 2]], q * 3); col.set(cyl.r[v] < R - 0.01 ? usine : brut, q * 3); }
+      }
+      g.attributes.position.needsUpdate = true; g.attributes.color.needsUpdate = true;
+      g.computeVertexNormals(); g.computeBoundingSphere();
+    };
+    cyl.maj();
+    return cyl;
+  }
+
+  _pieceCylindre(def) {
+    const fonte = matMetal(COUL.etau, 0.45, 0.5), acier = matMetal(0xa3adba, 0.3, 0.85);
+    this.rotCyl = new THREE.Group(); this.pieceG.add(this.rotCyl);
+    if (def.cyl === 'clavette') {
+      const A = ARBRE;
+      const xs = [], th = [];
+      for (let x = -A.L / 2; x < -20; x += 2) xs.push(x);
+      for (let x = -20; x < 20; x += 0.4) xs.push(x);
+      for (let x = 20; x <= A.L / 2 + 1e-6; x += 2) xs.push(x);
+      for (let a = 0; a < 60; a += 3) th.push(a * Math.PI / 180);          // maillage fin sur le dessus (zone de la rainure)
+      for (let a = 60; a < 120; a += 0.6) th.push(a * Math.PI / 180);
+      for (let a = 120; a < 360 - 1e-6; a += 3) th.push(a * Math.PI / 180);
+      this.cyl = this._maillageCylindre(A.R, xs, th, { titre: 'Arbre Ø30', texte: 'Arbre en acier posé sur deux vés et bridé. On y creuse une rainure de clavette parallèle (forme A) b = 8, t1 = 4.' });
+      this.cyl.ylim = new Float32Array(this.cyl.r.length).fill(Infinity);
+      this.rotCyl.add(this.cyl.mesh);
+      // vés (V à 90°) et brides
+      const d = A.R * Math.SQRT2, haut = -5, prof = -A.hAxe;
+      const forme = [[-25, prof], [25, prof], [25, haut], [haut + d, haut], [0, -d], [-(haut + d), haut], [-25, haut]];
+      for (const xv of [-45, 45]) {
+        const sh = new THREE.Shape(forme.map(([z, y]) => new THREE.Vector2(-z, y)));
+        const gv = new THREE.ExtrudeGeometry(sh, { depth: 20, bevelEnabled: false }); gv.rotateY(Math.PI / 2); gv.translate(xv - 10, 0, 0);
+        const ve = new THREE.Mesh(gv, fonte); ve.userData.info = { titre: 'Vé', texte: 'Bloc en V à 90° : l\'arbre s\'y centre tout seul. Deux vés identiques gardent l\'arbre parallèle à la table.' };
+        this.pieceG.add(ve);
+        this.pieceG.add(this._box(xv - 5, xv + 5, A.R, A.R + 7, -32, 32, acier, { titre: 'Bride', texte: 'Elle plaque l\'arbre dans les vés. Interposer une cale en laiton pour ne pas marquer l\'arbre.' }));
+        for (const z of [-28, 28]) { const v = this._cyl(3, prof, A.R + 12, acier, 12); v.position.set(xv, (prof + A.R + 12) / 2, z); this.pieceG.add(v); }
+      }
+      this.x0 = -A.L / 2; this.x1 = A.L / 2;
+    } else {
+      const Hh = HELICE;
+      this.cyl = this._maillageCylindre(Hh.R, Array.from({ length: 101 }, (_, i) => -Hh.L / 2 + Hh.L * i / 100), Array.from({ length: 288 }, (_, j) => j * 2 * Math.PI / 288), { titre: 'Ébauche Ø40', texte: `Ébauche montée sur le diviseur. 4 goujures hélicoïdales à 30° : pas de l'hélice P = π × D / tan β ≈ ${Math.round(Hh.P)} mm.` }, -2 * Math.PI / Hh.P);
+      this.rotCyl.add(this.cyl.mesh);
+      const infoDiv = { titre: 'Diviseur relié à la table', texte: `Le diviseur est entraîné par la vis de la table grâce à un train de roues : la pièce tourne pendant que la table avance (hélice de pas ${Math.round(Hh.P)} mm). Entre deux goujures : 40 / 4 = 10 tours de manivelle.` };
+      this._diviseur(this.rotCyl, -14, infoDiv, Hh.hAxe);
+      // train de roues (vis de table → diviseur)
+      const roues = matMetal(0xd8b04a, 0.35, 0.7);
+      for (const [y, z, r] of [[-62, -48, 16], [-62, -78, 11], [-30, -60, 13]]) { const c = this._cyl(r, -6, 6, roues, 24, { titre: 'Train de roues', texte: 'Il relie la vis de la table au diviseur : rapport = 40 × pas de la vis / pas de l\'hélice.' }); c.rotation.z = Math.PI / 2; c.position.set(-128, y, z); this.pieceG.add(c); }
+      this.x0 = -Hh.L / 2; this.x1 = Hh.L / 2;
+    }
+  }
+
+  /* Arbre : la fraise (rayon Rt, bout en y) balaie (xa, za) → (xb, zb) */
+  _couperArbre(xa, za, xb, zb, y, Rt) {
+    const c = this.cyl, { nx, nt, xs, th, R } = c;
+    let change = false;
+    const ux = xb - xa, uz = zb - za, l2 = ux * ux + uz * uz, R2 = Rt * Rt + 1e-3;
+    for (let i = 0; i < nx; i++) {
+      const x = xs[i]; if (x < Math.min(xa, xb) - Rt - 1 || x > Math.max(xa, xb) + Rt + 1) continue;
+      for (let j = 0; j < nt; j++) {
+        const a = c.ang(i, j), sn = Math.sin(a); if (sn <= 0.2) continue;
+        const z = R * Math.cos(a), px = x - xa, pz = z - za;
+        const t = l2 > 0 ? Math.max(0, Math.min(1, (px * ux + pz * uz) / l2)) : 0, dx = px - t * ux, dz = pz - t * uz;
+        if (dx * dx + dz * dz > R2) continue;
+        const v = i * nt + j;
+        if (y < c.ylim[v]) { c.ylim[v] = y; const r = Math.min(R, y / sn); if (r < c.r[v]) { c.r[v] = r; change = true; } }
+      }
+    }
+    return change;
+  }
+
+  /* Goujures : creux semi-circulaires R4 le long de l'hélice ; g < faits : complètes ; g = enCours : jusqu'à x */
+  _majHelice(faits, enCours, xMax, xMin = -Infinity) {
+    const c = this.cyl, Hh = HELICE, { nx, nt, xs, th, R } = c, aN = 2 * Math.PI / Hh.N, rp = Hh.prof;
+    for (let i = 0; i < nx; i++) { if (xs[i] <= xMin || (xMin > -Infinity && xs[i] > xMax)) continue; for (let j = 0; j < nt; j++) {
+      let r = R;
+      for (let g = 0; g < Hh.N; g++) {
+        if (g >= faits && !(g === enCours && xs[i] <= xMax)) continue;
+        let d = c.ang(i, j) - (Math.PI / 2 - (2 * Math.PI * xs[i] / Hh.P + g * aN));
+        d = Math.atan2(Math.sin(d), Math.cos(d));
+        const sArc = R * d;
+        if (Math.abs(sArc) < rp) r = Math.min(r, R - Math.sqrt(rp * rp - sArc * sArc));
+      }
+      c.r[i * nt + j] = r;
+    } }
+    c.sale = true;
+  }
+
   /* ---------- Pièce : roue dentée sur diviseur ---------- */
   _pieceDenture() {
     const { Z, b, ra, yAxe } = ROUE;
@@ -557,24 +681,30 @@ export class Fraisage {
     this.matBrut = brut; this.matUsine = usine;
     this.rotRoue.add(this.mFait, this.mBrut);
     const infoDiv = { titre: 'Diviseur universel', texte: `Rapport 40 : 1. Pour ${Z} dents : 40 / ${Z} = 2 tours + 1/2 tour de manivelle entre deux dents (2 tours + 10 trous sur le cercle de 20 trous).` };
+    this._diviseur(this.rotRoue, 0, infoDiv, yAxe);
+    this.x0 = -b / 2; this.x1 = b / 2;
+  }
+
+  /* Diviseur universel + mandrin + contre-pointe (rot : groupe qui tourne avec la pièce, dx : recul du diviseur) */
+  _diviseur(rot, dx, infoDiv, yAxe) {
+    const fonte = matMetal(COUL.etau, 0.45, 0.5), acier = matMetal(0xa3adba, 0.3, 0.85), sombre = matMetal(0x1e293b, 0.7, 0.3);
+    const mOrange = () => matMetal(0xf59e0b, 0.4, 0.3);
     const axeX = (m, x0, x1) => { m.rotation.z = Math.PI / 2; m.position.x = (x0 + x1) / 2; return m; };
     // mandrin porte-pièce et mandrin 3 mors (tournent avec la roue)
-    this.rotRoue.add(axeX(this._cyl(8, -52, 64, acier, 24, { titre: 'Mandrin porte-pièce', texte: 'Arbre sur lequel la roue est serrée, entre le diviseur et la contre-pointe.' }), -52, 64));
-    this.rotRoue.add(axeX(this._cyl(18, -70, -52, fonte, 28, infoDiv), -70, -52));
-    for (let k = 0; k < 3; k++) { const m = this._box(-56, -50, 12, 20, -3, 3, acier); const gm = new THREE.Group(); gm.rotation.x = k * 2 * Math.PI / 3; gm.add(m); this.rotRoue.add(gm); }
+    rot.add(axeX(this._cyl(8, -52 + dx, 64, acier, 24, { titre: 'Mandrin porte-pièce', texte: 'Arbre sur lequel la roue est serrée, entre le diviseur et la contre-pointe.' }), -52 + dx, 64));
+    rot.add(axeX(this._cyl(18, -70 + dx, -52 + dx, fonte, 28, infoDiv), -70 + dx, -52 + dx));
+    for (let k = 0; k < 3; k++) { const m = this._box(-56 + dx, -50 + dx, 12, 20, -3, 3, acier); const gm = new THREE.Group(); gm.rotation.x = k * 2 * Math.PI / 3; gm.add(m); rot.add(gm); }
     // diviseur (fixe sur la table)
-    this.pieceG.add(this._box(-130, -72, -yAxe, -38, -42, 42, fonte, infoDiv));
-    this.pieceG.add(axeX(this._cyl(30, -112, -70, fonte, 32, infoDiv), -112, -70));
-    this.pieceG.add(axeX(this._cyl(40, -118, -112, sombre, 40, infoDiv), -118, -112));
-    for (let k = 0; k < 20; k++) { const a = k * Math.PI / 10, t = axeX(this._cyl(1.6, -119, -117.5, acier, 8), -119, -117.5); t.position.y = 32 * Math.sin(a); t.position.z = 32 * Math.cos(a); this.pieceG.add(t); }
-    this.manivelle = new THREE.Group(); this.manivelle.position.x = -122; this.pieceG.add(this.manivelle);
+    this.pieceG.add(this._box(-130 + dx, -72 + dx, -yAxe, -38, -42, 42, fonte, infoDiv));
+    this.pieceG.add(axeX(this._cyl(30, -112 + dx, -70 + dx, fonte, 32, infoDiv), -112 + dx, -70 + dx));
+    this.pieceG.add(axeX(this._cyl(40, -118 + dx, -112 + dx, sombre, 40, infoDiv), -118 + dx, -112 + dx));
+    for (let k = 0; k < 20; k++) { const a = k * Math.PI / 10, t = axeX(this._cyl(1.6, -119 + dx, -117.5 + dx, acier, 8), -119 + dx, -117.5 + dx); t.position.y = 32 * Math.sin(a); t.position.z = 32 * Math.cos(a); this.pieceG.add(t); }
+    this.manivelle = new THREE.Group(); this.manivelle.position.x = -122 + dx; this.pieceG.add(this.manivelle);
     this.manivelle.add(this._box(-2, 2, -3, 34, -3, 3, acier, { titre: 'Manivelle du diviseur', texte: infoDiv.texte }));
     const bouton = axeX(this._cyl(4, -14, -2, mOrange(), 16), -14, -2); bouton.position.y = 32; this.manivelle.add(bouton);
     // contre-pointe
     this.pieceG.add(this._box(68, 104, -yAxe, -18, -30, 30, fonte, { titre: 'Contre-pointe', texte: 'Elle soutient l\'autre bout du mandrin (pointe tournante).' }));
     this.pieceG.add(axeX(this._cyl(12, 64, 96, acier, 24), 64, 96));
-    this.x0 = -b / 2; this.x1 = b / 2;
-    function mOrange() { return matMetal(0xf59e0b, 0.4, 0.3); }
   }
 
   /* ---------- Pièce : trous (perçage, taraudage) ---------- */
@@ -738,7 +868,35 @@ export class Fraisage {
       segs.push({ type, de: { ...de }, vers: { ...vers }, dur: o.dur ?? Math.max(0.25, d / v), lab, outil, ...o });
       cur = { ...vers };
     };
-    if (def.denture) {
+    if (def.cyl === 'clavette') {
+      const A = ARBRE, sur = A.R + 12, xs = [-A.xc, A.xc];
+      outil = 'f8clav'; cur = { x: xs[0], y: sur, z: 0 };
+      ajoute('rapide', { x: xs[0], y: sur, z: 0 }, 'Positionnement sur l\'axe de l\'arbre, au bout de la rainure');
+      ajoute('descente', { x: xs[0], y: A.R + 1, z: 0 }, 'Approche à 1 mm du dessus de l\'arbre');
+      let cote = 0;
+      for (let n = 1; n <= A.t1; n++) {
+        const y = A.R - n;
+        ajoute('plonge', { x: xs[cote], y, z: 0 }, `Plongée de 1 mm (profondeur ${n} / ${A.t1} mm)`, { coupe: true, v: 3 });
+        cote = 1 - cote;
+        ajoute('travail', { x: xs[cote], y, z: 0 }, `Fraisage pendulaire : passe ${n}/${A.t1} vers ${cote ? 'la droite' : 'la gauche'}`, { coupe: true, cote: 0, v: 10 });
+      }
+      ajoute('rapide', { x: xs[cote], y: sur, z: 0 }, 'Dégagement : rainure finie (b = 8, t1 = 4, L = 30)');
+      ajoute('rapide', { x: xs[0], y: sur, z: 0 }, 'Retour au point de départ');
+      segs.forEach(sg => { sg.faits = 0; });
+    } else if (def.cyl === 'helice') {
+      const Hh = HELICE, Rc = OUT.convexe.R, xa = -(Hh.L / 2 + 20), yc = Hh.R - Hh.prof + Rc, sur = Hh.R + Rc + 4;
+      outil = 'convexe'; cur = { x: xa, y: sur, z: 0 };
+      for (let g = 0; g < Hh.N; g++) {
+        ajoute('descente', { x: xa, y: yc, z: 0 }, `Prise de passe : profondeur ${Hh.prof} mm`);
+        ajoute('travail', { x: -xa, y: yc, z: 0 }, `Goujure ${g + 1}/${Hh.N} : la table avance et le diviseur fait tourner la pièce`, { passe: g, cote: 'h', v: 14 });
+        ajoute('rapide', { x: -xa, y: sur, z: 0 }, 'Dégagement de la fraise');
+        ajoute('rapide', { x: xa, y: sur, z: 0 }, 'Retour : la pièce tourne en sens inverse (train de roues)', { v: 60 });
+        if (g < Hh.N - 1) ajoute('division', { x: xa, y: sur, z: 0 }, `Division : 40 / ${Hh.N} = 10 tours de manivelle → goujure ${g + 2}/${Hh.N}`, { dur: 1.1 });
+      }
+      let faits = 0, k = 0;
+      for (const sg of segs) { sg.faits = faits; sg.k0 = k; if (sg.passe != null) faits = sg.passe + 1; if (sg.type === 'division') k++; }
+      this.nbDiv = k;
+    } else if (def.denture) {
       const { Z, ra, h } = ROUE, R = OUT.module.R, xa = -(ROUE.b / 2 + 17 + 6), yc = ra - h + R, sur = ra + R + 4;
       outil = 'module'; cur = { x: xa, y: sur, z: 0 };
       for (let g = 0; g < Z; g++) {
@@ -846,26 +1004,30 @@ export class Fraisage {
     this.outils = {}; this.outilCourant = null;
     for (const e of this.etiquettes) e.el.remove();
     this.etiquettes = [];
-    const premier = def.denture ? 'module' : def.trous ? def.etapes[0].outil : def.carte ? def.outil : def.passes[0].outil, horiz = !!OUT[premier].horiz;
+    const premier = def.cyl ? def.outil : def.denture ? 'module' : def.trous ? def.etapes[0].outil : def.carte ? def.outil : def.passes[0].outil, horiz = !!OUT[premier].horiz;
     const machineChange = !this.bati || this.bati.userData.horiz !== horiz;
     this._construireBati(horiz);
     if (machineChange && this.cle0) this.recentrer();
     this.cle0 = cle;
-    this.etau.visible = !def.denture;
+    this.etau.visible = !def.denture && !def.cyl;
     this._construireMachineMobileEtiquettes();
     if (!this.porte) {
       this.porte = new THREE.Group(); this.rotor = new THREE.Group(); this.porte.add(this.rotor); this.racine.add(this.porte);
     }
     this.porte.position.set(0, YT, 0);
-    this.carte = null; this.trous = null; this.etatTrous = null; this.decalCop = 0; this.rotRoue = null; this.manivelle = null;
+    this.carte = null; this.trous = null; this.etatTrous = null; this.decalCop = 0; this.rotRoue = null; this.manivelle = null; this.cyl = null; this.rotCyl = null;
+    this.beta = def.cyl === 'helice' ? HELICE.beta : 0; this.table.rotation.y = this.beta; this.table.position.z = 0;
     this.x0 = -L / 2; this.x1 = L / 2;
-    this.hPiece = def.denture ? ROUE.yAxe : BRIDE; this.pieceG.position.y = this.hPiece; this.etau.visible = !def.denture;
-    if (def.denture) this._pieceDenture(); else if (def.trous) this._pieceTrous(def); else if (def.carte) this._pieceCarte(); else this._pieceProfils(def);
+    this.hPiece = def.denture ? ROUE.yAxe : def.cyl === 'clavette' ? ARBRE.hAxe : def.cyl === 'helice' ? HELICE.hAxe : BRIDE; this.pieceG.position.y = this.hPiece; this.etau.visible = !def.denture && !def.cyl;
+    if (def.cyl) this._pieceCylindre(def); else if (def.denture) this._pieceDenture(); else if (def.trous) this._pieceTrous(def); else if (def.carte) this._pieceCarte(); else this._pieceProfils(def);
     this.segs = this._trajet(cle);
-    this.t = 0; this.segIdx = -1; this.segIdxCache = 0; this.dernierT = 0; this.idxTrou = 0;
+    this.t = 0; this.segIdx = -1; this.segIdxCache = 0; this.dernierT = 0; this.idxTrou = 0; this.dernierTc = 0; this.cleHelice = null;
     this._mettreOutil(premier);
     this._etiq(this.porte, [OUT[premier].horiz ? 50 : 30, OUT[premier].horiz ? 30 : 60, OUT[premier].horiz ? 20 : 0], def.trous ? 'Outil' : 'Fraise', 'menant');
-    this._etiq(this.pieceG, def.denture ? [0, ROUE.ra + 8, 12] : [L / 2 - 8, H + 4, W / 2], def.denture ? 'Roue à tailler' : 'Pièce', 'mene');
+    const posP = def.denture ? [0, ROUE.ra + 8, 12] : def.cyl === 'clavette' ? [-40, 20, 16] : def.cyl === 'helice' ? [0, 26, 20] : [L / 2 - 8, H + 4, W / 2];
+    this._etiq(this.pieceG, posP, def.denture ? 'Roue à tailler' : def.cyl === 'clavette' ? 'Arbre Ø30' : def.cyl === 'helice' ? 'Ébauche Ø40' : 'Pièce', 'mene');
+    if (def.cyl === 'clavette') this._etiq(this.pieceG, [45, -25, 26], 'Vé + bride');
+    if (def.cyl === 'helice') { this._etiq(this.pieceG, [-110, 45, 0], 'Diviseur'); this._etiq(this.pieceG, [-128, -60, -60], 'Train de roues'); this._etiq(this.table, [-150, 8, 60], 'Table orientée de 30°'); }
     if (def.denture) { this._etiq(this.pieceG, [-100, 45, 0], 'Diviseur'); this._etiq(this.pieceG, [86, 20, 0], 'Contre-pointe'); }
     if (horiz) this._etiq(this.porte, [0, 18, 85], 'Arbre porte-fraise');
     this._animer(0);
@@ -887,7 +1049,7 @@ export class Fraisage {
   _animer(dt) {
     const pauseFin = 2.5, cycle = this.duree + pauseFin;
     let t = this.t + dt;
-    if (t >= cycle) { t -= cycle; if (this.carte) this._razCarte(); if (this.trous) this._razTrous(); this.idxTrou = 0; this.dernierT = 0; this.segIdxCache = 0; }
+    if (t >= cycle) { t -= cycle; if (this.carte) this._razCarte(); if (this.trous) this._razTrous(); if (this.cyl && this.cle === 'clavette') { this.cyl.ylim.fill(Infinity); this.cyl.r.fill(ARBRE.R); this.cyl.sale = true; this.cyl.tMaj = 0; } this.idxTrou = 0; this.dernierT = 0; this.segIdxCache = 0; }
     // enlèvement de matière (carte) : échantillonnage entre l'instant précédent et maintenant
     let coupe = false;
     if (this.carte) {
@@ -906,6 +1068,27 @@ export class Fraisage {
     }
     this.t = t; this.dernierT = t;
     const { i, s, p } = this._position(Math.min(t, this.duree - 1e-6));
+    if (this.cyl && this.cle === 'clavette') {
+      let change = false, prec = null;
+      const t0 = Math.min(this.dernierTc ?? 0, t), pas = Math.max(0.005, (t - t0) / Math.ceil((t - t0) / 0.04 || 1));
+      for (let ts = t0; ts <= t + 1e-6; ts += pas) {
+        const r0 = this._position(Math.min(ts, this.duree - 1e-6));
+        if (r0.s.coupe) { const a = prec || r0.p; if (this._couperArbre(a.x, a.z, r0.p.x, r0.p.z, Math.max(a.y, r0.p.y), OUT.f8clav.R)) change = true; }
+        prec = r0.s.coupe ? r0.p : null;
+      }
+      this.dernierTc = t;
+      if (change) { this.cyl.sale = true; coupe = true; }
+    }
+    if (this.cyl && this.cle === 'helice') {
+      const cleH = `${s.faits}|${s.passe ?? -1}`;
+      if (cleH !== this.cleHelice) { this.cleHelice = cleH; this.helX = p.x; this._majHelice(s.passe != null ? s.passe : s.faits, s.passe ?? -1, p.x); }
+      else if (s.passe != null && p.x > this.helX + 0.2) { this._majHelice(s.passe, s.passe, p.x, this.helX); this.helX = p.x; }   // seulement les colonnes nouvellement taillées
+      coupe = s.passe != null && Math.abs(p.x) < HELICE.L / 2 + 16;
+    }
+    if (this.cyl?.sale) {                                 // maillage recalculé au plus ~12 fois par seconde (téléphones)
+      const now = performance.now();
+      if (now - (this.cyl.tMaj || 0) > 80 || !coupe) { this.cyl.maj(); this.cyl.tMaj = now; this.cyl.sale = false; }
+    }
     if (this.trous) {
       // segments franchis depuis la dernière image : appliquer leur position finale
       let change = false;
@@ -919,7 +1102,7 @@ export class Fraisage {
     }
     if (s.outil && s.type === 'change') { if (t - s.t0 > s.dur / 2) this._mettreOutil(s.outil); }
     else if (s.outil) this._mettreOutil(s.outil);
-    if (!this.carte && !this.trous) {
+    if (!this.carte && !this.trous && !this.cyl) {
       this._majProfils(s, p.x);
       coupe = s.passe != null && Math.abs(p.x) < this.x1 + OUT[this.outilCourant].R * 0.8;
     }
@@ -930,8 +1113,16 @@ export class Fraisage {
       this.rotRoue.rotation.x = -k * 2 * Math.PI / ROUE.Z;
       this.manivelle.rotation.x = -k * 2.5 * 2 * Math.PI;              // 40 / Z = 2,5 tours par division
     }
-    this.selle.position.z = -p.z;
-    this.table.position.x = -p.x;
+    if (this.beta) {                                      // table orientée de β : elle avance dans sa propre direction
+      this.selle.position.z = 0;
+      this.table.position.set(-(p.x * Math.cos(this.beta) + p.z * Math.sin(this.beta)), 0, p.x * Math.sin(this.beta) - p.z * Math.cos(this.beta));
+    } else { this.selle.position.z = -p.z; this.table.position.x = -p.x; }
+    if (this.rotCyl && this.cle === 'helice') {
+      const u = s.type === 'division' ? Math.max(0, Math.min(1, (t - s.t0) / s.dur)) : 0, e = u * u * (3 - 2 * u), k = Math.min(this.nbDiv, (t >= this.duree ? this.nbDiv : s.k0) + e);
+      const phi = 2 * Math.PI * p.x / HELICE.P + k * 2 * Math.PI / HELICE.N;
+      this.rotCyl.rotation.x = -phi;
+      if (this.manivelle) this.manivelle.rotation.x = -40 * phi;
+    }
     // rotation de la fraise (arrêtée pendant le changement d'outil)
     const tourne = s.type !== 'change' && !s.arret && t < this.duree;
     const w = tourne ? this.toursParSec * Math.PI * 2 * dt * (s.inverse ? -1 : 1) : 0;
