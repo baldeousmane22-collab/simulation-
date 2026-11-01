@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Moteur asynchrone 3D</string>
+    <string name="title_activity_main">Moteur asynchrone 3D</string>
+    <string name="package_name">fr.formation.moteur</string>
+    <string name="custom_url_scheme">fr.formation.moteur</string>
+</resources>

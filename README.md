@@ -6,27 +6,7 @@ clapet anti-retour, régulateur de débit, distributeur 4/3, vérin double effet
 avec circulation de l'huile animée, fiches techniques, mode pas à pas, mode pannes,
 schéma ISO 1219 et quiz.
 
-### Banc « Moteur + réducteur » (accouplement)
-
-Depuis l'accueil, le bouton bleu **⚙️ Moteur + réducteur** ouvre un second banc 3D :
-moteur asynchrone 1,5 kW piloté par variateur de fréquence, **accouplement au choix**,
-**réducteur à engrenages hélicoïdaux** (i = 5, 10, 20 ou 40, carter transparent) et frein de charge.
-
-**8 types d'accouplement**, chacun avec son modèle 3D, son comportement (amortissement, jeu,
-graissage, sensibilité au désalignement), ses tolérances, sa pièce d'usure, sa panne et sa fiche :
-à crabots (étoile), rigide à plateaux, à pneu, à broches et douilles, à lames, à denture,
-à chaîne double et à grille. Le bouton **📊 Comparer les types** affiche un tableau comparatif.
-
-- **Commandes** : marche / arrêt, sens, fréquence (5 à 60 Hz), rapport de réduction, couple
-  résistant ; mesures en direct (vitesses, couples, intensité, puissance, glissement, rendement,
-  vibrations ISO 10816, températures, usure de l'étoile). Relais thermique avec réarmement.
-- **Alignement** : consignation, carter déposé, comparateurs radial et de face, lecture à
-  12 h / 3 h / 6 h / 9 h avec règle de validité, calcul des cales et des déplacements,
-  réglage des cales sous les pattes et des vis de poussée, tolérances à 1500 tr/min.
-- **Pannes** : désalignement, pièce d'usure de l'accouplement (étoile, pneu, douilles, lames,
-  dentures, chaîne, grille, boulons), manque de graisse (accouplements graissés), roulement,
-  manque d'huile, pied boiteux, clavette cisaillée, machine bloquée + panne mystère.
-- **Quiz** : 16 questions sur la transmission, les types d'accouplement et l'alignement.
+Le moteur, le motoréducteur et le banc d'accouplements sont des applications séparées (voir plus bas).
 
 ## 1. Ouvrir l'application web (aucune installation)
 
@@ -138,11 +118,6 @@ www/                    Application web (c'est elle qui est publiée et embarqu�
   js/schema.js          Schéma ISO 1219 en SVG, coloré en direct
   js/donnees.js         Textes pédagogiques (fiches, étapes, pannes, quiz)
   js/version.js         Numéro de version (rempli automatiquement)
-  js/accouplement/      Banc moteur + accouplement + réducteur :
-    app.js              interface, alignement, pannes, quiz
-    simulation.js       modèle (courbe de Kloss, réducteur, relais thermique, alignement)
-    scene3d.js          scène 3D (moteur, crabots, étoile, engrenages, comparateurs)
-    donnees.js          textes pédagogiques (fiches, procédure, pannes, quiz)
   vendor/three.min.js   Three.js r186 (embarqué pour le hors-connexion)
   sw.js, manifest.webmanifest, icons/   PWA
 android/                Projet Android Capacitor 8
@@ -151,8 +126,7 @@ android/                Projet Android Capacitor 8
 
 Tester sur un PC : `npx http-server www -p 8080` puis ouvrir http://localhost:8080.
 
-Les textes destinés aux élèves sont dans `www/js/donnees.js` (hydraulique) et
-`www/js/accouplement/donnees.js` (moteur + réducteur) : le formateur peut
+Les textes destinés aux élèves sont dans `www/js/donnees.js` : le formateur peut
 les modifier sans toucher au reste. Le numéro de version et le cache hors connexion sont
 mis à jour automatiquement à chaque publication.
 
@@ -291,3 +265,43 @@ Aussi : **rainure de clavette** sur arbre Ø30 posé sur vés (fraise 2 dents Ø
   suivante, liste des opérations, sens d'avance, arrosage, outil ARS / carbure), vitesse, pause, recommencer.
 
 Textes modifiables dans `fraisage/js/donnees.js`.
+
+---
+
+# Moteur asynchrone 3D
+
+- **Lien web** : https://baldeousmane22-collab.github.io/simulation-/moteur/
+- **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/moteur/Moteur.apk
+
+Moteur asynchrone 1,5 kW piloté par un variateur de fréquence (5 à 60 Hz, rampe, sens de rotation), entraînant
+directement un frein de charge (arbre + palier). Mesures en direct : vitesse, glissement, couple, intensité,
+puissance, vibrations ISO 10816 ; relais thermique avec réarmement ; décrochage au-delà du couple maximal.
+Onglets **Commandes**, **Pannes** (roulement, pied boiteux, machine bloquée + panne mystère) et **Quiz** (9 questions).
+Dossier `moteur/`.
+
+---
+
+# Motoréducteur 3D
+
+- **Lien web** : https://baldeousmane22-collab.github.io/simulation-/motoreducteur/
+- **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/motoreducteur/Motoreducteur.apk
+
+Moteur asynchrone + réducteur à engrenages hélicoïdaux (i = 5, 10, 20 ou 40, carter transparent) + frein de charge :
+Ns = Nm ÷ i, Cs = Cm × i × η, rendement par étage, température de l'huile. Onglets **Commandes**, **Pannes**
+(manque d'huile, clavette cisaillée, roulement, machine bloquée + panne mystère) et **Quiz** (17 questions).
+Dossier `motoreducteur/`.
+
+---
+
+# Banc d'accouplements 3D (alignement au comparateur)
+
+- **Lien web** : https://baldeousmane22-collab.github.io/simulation-/banc-accouplements/
+- **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/banc-accouplements/BancAccouplements.apk
+
+**8 types d'accouplement** entre le moteur et le réducteur (crabots, rigide, pneu, broches, lames, denture, chaîne,
+grille), avec comportement, tolérances, pièce d'usure et tableau comparatif. **Alignement** : consignation, comparateurs
+radial et de face (12 h / 3 h / 6 h / 9 h), calcul des cales et des déplacements, réglage des cales et des vis de poussée.
+**Pannes** (désalignement, pièce d'usure, manque de graisse, pied boiteux, clavette + panne mystère) et **Quiz** (11 questions).
+Dossier `banc-accouplements/` (l'appli `accouplements/` — cours + 12 types — reste inchangée).
+
+Ces trois applis partagent le même code de banc (`js/banc/`) ; seul `js/config.js` change d'un dossier à l'autre.

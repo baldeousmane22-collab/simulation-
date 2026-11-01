@@ -14,7 +14,7 @@ name: Publier sur GitHub Pages
 on:
   push:
     branches: [main, 'claude/**', 'ccr-*']
-    paths: ['www/**', 'pompe-centrifuge/**', 'circuit-pneumatique/**', 'accouplements/**', 'engrenages/**', 'broyage/**', 'fraisage/**', 'scripts/**', '.github/workflows/pages.yml']
+    paths: ['www/**', 'pompe-centrifuge/**', 'circuit-pneumatique/**', 'accouplements/**', 'engrenages/**', 'broyage/**', 'fraisage/**', 'moteur/**', 'motoreducteur/**', 'banc-accouplements/**', 'scripts/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:
@@ -46,7 +46,7 @@ jobs:
 
       - name: Ajouter les applis autonomes au site
         run: |
-          for d in pompe-centrifuge circuit-pneumatique accouplements engrenages broyage fraisage; do
+          for d in pompe-centrifuge circuit-pneumatique accouplements engrenages broyage fraisage moteur motoreducteur banc-accouplements; do
             test -f "$d/index.html" || { echo "Fichier manquant : $d/index.html"; exit 1; }
             cp -r "$d" www/
             rm -rf "www/$d/apk"   # projet Android : inutile sur le site
@@ -55,6 +55,9 @@ jobs:
           sed -i "s/^const VERSION_CACHE = .*/const VERSION_CACHE = 'engrenages-v$(git rev-list --count HEAD)';/" www/engrenages/sw.js
           sed -i "s/^const VERSION_CACHE = .*/const VERSION_CACHE = 'broyage-v$(git rev-list --count HEAD)';/" www/broyage/sw.js
           sed -i "s/^const VERSION_CACHE = .*/const VERSION_CACHE = 'fraisage-v$(git rev-list --count HEAD)';/" www/fraisage/sw.js
+          for d in moteur motoreducteur banc-accouplements; do
+            sed -i "s/^const VERSION_CACHE = .*/const VERSION_CACHE = '$d-v$(git rev-list --count HEAD)';/" www/$d/sw.js
+          done
 
       - name: Publier dans la branche gh-pages
         uses: peaceiris/actions-gh-pages@v4
@@ -85,7 +88,7 @@ jobs:
 
       - name: Ajouter les applis autonomes au site
         run: |
-          for d in pompe-centrifuge circuit-pneumatique accouplements engrenages broyage fraisage; do
+          for d in pompe-centrifuge circuit-pneumatique accouplements engrenages broyage fraisage moteur motoreducteur banc-accouplements; do
             test -f "$d/index.html" || { echo "Fichier manquant : $d/index.html"; exit 1; }
             cp -r "$d" www/
             rm -rf "www/$d/apk"   # projet Android : inutile sur le site
@@ -94,6 +97,9 @@ jobs:
           sed -i "s/^const VERSION_CACHE = .*/const VERSION_CACHE = 'engrenages-v$(git rev-list --count HEAD)';/" www/engrenages/sw.js
           sed -i "s/^const VERSION_CACHE = .*/const VERSION_CACHE = 'broyage-v$(git rev-list --count HEAD)';/" www/broyage/sw.js
           sed -i "s/^const VERSION_CACHE = .*/const VERSION_CACHE = 'fraisage-v$(git rev-list --count HEAD)';/" www/fraisage/sw.js
+          for d in moteur motoreducteur banc-accouplements; do
+            sed -i "s/^const VERSION_CACHE = .*/const VERSION_CACHE = '$d-v$(git rev-list --count HEAD)';/" www/$d/sw.js
+          done
 
       - name: Préparer le site
         run: touch www/.nojekyll

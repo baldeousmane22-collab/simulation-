@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Motoréducteur 3D</string>
+    <string name="title_activity_main">Motoréducteur 3D</string>
+    <string name="package_name">fr.formation.motoreducteur</string>
+    <string name="custom_url_scheme">fr.formation.motoreducteur</string>
+</resources>

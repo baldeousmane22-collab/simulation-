@@ -1,0 +1,24 @@
+{
+  "name": "Accouplements : banc d'alignement 3D",
+  "short_name": "Alignement 3D",
+  "description": "Banc d'accouplements en 3D : 8 types d'accouplement, alignement au comparateur (cales, vis de poussée), pannes et quiz.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

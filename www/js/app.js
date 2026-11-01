@@ -6,7 +6,6 @@ import { SimulationHydraulique, CARAC } from './simulation.js';
 import { FICHES, ETAPES, PANNES, QUIZ } from './donnees.js';
 import { svgSchema, majSchema } from './schema.js';
 import { VERSION } from './version.js';
-import { initBanc } from './accouplement/app.js';
 
 const $ = (sel, racine = document) => racine.querySelector(sel);
 const $$ = (sel, racine = document) => [...racine.querySelectorAll(sel)];
@@ -31,11 +30,8 @@ $('#version').textContent = 'Version ' + VERSION;
 function afficherEcran(id) {
   $$('.ecran').forEach(e => e.classList.toggle('actif', e.id === id));
   if (id === 'sim') demarrerBoucle(); else arreterBoucle();
-  if (id === 'accoup') banc.demarrerBoucle(); else banc.arreterBoucle();
 }
-// Banc « moteur + accouplement + réducteur » (écran #accoup, module séparé)
-const banc = initBanc(afficherEcran);
-const ECRANS_3D = ['sim', 'accoup'];
+const ECRANS_3D = ['sim'];
 
 async function ouvrirSimulation(onglet = 'commandes', depuisHistorique = false) {
   if (!depuisHistorique) history.pushState({ ecran: 'sim' }, '');
@@ -118,9 +114,8 @@ function image(t) {
 
 // Pause automatique quand l'application passe en arrière-plan
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) { arreterBoucle(); banc.arreterBoucle(); }
+  if (document.hidden) arreterBoucle();
   else if ($('#sim').classList.contains('actif')) demarrerBoucle();
-  else if ($('#accoup').classList.contains('actif')) banc.demarrerBoucle();
 });
 
 /* =====================================================================
@@ -273,7 +268,6 @@ function fermerFeuilles(depuisHistorique = false) {
   if (!feuilleOuverte()) return;
   $$('.feuille').forEach(f => { f.hidden = true; });
   if (scene && ongletActif !== 'pas') scene.selectionner(null);
-  banc.surFermetureFeuilles();
   if (!depuisHistorique) history.back();
 }
 $$('[data-fermer]').forEach(b => b.addEventListener('click', () => fermerFeuilles()));
