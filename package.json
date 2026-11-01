@@ -5,7 +5,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "serve": "npx http-server www -p 8080 -c-1",
+    "serve": "npx http-server hydraulique -p 8080 -c-1",
     "cap:sync": "npx cap sync android"
   },
   "devDependencies": {

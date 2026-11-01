@@ -14,7 +14,7 @@ name: Publier sur GitHub Pages
 on:
   push:
     branches: [main, 'claude/**', 'ccr-*']
-    paths: ['www/**', 'pompe-centrifuge/**', 'circuit-pneumatique/**', 'accouplements/**', 'engrenages/**', 'broyage/**', 'fraisage/**', 'moteur/**', 'motoreducteur/**', 'banc-accouplements/**', 'scripts/**', '.github/workflows/pages.yml']
+    paths: ['hydraulique/**', 'www/index.html', 'www/sw.js', 'pompe-centrifuge/**', 'circuit-pneumatique/**', 'accouplements/**', 'engrenages/**', 'broyage/**', 'fraisage/**', 'moteur/**', 'motoreducteur/**', 'banc-accouplements/**', 'scripts/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:
@@ -40,13 +40,13 @@ jobs:
 
       - name: Vérifier la présence des fichiers essentiels
         run: |
-          for f in index.html manifest.webmanifest sw.js js/app.js js/scene3d.js vendor/three.min.js plan-maison/index.html; do
-            test -f "www/$f" || { echo "Fichier manquant : www/$f"; exit 1; }
+          for f in hydraulique/index.html hydraulique/sw.js hydraulique/js/app.js hydraulique/js/scene3d.js hydraulique/vendor/three.min.js www/index.html www/sw.js www/plan-maison/index.html; do
+            test -f "$f" || { echo "Fichier manquant : $f"; exit 1; }
           done
 
       - name: Ajouter les applis autonomes au site
         run: |
-          for d in pompe-centrifuge circuit-pneumatique accouplements engrenages broyage fraisage moteur motoreducteur banc-accouplements; do
+          for d in hydraulique pompe-centrifuge circuit-pneumatique accouplements engrenages broyage fraisage moteur motoreducteur banc-accouplements; do
             test -f "$d/index.html" || { echo "Fichier manquant : $d/index.html"; exit 1; }
             cp -r "$d" www/
             rm -rf "www/$d/apk"   # projet Android : inutile sur le site
@@ -88,7 +88,7 @@ jobs:
 
       - name: Ajouter les applis autonomes au site
         run: |
-          for d in pompe-centrifuge circuit-pneumatique accouplements engrenages broyage fraisage moteur motoreducteur banc-accouplements; do
+          for d in hydraulique pompe-centrifuge circuit-pneumatique accouplements engrenages broyage fraisage moteur motoreducteur banc-accouplements; do
             test -f "$d/index.html" || { echo "Fichier manquant : $d/index.html"; exit 1; }
             cp -r "$d" www/
             rm -rf "www/$d/apk"   # projet Android : inutile sur le site

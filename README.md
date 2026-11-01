@@ -10,7 +10,9 @@ Le moteur, le motoréducteur et le banc d'accouplements sont des applications s�
 
 ## 1. Ouvrir l'application web (aucune installation)
 
-**Lien :** https://baldeousmane22-collab.github.io/simulation-/
+**Lien :** https://baldeousmane22-collab.github.io/simulation-/hydraulique/
+
+(La racine https://baldeousmane22-collab.github.io/simulation-/ affiche la liste de toutes les applis.)
 
 - Fonctionne dans Chrome sur Android (et sur PC, tablette, iPhone).
 - Pour l'installer comme une appli : menu ⋮ de Chrome → **« Ajouter à l'écran d'accueil »**
@@ -82,7 +84,7 @@ si on la perd, les téléphones devront désinstaller l'appli une fois.
 
 La version (`1.0.N`, N = nombre de commits) est calculée automatiquement à chaque
 construction par `scripts/version.sh`. Le même numéro apparaît sur l'accueil de l'appli, dans
-le cache hors connexion (`VERSION_CACHE` de `www/sw.js`) et dans l'APK. Comme `sw.js` change
+le cache hors connexion (`VERSION_CACHE` de `hydraulique/sw.js`) et dans l'APK. Comme `sw.js` change
 à chaque livraison, les téléphones téléchargent tout seuls la nouvelle version.
 
 ## 3. Utilisation
@@ -109,7 +111,7 @@ Onglets du panneau : **Commandes**, **Pas à pas** (7 étapes commentées),
 ## 4. Organisation du code
 
 ```
-www/                    Application web (c'est elle qui est publiée et embarquée dans l'APK)
+hydraulique/            Application web (publiée dans /hydraulique/ et embarquée dans l'APK)
   index.html            Écrans et panneaux
   css/style.css         Mise en page mobile (portrait / paysage)
   js/app.js             Interface, modes, quiz, navigation, PWA
@@ -120,13 +122,14 @@ www/                    Application web (c'est elle qui est publiée et embarqu�
   js/version.js         Numéro de version (rempli automatiquement)
   vendor/three.min.js   Three.js r186 (embarqué pour le hors-connexion)
   sw.js, manifest.webmanifest, icons/   PWA
-android/                Projet Android Capacitor 8
+android/, ios/          Projets Android et iPhone (Capacitor 8) de l'appli hydraulique
+www/                    Racine du site : liste des applis (index.html) + plan-maison/
 .github/workflows/      Publication GitHub Pages + construction de l'APK
 ```
 
-Tester sur un PC : `npx http-server www -p 8080` puis ouvrir http://localhost:8080.
+Tester sur un PC : `npx http-server hydraulique -p 8080` puis ouvrir http://localhost:8080.
 
-Les textes destinés aux élèves sont dans `www/js/donnees.js` : le formateur peut
+Les textes destinés aux élèves sont dans `hydraulique/js/donnees.js` : le formateur peut
 les modifier sans toucher au reste. Le numéro de version et le cache hors connexion sont
 mis à jour automatiquement à chaque publication.
 

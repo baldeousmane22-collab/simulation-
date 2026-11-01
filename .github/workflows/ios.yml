@@ -19,7 +19,7 @@ name: Construire l'app iPhone
 on:
   push:
     branches: [main, 'claude/**']
-    paths: ['www/**', 'ios/**', 'scripts/**', 'package.json', 'package-lock.json', 'capacitor.config.json', '.github/workflows/ios.yml']
+    paths: ['hydraulique/**', 'ios/**', 'scripts/**', 'package.json', 'package-lock.json', 'capacitor.config.json', '.github/workflows/ios.yml']
   workflow_dispatch:
 
 permissions:

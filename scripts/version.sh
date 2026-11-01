@@ -13,10 +13,10 @@ cd "$(dirname "$0")/.."
 N=$(git rev-list --count HEAD)
 VERSION="1.0.${N}"
 CODE=$((100 + N))
-sed -i.bak "s/^export const VERSION = .*/export const VERSION = '${VERSION}';/" www/js/version.js
-sed -i.bak "s/^const VERSION_CACHE = .*/const VERSION_CACHE = 'hydraulique-3d-v${VERSION}';/" www/sw.js
-rm -f www/js/version.js.bak www/sw.js.bak
-grep -q "'${VERSION}'" www/js/version.js && grep -q "v${VERSION}'" www/sw.js
+sed -i.bak "s/^export const VERSION = .*/export const VERSION = '${VERSION}';/" hydraulique/js/version.js
+sed -i.bak "s/^const VERSION_CACHE = .*/const VERSION_CACHE = 'hydraulique-v${VERSION}';/" hydraulique/sw.js
+rm -f hydraulique/js/version.js.bak hydraulique/sw.js.bak
+grep -q "'${VERSION}'" hydraulique/js/version.js && grep -q "v${VERSION}'" hydraulique/sw.js
 echo "Version appliquée : ${VERSION} (code Android ${CODE})"
 if [ -n "${GITHUB_ENV:-}" ]; then
   echo "VERSION_NAME=${VERSION}" >> "$GITHUB_ENV"
