@@ -43,7 +43,7 @@
   #detail { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; }
   #detail[hidden] { display: none; }
   .dv-backdrop { position: absolute; inset: 0; background: rgba(8,16,28,.55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); opacity: 0; transition: opacity .2s; }
-  .dv-card { position: relative; width: min(760px, 94vw); height: min(640px, 86vh); background: radial-gradient(circle at 50% 42%, #f4f6f8 0%, #c9d0d7 62%, #9aa4ae 100%); border-radius: 22px; box-shadow: 0 24px 60px rgba(0,0,0,.45), 0 0 0 6px rgba(242,169,0,.85); display: flex; flex-direction: column; overflow: hidden; transform: scale(.88); opacity: 0; transition: transform .22s ease, opacity .2s; color: #0f2741; }
+  .dv-card { position: relative; width: min(1180px, 97vw); height: min(760px, 94vh); background: radial-gradient(circle at 50% 42%, #f4f6f8 0%, #c9d0d7 62%, #9aa4ae 100%); border-radius: 22px; box-shadow: 0 24px 60px rgba(0,0,0,.45), 0 0 0 6px rgba(242,169,0,.85); display: flex; flex-direction: column; overflow: hidden; transform: scale(.88); opacity: 0; transition: transform .22s ease, opacity .2s; color: #0f2741; }
   #detail.show .dv-backdrop { opacity: 1; } #detail.show .dv-card { transform: scale(1); opacity: 1; }
   .dv-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px 6px; }
   .dv-badge { min-width: 44px; height: 44px; border-radius: 12px; border: 3px solid #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 20px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.5); box-shadow: 0 2px 6px rgba(0,0,0,.25); }
@@ -51,13 +51,54 @@
   .dv-sub { font-size: 13px; color: #3c4b5c; margin-top: 2px; }
   .dv-head .grow { flex: 1; min-width: 0; }
   #dv-close { background: #0f2741; color: #fff; width: 44px; height: 44px; padding: 0; font-size: 20px; flex: none; }
-  .dv-canvas { position: relative; flex: 1; min-height: 0; }
-  .dv-canvas canvas { position: absolute; inset: 0; cursor: grab; }
-  .dv-canvas canvas:active { cursor: grabbing; }
+  .dv-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 10px; padding: 0 12px; }
+  .dv-3d { position: relative; min-height: 0; border-radius: 16px; background: radial-gradient(circle at 50% 45%, #fbfcfd 0%, #d6dce2 70%, #b9c2cb 100%); box-shadow: inset 0 0 0 1px rgba(15,39,65,.12); overflow: hidden; }
+  .dv-3d canvas { position: absolute; inset: 0; cursor: grab; }
+  .dv-3d canvas:active { cursor: grabbing; }
+  .dv-tag { position: absolute; left: 10px; top: 8px; font-size: 11px; font-weight: 800; letter-spacing: .08em; color: #0f2741; background: rgba(255,255,255,.75); border-radius: 999px; padding: 3px 9px; pointer-events: none; }
+  .dv-zone { position: absolute; left: 10px; right: 10px; bottom: 10px; background: rgba(15,39,65,.9); color: #fff; border-radius: 10px; padding: 7px 10px; font-size: 13px; pointer-events: none; }
+  .dv-zone b { display: inline-flex; width: 22px; height: 22px; border-radius: 50%; background: #f2a900; color: #0f2741; align-items: center; justify-content: center; margin-right: 6px; }
+  .dv-schema { min-height: 0; overflow: auto; background: #fbfbf7; border-radius: 16px; box-shadow: inset 0 0 0 1px rgba(15,39,65,.15); }
+  .dv-schema svg { display: block; width: 100%; height: auto; font-family: "Segoe UI", Roboto, Arial, sans-serif; }
+  .dv-schema .frame { fill: none; stroke: #1d2733; stroke-width: 1.4; }
+  .dv-schema .ttl { font-size: 19px; font-weight: 800; fill: #0f2741; } .dv-schema .sub { font-size: 11.5px; fill: #4a5868; }
+  .dv-schema .sec { fill: url(#hz); stroke: #10161d; stroke-width: 1.7; stroke-linejoin: round; } .dv-schema .sec.grain { fill: url(#gr); }
+  .dv-schema .vis, .dv-schema .face { fill: none; stroke: #10161d; stroke-width: 1.7; stroke-linejoin: round; }
+  .dv-schema .face { fill: #eef0f2; } .dv-schema .hole { fill: #fbfbf7; stroke: #10161d; stroke-width: 1.7; }
+  .dv-schema .hid { fill: none; stroke: #10161d; stroke-width: 1; stroke-dasharray: 6 4; }
+  .dv-schema .thin { fill: none; stroke: #10161d; stroke-width: .8; }
+  .dv-schema .ax { stroke: #b0302a; stroke-width: 1; stroke-dasharray: 18 4 3 4; }
+  .dv-schema .ball { fill: #fff; stroke: #10161d; stroke-width: 1.6; } .dv-schema .cage { stroke: #9a6b00; stroke-width: 2.2; fill: none; }
+  .dv-schema .tab { fill: #f3e7e7; stroke: #10161d; stroke-width: 1.4; }
+  .dv-schema .zs { stroke: #10161d; stroke-width: 1.5; fill: #eef0f2; } .dv-schema .zs.ring { fill: none; }
+  .dv-schema .zr { fill: transparent; stroke: none; }
+  .dv-schema .dim line { stroke: #1f5fa8; stroke-width: 1; } .dv-schema .dim text { font-size: 12px; fill: #1f5fa8; font-weight: 600; }
+  .dv-schema .vt { font-size: 12px; fill: #4a5868; font-style: italic; }
+  .dv-schema .lead { stroke: #10161d; stroke-width: 1; } .dv-schema .dot { fill: #10161d; }
+  .dv-schema .bc { fill: #fff; stroke: #0f2741; stroke-width: 2; } .dv-schema .bub text, .dv-schema .lt { font-size: 13px; font-weight: 800; fill: #0f2741; }
+  .dv-schema .bub, .dv-schema .leg { cursor: pointer; outline: none; }
+  .dv-schema .h { font-size: 13px; font-weight: 800; fill: #0f2741; } .dv-schema .ll { font-size: 12.5px; fill: #1d2733; } .dv-schema .lr { fill: transparent; }
+  .dv-schema .tbk rect, .dv-schema .tbk line { fill: none; stroke: #1d2733; stroke-width: 1.2; } .dv-schema .tbk .k { font-size: 10.5px; fill: #5a6878; text-transform: uppercase; letter-spacing: .04em; }
+  .dv-schema .tbk .v { font-size: 13.5px; font-weight: 700; fill: #0f2741; } .dv-schema .tbk .v.big { font-size: 26px; font-weight: 900; stroke: #0f2741; stroke-width: .6; } .dv-schema .tbk .v.sm { font-size: 12px; font-weight: 500; }
+  /* zone repérée allumée (lien 3D ↔ schéma) */
+  .dv-schema .hot.zr { fill: rgba(242,169,0,.45); stroke: #e08e00; stroke-width: 2; }
+  .dv-schema .hot.sec, .dv-schema .hot.zs, .dv-schema .hot.face, .dv-schema .hot.tab, .dv-schema .hot.ball { stroke: #e08e00; stroke-width: 3.2; fill: rgba(242,169,0,.55); }
+  .dv-schema .hot.cage { stroke: #e08e00; stroke-width: 4; }
+  .dv-schema .bub.hot .bc, .dv-schema .leg.hot .bc { fill: #f2a900; } .dv-schema .leg.hot .lr { fill: rgba(242,169,0,.25); }
+  .dv-schema .bub.hot .lead { stroke: #e08e00; stroke-width: 2.2; }
+  .dv-schema .bub:focus-visible .bc, .dv-schema .leg:focus-visible .lr { stroke: #4dabf7; stroke-width: 3; }
+  @media (max-width: 760px), (orientation: portrait) and (max-width: 900px) { .dv-body { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) minmax(0, 1.15fr); } }
   .dv-lens { position: absolute; left: 50%; top: 50%; width: min(86%, 86vh); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; border: 2px dashed rgba(15,39,65,.18); pointer-events: none; }
-  .dv-bar { display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap; padding: 10px 12px 14px; }
+  .dv-bar { display: flex; gap: 8px; row-gap: 6px; justify-content: center; align-items: center; flex-wrap: wrap; padding: 10px 12px 14px; }
   .dv-bar button { background: #0f2741; color: #fff; }
   .dv-bar #dv-play { background: var(--amber); color: #0f2741; }
+  #detail.coupe .dv-lens { display: none; } .dv-lens { display: none; }
+  @media (max-width: 640px) { .dv-hint { display: none; } .dv-head { padding: 10px 12px 4px; } .dv-bar { padding: 8px 8px 10px; } .dv-note { font-size: 12px; } }
+  .dv-modes { display: inline-flex; background: rgba(15,39,65,.12); border-radius: 999px; padding: 3px; gap: 3px; }
+  .dv-modes button { background: transparent; color: #0f2741; padding: 8px 12px; }
+  .dv-modes button.on { background: #0f2741; color: #fff; }
+  #dv-close2 { background: #fff; color: #0f2741; border: 2px solid #0f2741; }
+  .dv-note { margin: 8px 16px 0; padding: 7px 12px; background: rgba(15,39,65,.08); border-left: 4px solid #f2a900; border-radius: 8px; font-size: 13px; }
   .dv-hint { font-size: 12px; color: #3c4b5c; width: 100%; text-align: center; }
   #detail button:focus-visible, .bar button:focus-visible, .chip:focus-visible { outline: 3px solid #4dabf7; outline-offset: 2px; }
   body.ar .top { background: linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,0)); }
@@ -98,13 +139,22 @@
     <div class="dv-head">
       <span class="dv-badge">—</span>
       <div class="grow"><h2 id="dv-title">Pièce</h2><div class="dv-sub"></div></div>
-      <button id="dv-close" aria-label="Fermer la vue de détail">✕</button>
+      <button id="dv-close" aria-label="Fermer la vue de détail" title="Fermer">✕</button>
     </div>
-    <div class="dv-canvas"><div class="dv-lens"></div></div>
-    <div class="dv-bar">
-      <button id="dv-play" aria-pressed="false">⏸ Pause</button>
-      <button id="dv-reset">⟲ Recentrer</button>
-      <div class="dv-hint">Glissez pour tourner la pièce · molette ou deux doigts pour zoomer · Échap pour fermer · Espace : pause</div>
+    <div class="dv-body">
+      <section class="dv-3d" aria-label="Pièce en 3D (rotation continue)"><div class="dv-lens"></div><span class="dv-tag">3D</span><div class="dv-zone" hidden></div></section>
+      <section class="dv-schema" aria-label="Schéma technique de la pièce"></section>
+    </div>
+    <p class="dv-note" hidden></p>
+    <div class="dv-bar" role="toolbar" aria-label="Commandes de la vue de détail">
+      <button id="dv-play" aria-pressed="false">⏸ Rotation : pause</button>
+      <span class="dv-modes" role="group" aria-label="Type de vue">
+        <button data-mode="normal" aria-pressed="true">Vue normale</button>
+        <button data-mode="eclatee" aria-pressed="false">Vue éclatée</button>
+        <button data-mode="coupe" aria-pressed="false">Vue en coupe</button>
+      </span>
+      <button id="dv-close2">✕ Fermer</button>
+      <div class="dv-hint">Survolez ou touchez la pièce : la zone s'allume sur le schéma · touchez un repère du schéma (A, B, C…) : il s'allume sur la pièce · glisser : tourner · 1 / 2 / 3 : normale / éclatée / coupe · Échap : fermer</div>
     </div>
   </div>
 </div>

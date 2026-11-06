@@ -70,7 +70,7 @@ export function buildTouret(root) {
     holder.add(cap); capsList.push(cap);
     root.add(holder);
     const key = opt.key || num;
-    parts[key] = { col: opt.color, g: holder, spin, rot: opt.rot !== undefined ? opt.rot : ROT.has(num), dx: opt.dx || 0, dy: opt.dy || 0, num: PIECES[num] ? num : null, mats: [mat], capMats: [cm], hatch, dir: opt.dir || 1, extras: [] };
+    parts[key] = { prof, col: opt.color, g: holder, spin, rot: opt.rot !== undefined ? opt.rot : ROT.has(num), dx: opt.dx || 0, dy: opt.dy || 0, num: PIECES[num] ? num : null, mats: [mat], capMats: [cm], hatch, dir: opt.dir || 1, extras: [] };
     return parts[key];
   }
   const smallMat = (col, metal = 0.5) => new THREE.MeshStandardMaterial({ color: col, metalness: metal, roughness: 0.4, clippingPlanes: CLIP, side: THREE.DoubleSide });
@@ -118,7 +118,7 @@ export function buildTouret(root) {
     capShapes(capN, [[new THREE.Vector2(X(xa), ri), new THREE.Vector2(X(xb), ri), new THREE.Vector2(X(xb), R - nd), new THREE.Vector2(X(xa), R - nd)],
                      [new THREE.Vector2(X(xa), -ri), new THREE.Vector2(X(xb), -ri), new THREE.Vector2(X(xb), -R), new THREE.Vector2(X(xa), -R)]], cmN);
     holder.add(capN); capsList.push(capN);
-    parts[nutKey] = { col: nutCol, g: holder, spin, rot: true, dx: dxN, dy: 0, num: nutNum || null, mats: [mN], capMats: [cmN], hatch: true, dir: -1, extras: [] };
+    parts[nutKey] = { lock: { kind: 'nut', xa, xb, ri, R, nd, nw }, col: nutCol, g: holder, spin, rot: true, dx: dxN, dy: 0, num: nutNum || null, mats: [mN], capMats: [cmN], hatch: true, dir: -1, extras: [] };
 
     // rondelle frein
     const xf = side > 0 ? xa : xb;                 // face de l'écrou contre la rondelle
@@ -134,8 +134,9 @@ export function buildTouret(root) {
     const bx0 = Math.min(X(w0), X(xe)), bx1 = Math.max(X(w1), X(xe));
     const bent = new THREE.Mesh(new THREE.BoxGeometry(bx1 - bx0, t, nw * 1.6), mW); bent.position.set((bx0 + bx1) / 2, R - nd + t / 2 + 0.01, 0); sp.add(bent);
     // languettes extérieures non rabattues
+    const lugs = [];
     if (lugR) for (const a of [Math.PI / 3, 2 * Math.PI / 3, Math.PI, 4 * Math.PI / 3, 5 * Math.PI / 3, 0]) {
-      const lug = new THREE.Mesh(new THREE.BoxGeometry(t, lugR - Rw + 0.1, 0.24), mW); const h = new THREE.Group(); h.rotation.x = a; lug.position.set((X(w0) + X(w1)) / 2, (lugR + Rw) / 2 - 0.05, 0); h.add(lug); sp.add(h);
+      const lug = new THREE.Mesh(new THREE.BoxGeometry(t, lugR - Rw + 0.1, 0.24), mW); lugs.push(lug); const h = new THREE.Group(); h.rotation.x = a; lug.position.set((X(w0) + X(w1)) / 2, (lugR + Rw) / 2 - 0.05, 0); h.add(lug); sp.add(h);
     }
     const hW = new THREE.Group(); hW.add(sp); root.add(hW);
     const cmW = capMaterial(washCol, 1, false); const capW = new THREE.Group(); capW.userData.isCap = true;
@@ -143,7 +144,7 @@ export function buildTouret(root) {
     const top = [new THREE.Vector2(X(xo), ri), new THREE.Vector2(X(xn), ri), new THREE.Vector2(X(xn), R - nd), new THREE.Vector2(X(xe), R - nd), new THREE.Vector2(X(xe), T), new THREE.Vector2(X(xn), T), new THREE.Vector2(X(xn), H), new THREE.Vector2(X(xo), H)];
     capShapes(capW, [top, [new THREE.Vector2(X(w0), -ri + 0.12), new THREE.Vector2(X(w1), -ri + 0.12), new THREE.Vector2(X(w1), -Rw), new THREE.Vector2(X(w0), -Rw)]], cmW);
     hW.add(capW); capsList.push(capW);
-    parts[washKey] = { col: washCol, g: hW, spin: sp, rot: true, dx: dxW, dy: 0, num: washNum || null, mats: [mW], capMats: [cmW], hatch: false, dir: 1, extras: [] };
+    parts[washKey] = { lock: { kind: 'washer', w0, w1, ri, Rw, R, nd, xe, lugR: lugR || 0, tabIn, bent, lugs }, col: washCol, g: hW, spin: sp, rot: true, dx: dxW, dy: 0, num: washNum || null, mats: [mW], capMats: [cmW], hatch: false, dir: 1, extras: [] };
   }
   // 6 + 7 : contre le roulement 4 (rondelle 1203–1212, écrou 1212–1257)
   lockSet({ nutKey: 7, nutNum: 7, washKey: 6, washNum: 6, nutCol: PIECES[7][1], washCol: PIECES[6][1], xa: 1212, xb: 1257, xw: 1203, ri: 0.86, R: 1.40, Rw: 1.42, side: 1, dxN: 1.5, dxW: 1.2, lugR: 1.62 });
@@ -161,7 +162,7 @@ export function buildTouret(root) {
     const lists = [];
     for (const prof of [b.profOuter, b.profInner]) for (const s of [1, -1]) lists.push(prof.map(([r, y]) => new THREE.Vector2(-y, s * r)));
     capShapes(cap, lists, cm); g.add(cap); capsList.push(cap);
-    parts[num] = { g, bearing: b, rot: true, dx: 0, dy: 0, num, mats: [om, im], capMats: [cm], hatch: true, dir: num === 3 ? 1 : -1, extras: [] };
+    parts[num] = { xpx, g, bearing: b, rot: true, dx: 0, dy: 0, num, mats: [om, im], capMats: [cm], hatch: true, dir: num === 3 ? 1 : -1, extras: [] };
   };
   mkBearing(3, 2.26, 5.30, 1.20, 593);
   mkBearing(4, 2.16, 4.70, 1.06, 1150);
@@ -234,7 +235,7 @@ export function buildTouret(root) {
     const hexm = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.42, 6), smallMat(0x212529, 0.5)); hexm.rotation.z = Math.PI / 2; hexm.position.x = -dirx * 0.01;
     const body = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, len, 16), m); body.rotation.z = Math.PI / 2; body.position.x = dirx * (len / 2 + 0.2);
     s.add(head, hexm, body); s.position.set(X(xp), rr, 0); root.add(s);
-    parts[key] = { g: s, rot: false, dx, dy: 0, num: 20, mats: [m], capMats: [], extras: [] };
+    parts[key] = { screw: { len, headR: 0.3, headL: 0.4, bodyR: 0.16, hexR: 0.14, dirx, head, body }, g: s, rot: false, dx, dy: 0, num: 20, mats: [m], capMats: [], extras: [] };
   };
   screw(1373, 3.6, -1, 20, 2.6, 3.1);
   screw(387, 3.28, 1, 'vg', -2.2, 2.5);
