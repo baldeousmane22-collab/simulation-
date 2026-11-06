@@ -14,7 +14,7 @@ name: Publier sur GitHub Pages
 on:
   push:
     branches: [main, 'claude/**', 'ccr-*']
-    paths: ['hydraulique/**', 'www/index.html', 'www/sw.js', 'pompe-centrifuge/**', 'circuit-pneumatique/**', 'accouplements/**', 'engrenages/**', 'broyage/**', 'fraisage/**', 'moteur/**', 'motoreducteur/**', 'banc-accouplements/**', 'scripts/**', '.github/workflows/pages.yml']
+    paths: ['hydraulique/**', 'www/index.html', 'www/sw.js', 'pompe-centrifuge/**', 'circuit-pneumatique/**', 'accouplements/**', 'engrenages/**', 'broyage/**', 'fraisage/**', 'moteur/**', 'motoreducteur/**', 'banc-accouplements/**', 'touret-a-meuler-ra/**', 'scripts/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:
@@ -46,7 +46,7 @@ jobs:
 
       - name: Ajouter les applis autonomes au site
         run: |
-          for d in hydraulique pompe-centrifuge circuit-pneumatique accouplements engrenages broyage fraisage moteur motoreducteur banc-accouplements; do
+          for d in hydraulique pompe-centrifuge circuit-pneumatique accouplements engrenages broyage fraisage moteur motoreducteur banc-accouplements touret-a-meuler-ra; do
             test -f "$d/index.html" || { echo "Fichier manquant : $d/index.html"; exit 1; }
             cp -r "$d" www/
             rm -rf "www/$d/apk"   # projet Android : inutile sur le site
@@ -88,7 +88,7 @@ jobs:
 
       - name: Ajouter les applis autonomes au site
         run: |
-          for d in hydraulique pompe-centrifuge circuit-pneumatique accouplements engrenages broyage fraisage moteur motoreducteur banc-accouplements; do
+          for d in hydraulique pompe-centrifuge circuit-pneumatique accouplements engrenages broyage fraisage moteur motoreducteur banc-accouplements touret-a-meuler-ra; do
             test -f "$d/index.html" || { echo "Fichier manquant : $d/index.html"; exit 1; }
             cp -r "$d" www/
             rm -rf "www/$d/apk"   # projet Android : inutile sur le site

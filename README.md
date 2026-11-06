@@ -308,3 +308,15 @@ radial et de face (12 h / 3 h / 6 h / 9 h), calcul des cales et des déplacement
 Dossier `banc-accouplements/` (l'appli `accouplements/` — cours + 12 types — reste inchangée).
 
 Ces trois applis partagent le même code de banc (`js/banc/`) ; seul `js/config.js` change d'un dossier à l'autre.
+
+---
+
+# Touret à meuler 3D + réalité augmentée (guidage en rotation)
+
+- **Lien web** : https://baldeousmane22-collab.github.io/simulation-/touret-a-meuler-ra/
+
+Touret à meuler d'après le dessin d'ensemble du cours « Solutions constructives – guidage en rotation » (20 repères,
+nomenclature en couleurs). **Montage pas à pas** (26 étapes), **en marche** (affûtage avec étincelles), coupe, éclaté,
+repères. **Réalité augmentée** : dans Chrome sur Android (ARCore / « Services Google Play pour la RA »), bouton
+« 👓 Réalité augmentée », viser une table puis toucher l'écran pour poser le touret à taille réelle (meule Ø200).
+Dossier `touret-a-meuler-ra/` (page autonome, un seul fichier).
