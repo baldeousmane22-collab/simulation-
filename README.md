@@ -314,9 +314,12 @@ Ces trois applis partagent le même code de banc (`js/banc/`) ; seul `js/config.
 # Touret à meuler 3D + réalité augmentée (guidage en rotation)
 
 - **Lien web** : https://baldeousmane22-collab.github.io/simulation-/touret-a-meuler-ra/
+- **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/touret-ra/TouretRA.apk
+  (version 1.0.N toujours plus élevée : s'installe par-dessus l'ancienne)
 
 Touret à meuler d'après le dessin d'ensemble du cours « Solutions constructives – guidage en rotation » (20 repères,
 nomenclature en couleurs). **Montage pas à pas** (26 étapes), **en marche** (affûtage avec étincelles), coupe, éclaté,
 repères. **Réalité augmentée** : dans Chrome sur Android (ARCore / « Services Google Play pour la RA »), bouton
 « 👓 Réalité augmentée », viser une table puis toucher l'écran pour poser le touret à taille réelle (meule Ø200).
-Dossier `touret-a-meuler-ra/` (page autonome, un seul fichier).
+Si la caméra est refusée, l'appli explique comment l'autoriser dans les paramètres du téléphone ; dans l'APK, la RA
+s'ouvre dans Chrome (lien direct). Dossier `touret-a-meuler-ra/` (page autonome) ; projet Android dans `touret-a-meuler-ra/apk/`.

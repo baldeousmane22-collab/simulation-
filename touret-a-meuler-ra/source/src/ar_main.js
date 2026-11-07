@@ -111,14 +111,38 @@ function leaveARScene() {
 let bgSaved = scene.background;
 function restoreBg() { scene.background = bgSaved; }
 
+// appli Android (APK) : la RA WebXR n'existe pas dans la fenêtre de l'appli → Chrome
+const IN_APK = !!(window.Capacitor && (window.Capacitor.isNativePlatform ? window.Capacitor.isNativePlatform() : true));
+const WEB_URL = 'https://baldeousmane22-collab.github.io/simulation-/touret-a-meuler-ra/';
+const CAM_HELP = '<ol style="margin:6px 0 0 18px;padding:0;text-align:left">'
+  + '<li>Ouvrez les <b>Paramètres</b> du téléphone → <b>Applications</b> → <b>' + (IN_APK ? 'Touret RA' : 'Chrome') + '</b> → <b>Autorisations</b>.</li>'
+  + '<li>Touchez <b>Appareil photo</b> (Caméra) → <b>Autoriser</b> (ou « Autoriser seulement si l\'appli est en cours d\'utilisation »).</li>'
+  + (IN_APK ? '' : '<li>Dans Chrome : touchez l\'icône à gauche de l\'adresse (cadenas ou réglages) → <b>Autorisations</b> → <b>Caméra</b> → <b>Autoriser</b>.</li>')
+  + '<li>Revenez ici, rechargez la page puis touchez de nouveau « 👓 Réalité augmentée ».</li></ol>';
+function cameraDenied() {
+  showNote('<b>La caméra est refusée : la réalité augmentée ne peut pas démarrer.</b><br>Pour l\'autoriser dans les paramètres du téléphone :' + CAM_HELP);
+}
+function showNote(html) {
+  const n = $('arnote'); n.innerHTML = html + '<br><small>(toucher ce message pour le fermer)</small>'; n.classList.add('show');
+  n.onclick = (e) => { if (e.target.tagName !== 'A') n.classList.remove('show'); };
+}
+async function cameraState() {
+  try { const r = await navigator.permissions.query({ name: 'camera' }); return r.state; } catch (e) { return 'unknown'; }
+}
 async function startAR() {
+  if (IN_APK) return showNote('<b>La réalité augmentée s\'ouvre dans Google Chrome.</b><br>La fenêtre de l\'appli ne permet pas la RA. Touchez le lien : <a href="' + WEB_URL + '" target="_blank" rel="noopener" style="color:#8a4b00;font-weight:bold">ouvrir le touret dans Chrome</a>, puis « 👓 Réalité augmentée » et autorisez la caméra.<br>Si la caméra a été refusée :' + CAM_HELP.replace('Touret RA', 'Chrome'));
   if (!navigator.xr) return arUnavailable();
+  if (await cameraState() === 'denied') return cameraDenied();
   let ok = false; try { ok = await navigator.xr.isSessionSupported('immersive-ar'); } catch (e) { ok = false; }
   if (!ok) return arUnavailable();
   bgSaved = scene.background;
   try {
     session = await navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['hit-test'], optionalFeatures: ['dom-overlay', 'local-floor'], domOverlay: { root: $('overlay') } });
-  } catch (e) { return arUnavailable(String(e && e.message || e)); }
+  } catch (e) {
+    const m = String(e && e.message || e);
+    if ((e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) || /denied|permission|refus/i.test(m) || await cameraState() === 'denied') return cameraDenied();
+    return arUnavailable(m);
+  }
   renderer.xr.setReferenceSpaceType('local');
   await renderer.xr.setSession(session);
   enterARScene();
@@ -129,11 +153,10 @@ async function startAR() {
   syncUI();
 }
 function arUnavailable(msg) {
-  $('arnote').classList.add('show');
-  $('arnote').onclick = () => $('arnote').classList.remove('show');
   let framed = false; try { framed = window.top !== window; } catch (e) { framed = true; }
-  if (framed) { $('arnote').innerHTML = '<b>La réalité augmentée est bloquée dans cette fenêtre.</b><br>Ouvrez la version publiée sur votre site <b>github.io</b> (dossier « touret-a-meuler-ra ») dans <b>Google Chrome</b> sur votre téléphone Android. La simulation 3D animée marche ici.'; return; }
-  $('arnote').innerHTML = '<b>Réalité augmentée non disponible ici.</b><br>Ouvrez ce lien dans <b>Google Chrome</b> sur un téléphone Android compatible ARCore (« Services Google Play pour la RA » installés). La simulation 3D reste utilisable ci-dessus.' + (msg ? '<br><small>' + msg + '</small>' : '');
+  if (framed) { showNote('<b>La réalité augmentée est bloquée dans cette fenêtre.</b><br>Ouvrez la version publiée sur votre site <b>github.io</b> (dossier « touret-a-meuler-ra ») dans <b>Google Chrome</b> sur votre téléphone Android. La simulation 3D animée marche ici.'); return; }
+  if (/denied|permission|refus/i.test(msg || '')) return cameraDenied();
+  showNote('<b>Réalité augmentée non disponible ici.</b><br>Ouvrez ce lien dans <b>Google Chrome</b> sur un téléphone Android compatible ARCore (« Services Google Play pour la RA » installés). Vérifiez aussi que la caméra est autorisée :' + CAM_HELP + (msg ? '<small>' + msg.replace(/[<>&]/g, '') + '</small>' : ''));
 }
 
 const _cam = new THREE.Vector3();

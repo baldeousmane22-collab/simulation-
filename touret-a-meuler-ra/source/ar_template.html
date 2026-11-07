@@ -29,7 +29,7 @@
   #cap.show { display: block; }
   #hint { position: absolute; top: 112px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.65); padding: 8px 14px; border-radius: 12px; font-size: 14px; width: max-content; max-width: 90%; text-align: center; display: none; }
   #hint.show { display: block; }
-  #arnote { position: absolute; top: 112px; left: 12px; right: 12px; background: #fff3cd; color: #5c4300; border-radius: 12px; padding: 10px 12px; font-size: 13px; display: none; }
+  #arnote { position: absolute; top: 112px; left: 12px; right: 12px; background: #fff3cd; color: #5c4300; border-radius: 12px; padding: 10px 12px; font-size: 13px; display: none; max-height: 60vh; overflow: auto; z-index: 30; }
   #arnote.show { display: block; }
   #nompanel { position: absolute; left: 8px; top: 64px; bottom: 140px; width: min(300px, 80vw); display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
   #overlay #nompanel { pointer-events: none; } #overlay #nompanel > * { pointer-events: auto; }   /* le panneau fermé ne bloque pas la 3D */
