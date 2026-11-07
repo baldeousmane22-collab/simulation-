@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Engrenages 3D</title>
+  <meta name="description" content="Engrenages animés en 3D pour le brevet technique : types d'engrenages, formules, calculs détaillés, profil des dents, exercices corrigés et quiz.">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Engrenages 3D">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self'">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="entete">
+  <div class="titre"><span class="logo">⚙️</span> Engrenages 3D <small>Brevet technique</small></div>
+  <nav class="types" id="types" aria-label="Types d'engrenages"></nav>
+</header>
+
+<main class="disposition">
+  <section class="zone3d" id="zone3d" aria-label="Vue 3D">
+    <canvas id="canvas3d" aria-label="Engrenages animés en 3D"></canvas>
+    <div id="etiquettes" class="calque-etiq"></div>
+    <div class="nom-type" id="nom-type"></div>
+    <div class="outils">
+      <button type="button" class="btn-rond" id="b-pause" title="Pause / lecture" aria-label="Pause">⏸</button>
+      <button type="button" class="btn-rond" id="b-etiq" title="Étiquettes" aria-label="Étiquettes" aria-pressed="true">🏷️</button>
+      <button type="button" class="btn-rond" id="b-centre" title="Recentrer la vue" aria-label="Recentrer">🎯</button>
+      <button type="button" class="btn-rond" id="b-plein" title="Plein écran" aria-label="Plein écran">⛶</button>
+    </div>
+    <div class="hud" id="hud"></div>
+    <label class="vitesse">🐢 <input type="range" id="vitesse" min="0.1" max="3" step="0.1" value="1" aria-label="Vitesse de l'animation"> 🐇</label>
+    <div class="info3d" id="info3d" hidden></div>
+    <div class="aide3d">1 doigt : tourner · 2 doigts : zoomer / déplacer · toucher une pièce : son nom</div>
+  </section>
+
+  <aside class="panneau">
+    <div class="onglets" role="tablist">
+      <button type="button" role="tab" data-onglet="reglages" class="actif">🎛️ Réglages</button>
+      <button type="button" role="tab" data-onglet="calculs">🧮 Calculs</button>
+      <button type="button" role="tab" data-onglet="profil">📐 Profil</button>
+      <button type="button" role="tab" data-onglet="cours">📘 Cours</button>
+      <button type="button" role="tab" data-onglet="exercices">✏️ Exercices</button>
+      <button type="button" role="tab" data-onglet="quiz">❓ Quiz</button>
+    </div>
+    <div class="contenu">
+      <div class="page actif" id="p-reglages">
+        <div id="params"></div>
+        <div id="alertes"></div>
+        <h3>Résultats principaux</h3>
+        <div id="resume" class="resume"></div>
+        <button type="button" class="btn" id="b-defaut">↺ Valeurs par défaut</button>
+      </div>
+      <div class="page" id="p-calculs">
+        <p class="note">Toutes les valeurs sont recalculées en direct avec les réglages. α = 20° (denture normale ISO).</p>
+        <div id="calculs"></div>
+      </div>
+      <div class="page" id="p-profil">
+        <div class="choix-profil" id="choix-profil"></div>
+        <div class="cadre-svg" id="cadre-svg"></div>
+        <p class="note">Pincer pour zoomer, glisser pour déplacer, double-toucher pour revenir.</p>
+        <div id="legende-profil"></div>
+      </div>
+      <div class="page" id="p-cours"></div>
+      <div class="page" id="p-exercices"></div>
+      <div class="page" id="p-quiz"></div>
+    </div>
+  </aside>
+</main>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
