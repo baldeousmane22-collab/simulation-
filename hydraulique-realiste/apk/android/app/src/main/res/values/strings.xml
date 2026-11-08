@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Hydraulique réaliste</string>
+    <string name="title_activity_main">Hydraulique réaliste</string>
+    <string name="package_name">fr.formation.hydrauliquerealiste</string>
+    <string name="custom_url_scheme">fr.formation.hydrauliquerealiste</string>
+</resources>

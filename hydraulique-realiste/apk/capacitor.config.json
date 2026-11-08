@@ -1,0 +1,8 @@
+{
+  "appId": "fr.formation.hydrauliquerealiste",
+  "appName": "Hydraulique réaliste",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#11161c"
+  }
+}

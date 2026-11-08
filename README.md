@@ -323,3 +323,18 @@ repères. **Réalité augmentée** : dans Chrome sur Android (ARCore / « Servic
 « 👓 Réalité augmentée », viser une table puis toucher l'écran pour poser le touret à taille réelle (meule Ø200).
 Si la caméra est refusée, l'appli explique comment l'autoriser dans les paramètres du téléphone ; dans l'APK, la RA
 s'ouvre dans Chrome (lien direct). Dossier `touret-a-meuler-ra/` (page autonome) ; projet Android dans `touret-a-meuler-ra/apk/`.
+
+---
+
+# Hydraulique réaliste 3D (physique réelle)
+
+- **Lien web** : https://baldeousmane22-collab.github.io/simulation-/hydraulique-realiste/
+- **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/hydraulique-realiste/HydrauliqueRealiste.apk
+
+Banc complet calculé avec les vraies équations : compressibilité de l'huile, débit des orifices
+(`Q = Cd·S·√(2Δp/ρ)`), fuites internes de la pompe, clapet du limiteur, tiroir du distributeur 4/3 (centre fermé
+ou tandem, commande proportionnelle), réducteur de débit unidirectionnel (descente freinée), vérin Ø50/28 × 500
+qui soulève 0 à 1500 kg, frottements des joints, amortisseurs de fin de course, échauffement et viscosité de l'huile.
+**Vue en coupe** (pignons, tiroir, clapet, piston), **voir l'huile** (couleur = pression, chevrons = débit),
+**courbes** (15 s), **6 pannes** + panne mystère, **calculs** en direct, sons. Dossier `hydraulique-realiste/`
+(l'appli `hydraulique/` reste inchangée) ; projet Android dans `hydraulique-realiste/apk/`.
