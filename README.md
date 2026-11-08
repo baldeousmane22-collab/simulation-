@@ -87,6 +87,25 @@ construction par `scripts/version.sh`. Le même numéro apparaît sur l'accueil 
 le cache hors connexion (`VERSION_CACHE` de `hydraulique/sw.js`) et dans l'APK. Comme `sw.js` change
 à chaque livraison, les téléphones téléchargent tout seuls la nouvelle version.
 
+## Version Windows (toutes les applis, vidéoprojecteur)
+
+- **Installation** : https://github.com/baldeousmane22-collab/simulation-/releases/download/windows/Simulations3D-Installation.exe
+- **Portable (sans installation, clé USB)** : https://github.com/baldeousmane22-collab/simulation-/releases/download/windows/Simulations3D-Portable.exe
+
+Une seule appli Windows 10/11 (64 bits) qui contient l'accueil et **toutes** les simulations, hors connexion.
+Elle s'ouvre en **plein écran** (vidéoprojecteur) et empêche la mise en veille de l'écran pendant la séance.
+Si Windows affiche « Windows a protégé votre ordinateur » (exe non signé) : **Informations complémentaires → Exécuter quand même**.
+
+| Touche | Action |
+|---|---|
+| F11 | plein écran / fenêtre |
+| Ctrl + / Ctrl − / Ctrl 0 | agrandir / réduire / taille normale (lisible au fond de la salle) |
+| Ctrl+Accueil ou bouton 🏠 (en bas à gauche) | retour à l'accueil |
+| Alt+← · F5 · Alt+F4 | page précédente · recharger · quitter |
+
+Construit par GitHub Actions (« Construire l'appli Windows », dossier `windows/`, Electron) : chaque appli est ouverte
+et testée automatiquement avant la publication. Une appli ajoutée à l'accueil (`www/index.html`) est incluse d'office.
+
 ## 3. Utilisation
 
 | Élément | Action |

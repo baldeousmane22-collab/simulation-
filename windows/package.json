@@ -1,0 +1,55 @@
+{
+  "name": "simulations-3d-windows",
+  "productName": "Simulations 3D",
+  "version": "1.0.0",
+  "description": "Version Windows (Electron) des simulations 3D de formation mécanicien : toutes les applis web, hors connexion, plein écran pour vidéoprojecteur.",
+  "author": "Baldé Ousmane — IRAM Boké",
+  "private": true,
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "preparer": "node scripts/preparer-web.js",
+    "start": "node scripts/preparer-web.js && electron .",
+    "exe": "node scripts/preparer-web.js && electron-builder --win --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "45.0.0",
+    "electron-builder": "26.17.0"
+  },
+  "build": {
+    "appId": "fr.formation.simulations3d",
+    "productName": "Simulations 3D",
+    "copyright": "IRAM Boké — formation mécanicien",
+    "directories": {
+      "output": "sortie",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "site/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Simulations 3D",
+      "artifactName": "Simulations3D-Installation.exe",
+      "language": "1036"
+    },
+    "portable": {
+      "artifactName": "Simulations3D-Portable.exe"
+    }
+  }
+}
