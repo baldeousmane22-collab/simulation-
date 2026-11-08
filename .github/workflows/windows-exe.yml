@@ -1,0 +1,123 @@
+# ===================================================================
+# Version Windows (.exe) de toutes les simulations 3D (Electron)
+# - source : l'accueil www/index.html et chaque appli qu'il liste
+#   (les mêmes fichiers que sur GitHub Pages), copiés par windows/scripts/preparer-web.js
+# - auto-test : chaque appli est ouverte dans l'exe, les erreurs JavaScript
+#   et fichiers manquants font échouer la construction (captures en artefact)
+# - deux fichiers, Windows 10/11 64 bits :
+#     Simulations3D-Installation.exe  (installe l'appli + raccourci Bureau)
+#     Simulations3D-Portable.exe      (sans installation, ex. sur clé USB)
+# - publiés dans la version « windows » des Releases, uniquement depuis main :
+#   https://github.com/<compte>/<dépôt>/releases/download/windows/Simulations3D-Installation.exe
+#   (sur une autre branche : exe disponibles comme artefacts de la construction)
+# ===================================================================
+name: Construire l'appli Windows
+
+on:
+  push:
+    branches: [main, 'claude/**', 'ccr-*']
+    paths-ignore: ['**/apk/**', 'android/**', 'ios/**', '**/*.md', '.github/workflows/*-apk.yml', '.github/workflows/android.yml', '.github/workflows/ios.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-exe-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  exe:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+        working-directory: windows
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Numéro de version
+        run: |
+          N=$(git rev-list --count HEAD)
+          echo "VERSION_NAME=1.0.${N}" >> "$GITHUB_ENV"
+          echo "Version 1.0.${N}"
+
+      - name: Installer Node.js 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: windows/package-lock.json
+
+      - name: Installer les dépendances (Electron)
+        run: npm ci
+
+      - name: Copier le site (accueil + toutes les applis)
+        run: npm run preparer
+
+      - name: Auto-test (chaque appli ouverte dans Electron)
+        timeout-minutes: 6
+        env:
+          SIMULATIONS_AUTOTEST: captures
+        run: |
+          set +e
+          npx electron .
+          CODE=$?
+          cat captures/rapport.txt || { echo "Pas de rapport d'auto-test"; exit 1; }
+          exit $CODE
+
+      - name: Conserver les captures de l'auto-test
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-captures-autotest
+          path: windows/captures/
+          if-no-files-found: ignore
+
+      - name: Construire les .exe (installation + portable)
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: |
+          npm pkg set version="$VERSION_NAME"
+          npx electron-builder --win --x64 --publish never
+          ls -la sortie
+          test -f sortie/Simulations3D-Installation.exe
+          test -f sortie/Simulations3D-Portable.exe
+
+      - name: Conserver les .exe (artefact de la construction)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Simulations3D-Windows
+          path: |
+            windows/sortie/Simulations3D-Installation.exe
+            windows/sortie/Simulations3D-Portable.exe
+
+      - name: Publier les .exe (version « windows » des Releases)
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: windows
+          name: Simulations 3D — Windows
+          target_commitish: ${{ github.sha }}
+          make_latest: 'false'
+          files: |
+            windows/sortie/Simulations3D-Installation.exe
+            windows/sortie/Simulations3D-Portable.exe
+          body: |
+            Version Windows (10 / 11, 64 bits) de **toutes les simulations 3D** (version ${{ env.VERSION_NAME }}).
+            Fonctionne hors connexion et s'ouvre en plein écran, prête pour le vidéoprojecteur.
+
+            - **Simulations3D-Installation.exe** : installe l'appli (raccourci sur le Bureau et dans le menu Démarrer).
+            - **Simulations3D-Portable.exe** : aucune installation, se lance directement (par ex. depuis une clé USB).
+
+            Au premier lancement, Windows peut afficher « Windows a protégé votre ordinateur » (l'exe n'est pas
+            signé par un certificat payant) : cliquer **Informations complémentaires → Exécuter quand même**.
+
+            **Raccourcis** : F11 plein écran · Ctrl + / Ctrl − agrandir / réduire · Ctrl 0 taille normale ·
+            Ctrl+Accueil ou bouton 🏠 retour à l'accueil · Alt+← page précédente · F5 recharger · Alt+F4 quitter.
+
+            Version web : https://baldeousmane22-collab.github.io/simulation-/
