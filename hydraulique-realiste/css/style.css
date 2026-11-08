@@ -41,6 +41,15 @@ button, select, input { font: inherit; color: inherit; }
 .roue { width: 42px; height: 42px; border: 4px solid var(--bord); border-top-color: var(--accent); border-radius: 50%; animation: tour 0.9s linear infinite; }
 @keyframes tour { to { transform: rotate(360deg); } }
 
+.explication { position: absolute; left: 12px; bottom: calc(62px + env(safe-area-inset-bottom)); width: min(360px, calc(100% - 24px));
+  background: rgba(17, 22, 28, 0.86); border: 1px solid var(--bord); border-radius: 12px; padding: 8px 10px; font-size: 0.8rem; line-height: 1.4; }
+.expl-titre { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.expl-titre .btn-rond { width: 28px; height: 28px; }
+.explication ul { margin: 6px 0 0; padding-left: 16px; max-height: 40vh; overflow-y: auto; }
+.explication li { margin: 3px 0; }
+.explication li b { color: var(--accent); }
+.explication.reduite ul { display: none; }
+
 /* Panneau */
 .panneau { width: 390px; flex: none; background: var(--panneau); border-left: 1px solid var(--bord); display: flex; flex-direction: column; min-height: 0; }
 .barre-rapide { display: flex; gap: 6px; padding: 10px; border-bottom: 1px solid var(--bord); align-items: stretch; }
@@ -115,6 +124,8 @@ button, select, input { font: inherit; color: inherit; }
   .hud-p b { font-size: 1.1rem; }
   .vues button { padding: 6px 7px; font-size: 0.78rem; }
   .legende { bottom: 54px; }
+  .explication { bottom: 92px; font-size: 0.74rem; }
+  .explication ul { max-height: 22vh; }
   .etiquette { font-size: 11px; padding: 2px 7px; }
 }
 @media (min-width: 821px) { #b-replier { display: none; } }

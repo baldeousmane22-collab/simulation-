@@ -10,8 +10,11 @@
    colonnes, masses en plaques d'acier (100 kg par plaque).
    « Vue en coupe » : carters transparents (pignons de la pompe, tiroir
    du distributeur, clapet du limiteur, piston et chambres du vérin).
-   « Voir l'huile » : flexibles transparents, huile colorée selon la
-   pression et chevrons qui défilent dans le sens et à la vitesse du débit.
+   Circulation du fluide : des particules d'huile (couleur = pression)
+   suivent les flexibles et les canaux internes des organes, dans le sens
+   et à une vitesse proportionnelle au débit réel (aspiration, pignons,
+   limiteur, tiroir, clapet/étrangleur, chambres du vérin, retour).
+   « Voir l'huile » : seulement les flexibles transparents et l'huile.
    ===================================================================== */
 
 import * as THREE from '../vendor/three.min.js';
@@ -70,22 +73,6 @@ function texCadran(max, titre, pas, sousPas, rouge) {
   return t;
 }
 
-/* Texture des chevrons qui défilent dans les flexibles. */
-function texChevrons() {
-  const c = document.createElement('canvas'); c.width = 256; c.height = 32;
-  const g = c.getContext('2d');
-  g.fillStyle = '#ffffff'; g.fillRect(0, 0, 256, 32);
-  g.fillStyle = 'rgba(255,255,255,0.35)';
-  g.fillStyle = '#9a9a9a';
-  for (let i = 0; i < 4; i++) {
-    const x = i * 64 + 18;
-    g.beginPath(); g.moveTo(x, 4); g.lineTo(x + 18, 16); g.lineTo(x, 28); g.lineTo(x + 8, 28); g.lineTo(x + 26, 16); g.lineTo(x + 8, 4); g.fill();
-  }
-  const t = new THREE.CanvasTexture(c);
-  t.wrapS = THREE.RepeatWrapping; t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace;
-  return t;
-}
-
 /* Texture du sol (béton d'atelier). */
 function texSol() {
   const c = document.createElement('canvas'); c.width = c.height = 512;
@@ -122,6 +109,7 @@ export class SceneHydraulique {
     this._construireDistributeur();
     this._construireVerin();
     this._construireFlexibles();
+    this._construireFlux();
     this._construireEtiquettes();
     this._initInteraction();
     this.redimensionner();
@@ -220,7 +208,7 @@ export class SceneHydraulique {
     this._interieur(this._maillage(new THREE.BoxGeometry(0.06, 3.4, 4.3), M.fonte, res, -7.2, 2.2, 0));      // chicane
     const crepine = this._interieur(this._maillage(new THREE.CylinderGeometry(0.35, 0.35, 0.8, 20), M.laiton, res, -6.1, 1.0, 0));
     crepine.castShadow = false;
-    this._interieur(this._maillage(new THREE.CylinderGeometry(0.12, 0.12, 4.0, 12), M.acier, res, -6.1, 3.4, 0));
+    this._interieur(this._maillage(new THREE.CylinderGeometry(0.12, 0.12, 4.0, 12), mat(0xd9dee4, 0.6, 0.3, { transparent: true, opacity: 0.25, depthWrite: false }), res, -6.1, 3.4, 0));
     // voyant de niveau + thermomètre sur la face avant
     this._maillage(new THREE.BoxGeometry(0.5, 2.2, 0.12), M.noir, res, -4.4, 2.6, 2.28);
     this._maillage(new THREE.BoxGeometry(0.28, 1.9, 0.06), M.verre, res, -4.4, 2.6, 2.36);
@@ -278,7 +266,7 @@ export class SceneHydraulique {
     this._maillage(new THREE.BoxGeometry(1.0, 1.25, 0.95), this._env(M.alu), pompe, -6.05, yAxe - 0.18, 0);
     this._maillage(new THREE.BoxGeometry(0.12, 1.3, 1.0), this._env(M.alu), pompe, -5.5, yAxe - 0.18, 0);
     this._maillage(new THREE.CylinderGeometry(0.17, 0.17, 0.35, 16), M.acier, pompe, -6.05, yAxe + 0.6, 0);  // orifice de refoulement
-    this._maillage(new THREE.CylinderGeometry(0.22, 0.22, 0.9, 16), M.acier, pompe, -6.05, 4.95, 0);         // aspiration
+    this._maillage(new THREE.CylinderGeometry(0.22, 0.22, 0.9, 16), this._env(M.acier), pompe, -6.05, 4.95, 0);         // aspiration
     this.pignons = [];
     const gp1 = geoPignon(10, 0.3, 0.23, 0.6);
     for (const [dy, sens] of [[0.0, 1], [-0.53, -1]]) {
@@ -350,7 +338,7 @@ export class SceneHydraulique {
     const M = this.m, d = new THREE.Group(); this.scene.add(d);
     this._maillage(new THREE.BoxGeometry(1.6, 0.12, 1.6), M.fonte, d, 0, 0.06, 0);
     this._maillage(new THREE.BoxGeometry(0.4, 3.9, 0.4), M.peinture, d, 0, 2.0, 0);
-    this._maillage(new THREE.BoxGeometry(1.9, 0.3, 1.4), M.fonte, d, 0, 4.1, 0);                     // embase
+    this._maillage(new THREE.BoxGeometry(1.9, 0.3, 1.4), this._env(M.fonte), d, 0, 4.1, 0);                    // embase
     this._maillage(new THREE.BoxGeometry(1.7, 1.0, 1.0), this._env(M.fonte), d, 0, 4.75, 0);         // corps
     for (const s of [-1, 1]) {
       this._maillage(new THREE.BoxGeometry(0.14, 0.95, 0.95), M.noir, d, s * 0.92, 4.75, 0);
@@ -376,7 +364,7 @@ export class SceneHydraulique {
     // chambres T A P B T (anneaux colorés fixes dans le corps)
     this.chambresDist = {};
     for (const [nom, x] of [['T1', -0.8], ['A', -0.4], ['P', 0], ['B', 0.4], ['T2', 0.8]]) {
-      const anneau = this._interieur(this._maillage(new THREE.CylinderGeometry(0.3, 0.3, 0.16, 24, 1, true), mat(0x3b82f6, 0, 0.4, { side: THREE.DoubleSide }), d, x, 4.75, 0));
+      const anneau = this._interieur(this._maillage(new THREE.CylinderGeometry(0.3, 0.3, 0.16, 24, 1, true), mat(0x3b82f6, 0, 0.4, { side: THREE.DoubleSide, transparent: true, opacity: 0.4, depthWrite: false }), d, x, 4.75, 0));
       anneau.rotation.z = Math.PI / 2; anneau.castShadow = false;
       this.chambresDist[nom] = anneau;
     }
@@ -384,7 +372,14 @@ export class SceneHydraulique {
 
     // Réducteur de débit unidirectionnel (ligne A)
     const red = new THREE.Group(); this.scene.add(red);
-    this._maillage(new THREE.BoxGeometry(1.0, 0.55, 0.55), M.laiton, red, 2.6, 2.4, 0.9);
+    this._maillage(new THREE.BoxGeometry(1.0, 0.55, 0.55), this._env(M.laiton), red, 2.6, 2.4, 0.9);
+    // coupe : clapet anti-retour (bille + ressort) en bas, pointeau d'étranglement en haut
+    this.bille = this._interieur(this._maillage(new THREE.SphereGeometry(0.09, 16, 12), M.acier, red, 2.5, 2.28, 0.9));
+    this._interieur(this._maillage(new THREE.CylinderGeometry(0.1, 0.06, 0.06, 16, 1, true), M.fonte, red, 2.4, 2.28, 0.9)).rotation.z = Math.PI / 2;  // siège
+    this.ressortBille = this._interieur(this._maillage(new THREE.CylinderGeometry(0.05, 0.05, 1, 8), M.laiton, red, 2.75, 2.28, 0.9));
+    this.ressortBille.rotation.z = Math.PI / 2;
+    this.pointeau = this._interieur(this._maillage(new THREE.ConeGeometry(0.07, 0.3, 14), M.acier, red, 2.6, 2.6, 0.9));
+    this.pointeau.rotation.x = Math.PI;
     this._maillage(new THREE.CylinderGeometry(0.1, 0.1, 0.35, 12), M.acier, red, 2.6, 2.83, 0.9);
     this.boutonReducteur = this._maillage(new THREE.CylinderGeometry(0.22, 0.22, 0.25, 18), M.noir, red, 2.6, 3.1, 0.9);
     this._maillage(new THREE.BoxGeometry(0.05, 0.05, 0.45), M.jaune, this.boutonReducteur, 0, 0.13, 0);
@@ -460,8 +455,7 @@ export class SceneHydraulique {
     const courbe = new THREE.CatmullRomCurve3(points.map((p) => new THREE.Vector3(...p)), false, 'centripetal');
     const lg = courbe.getLength();
     const ext = this._maillage(new THREE.TubeGeometry(courbe, Math.max(24, Math.round(lg * 6)), rayon, 12), this.m.caoutchouc.clone());
-    const tex = texChevrons(); tex.repeat.set(Math.max(1, Math.round(lg / 1.2)), 1);
-    const int = new THREE.Mesh(new THREE.TubeGeometry(courbe, Math.max(24, Math.round(lg * 6)), rayon * 0.62, 8), new THREE.MeshStandardMaterial({ map: tex, color: 0x3b82f6, emissive: 0x111111, roughness: 0.4 }));
+    const int = new THREE.Mesh(new THREE.TubeGeometry(courbe, Math.max(24, Math.round(lg * 6)), rayon * 0.8, 8), new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.28, depthWrite: false }));
     int.visible = false; this.scene.add(int);
     for (const t of [0, 1]) {   // embouts sertis
       const p = courbe.getPointAt(t), tg = courbe.getTangentAt(t);
@@ -469,7 +463,7 @@ export class SceneHydraulique {
       e.position.copy(p).addScaledVector(tg, t === 0 ? 0.15 : -0.15);
       e.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tg);
     }
-    const f = { ext, int, tex, q: 0, p: 0, lg };
+    const f = { ext, int, courbe, q: 0, p: 0, lg };
     this.flexibles.push(f);
     return f;
   }
@@ -550,7 +544,7 @@ export class SceneHydraulique {
     const vues = {
       ensemble: [[2 * k, 13 * k, 32 * k], [0, 5.5, 0]],
       centrale: [[-4, 10, 13 * k], [-7, 5, 0]],
-      distributeur: [[2.5, 7.5, 8 * k], [0.8, 4.4, 0]],
+      distributeur: [[-2.2, 7.2, 7 * k], [0.3, 4.5, 0]],
       verin: [[10, 9, 15 * k], [6, 6, 0]]
     };
     const [pos, cible] = vues[nom] || vues.ensemble;
@@ -562,21 +556,97 @@ export class SceneHydraulique {
 
   setCoupe(on) {
     this.coupe = on;
+    this._majTuyaux();
     for (const m of this.enveloppes) { m.transparent = on; m.opacity = on ? 0.16 : 1; m.depthWrite = !on; m.needsUpdate = true; }
     for (const o of this.interieurs) o.visible = on;
   }
-  setHuile(on) {
-    this.huile = on;
+  setHuile(on) { this.huile = on; this._majTuyaux(); }
+  _majTuyaux() {
+    const on = this.huile || this.coupe;
     for (const f of this.flexibles) {
       const m = f.ext.material;
-      m.transparent = on; m.opacity = on ? 0.22 : 1; m.depthWrite = !on; m.needsUpdate = true;
+      m.transparent = on; m.opacity = on ? 0.2 : 1; m.depthWrite = !on; m.needsUpdate = true;
       f.int.visible = on;
     }
+    for (const fx of this.flux) fx.mesh.visible = on && (fx.flexible || this.coupe);
+  }
+
+  /* ---------------- Circulation du fluide (particules) ---------------- */
+  _construireFlux() {
+    this.flux = [];
+    const geo = new THREE.SphereGeometry(1, 8, 6);
+    const ajouter = (courbe, rayon, flexible) => {
+      const lg = courbe.getLength();
+      const n = Math.max(6, Math.round(lg * 5));
+      const mesh = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ color: 0xffffff }), n);
+      mesh.frustumCulled = false; mesh.visible = false;
+      this.scene.add(mesh);
+      const fx = { courbe, lg, n, mesh, rayon, flexible, phase: Math.random(), q: 0, p0: 0, p1: 0 };
+      this.flux.push(fx);
+      return fx;
+    };
+    const C = (pts) => new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(...p)), false, 'centripetal');
+    for (const f of this.flexibles) f.flux = ajouter(f.courbe, 0.045, true);
+    // pompe : l'huile est emprisonnée entre les dents et le carter, de l'aspiration (−z) au refoulement (+z)
+    const arc = (yc, a0, a1) => { const r = []; for (let i = 0; i <= 8; i++) { const a = a0 + (a1 - a0) * i / 8; r.push([-6.05, yc + 0.37 * Math.sin(a), 0.37 * Math.cos(a)]); } return r; };
+    const entree = [[-6.05, 4.6, 0], [-6.05, 5.25, -0.2], [-6.05, 5.68, -0.42]];
+    const sortie = [[-6.05, 5.68, 0.42], [-6.05, 6.3, 0.2], [-6.05, 6.8, 0]];
+    const zC = (p) => [p[0], p[1], p[2]];
+    this.fx = {
+      bac: ajouter(C([[-9.3, 2.4, -1.55], [-8.6, 0.8, -1.0], [-7.2, 0.42, -0.3], [-6.5, 0.7, 0], [-6.1, 1.0, 0]]), 0.06),
+      aspi: ajouter(C([[-6.1, 1.0, 0], [-6.1, 3.0, 0], [-6.1, 4.6, 0], [-6.05, 4.6, 0]]), 0.05),
+      pignonH: ajouter(C([...entree, ...arc(5.95, Math.PI * 0.95, Math.PI * 0.05).map(zC), ...sortie]), 0.04),
+      pignonB: ajouter(C([...entree, ...arc(5.42, Math.PI * 1.05, Math.PI * 1.95).map(zC), ...sortie]), 0.04),
+      limiteur: ajouter(C([[-4.85, 5.25, 0.4], [-4.45, 5.15, 0.05], [-4.3, 5.2, 0], [-4.3, 5.45, 0], [-4.3, 5.42, -0.35], [-4.3, 4.85, -0.35], [-4.3, 3.4, -0.35]]), 0.045),
+      retour: ajouter(C([[-9.3, 5.4, -1.55], [-9.3, 4.4, -1.55], [-9.3, 2.4, -1.55]]), 0.05)
+    };
+    // distributeur : canaux internes (décalés en z pour passer à côté du tiroir)
+    const pP = [[-0.4, 4.1, -0.6], [-0.15, 4.35, -0.3], [0, 4.6, 0.25], [0, 4.75, 0.25]];
+    const ch = (x) => [[x, 4.75, 0.25]];
+    const versA = [[-0.4, 4.75, 0.25], [-0.4, 4.45, 0.35], [-0.4, 4.1, 0.6]];
+    const versB = [[0.4, 4.75, 0.25], [0.4, 4.45, 0.35], [0.4, 4.1, 0.6]];
+    const deA = [[-0.4, 4.1, 0.6], [-0.4, 4.45, 0.35], [-0.4, 4.75, 0.25]];
+    const deB = [[0.4, 4.1, 0.6], [0.4, 4.45, 0.35], [0.4, 4.75, 0.25]];
+    const versT = (x) => [[x, 4.75, 0.25], [x, 4.45, -0.25], [0.4, 4.1, -0.6]];
+    Object.assign(this.fx, {
+      PA: ajouter(C([...pP, ...ch(-0.2), ...versA]), 0.04),
+      BT: ajouter(C([...deB, ...ch(0.6), ...versT(0.8)]), 0.04),
+      PB: ajouter(C([...pP, ...ch(0.2), ...versB]), 0.04),
+      AT: ajouter(C([...deA, ...ch(-0.6), ...versT(-0.8)]), 0.04),
+      PT: ajouter(C([...pP, ...ch(0.4), ...versT(0.8)]), 0.04),
+      // réducteur : passage libre par le clapet (bas) ou freiné par le pointeau (haut)
+      clapet: ajouter(C([[2.1, 2.4, 0.9], [2.25, 2.28, 0.9], [2.6, 2.2, 0.9], [2.95, 2.28, 0.9], [3.1, 2.4, 0.9]]), 0.04),
+      etrangl: ajouter(C([[3.1, 2.4, 0.9], [2.85, 2.52, 0.9], [2.6, 2.45, 0.9], [2.35, 2.52, 0.9], [2.1, 2.4, 0.9]]), 0.04),
+      // vérin : orifices → chambres
+      cylA: ajouter(C([[6.4, 1.25, 0], [6.8, 1.25, 0], [7.0, 1.45, 0], [7.0, 1.7, 0]]), 0.05),
+      cylB: ajouter(C([[6.4, 7.3, 0], [6.8, 7.3, 0], [7.0, 7.1, 0], [7.0, 6.9, 0]]), 0.05)
+    });
+    this._v = new THREE.Vector3(); this._mx = new THREE.Matrix4(); this._cc = new THREE.Color();
+  }
+
+  /* q en L/min (signe = sens de la courbe), p0 / p1 : pression au début / à la fin (bar). */
+  _majFlux(fx, q, p0, p1) {
+    const dt = this._dt;
+    fx.q = q; fx.p0 = p0; fx.p1 = p1 === undefined ? p0 : p1;
+    const actif = fx.flexible || Math.abs(q) > 0.05;
+    if (!fx.flexible) fx.mesh.visible = this.coupe && actif;
+    if (!actif) return;
+    fx.phase = (fx.phase + q * 0.22 * dt / fx.lg) % 1;   // vitesse affichée ∝ débit
+    for (let i = 0; i < fx.n; i++) {
+      let u = (i / fx.n + fx.phase) % 1; if (u < 0) u += 1;
+      fx.courbe.getPointAt(u, this._v);
+      this._mx.makeScale(fx.rayon, fx.rayon, fx.rayon).setPosition(this._v);
+      fx.mesh.setMatrixAt(i, this._mx);
+      fx.mesh.setColorAt(i, couleurPression(fx.p0 + (fx.p1 - fx.p0) * u, this._cc));
+    }
+    fx.mesh.instanceMatrix.needsUpdate = true;
+    if (fx.mesh.instanceColor) fx.mesh.instanceColor.needsUpdate = true;
   }
   setEtiquettes(on) { this.etiquettesVisibles = on; this._majEtiquettes(); }
 
   /* --------------------------- Mise à jour --------------------------- */
   maj(m, reglages, dt) {
+    this._dt = dt;
     // caméra animée
     if (this.anim) {
       this.anim.t = Math.min(1, this.anim.t + dt / 0.9);
@@ -649,9 +719,29 @@ export class SceneHydraulique {
     regle(fl.pompe, m.pP, m.qPompe); regle(fl.P, m.pP, m.qPompe - m.qLim);
     regle(fl.T, m.pT, Math.max(m.qT - m.qLim, 0)); regle(fl.A1, m.pA, m.qA); regle(fl.A2, m.pA, m.qA);
     regle(fl.B, m.pB, m.qB); regle(fl.mA, m.pA, 0); regle(fl.mB, m.pB, 0);
-    if (this.huile) for (const f of this.flexibles) {
+    const tuyauxVus = this.huile || this.coupe;
+    if (tuyauxVus) for (const f of this.flexibles) {
       couleurPression(f.p, f.int.material.color);
-      f.tex.offset.x -= f.q * dt * 0.09;
+      this._majFlux(f.flux, f.q, f.p, f.p);
+    }
+    if (this.coupe) {
+      const x = this.fx, s = m.tiroir, plus = (v) => Math.max(v, 0);
+      this._majFlux(x.bac, m.qPompe, 0); this._majFlux(x.aspi, m.qPompe, m.pAsp - 1, m.pAsp - 1);
+      this._majFlux(x.pignonH, m.qPompe / 2, 0, m.pP); this._majFlux(x.pignonB, m.qPompe / 2, 0, m.pP);
+      this._majFlux(x.limiteur, m.qLim, m.pP, 0); this._majFlux(x.retour, plus(m.qT), m.pT, 0);
+      this._majFlux(x.PA, s > 0.12 ? plus(m.qA) : 0, m.pP, m.pA);
+      this._majFlux(x.BT, s > 0.12 ? plus(-m.qB) : 0, m.pB, m.pT);
+      this._majFlux(x.PB, s < -0.12 ? plus(m.qB) : 0, m.pP, m.pB);
+      this._majFlux(x.AT, s < -0.12 ? plus(-m.qA) : 0, m.pA, m.pT);
+      const qPT = reglages.centre === 'tandem' ? plus(m.qPompe - m.qLim - plus(m.qA) - plus(m.qB)) * Math.max(0, 1 - Math.abs(s) / 0.35) : 0;
+      this._majFlux(x.PT, qPT, m.pP, m.pT);
+      this._majFlux(x.clapet, plus(m.qA), m.pA); this._majFlux(x.etrangl, plus(-m.qA), m.pA, m.pA * 0.4);
+      this._majFlux(x.cylA, m.qA, m.pA); this._majFlux(x.cylB, m.qB, m.pB);
+      // organes du réducteur : la bille se soulève en montée, le pointeau suit le réglage
+      const ouvB = Math.min(plus(m.qA) / 6, 1);
+      this.bille.position.x = 2.5 + 0.12 * ouvB;
+      this.ressortBille.scale.y = 0.4 - 0.12 * ouvB; this.ressortBille.position.x = 2.79 + 0.06 * ouvB;
+      this.pointeau.position.y = 2.6 + 0.12 * reglages.reducteur / 100;
     }
 
     this._majEtiquettes();

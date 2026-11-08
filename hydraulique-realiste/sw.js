@@ -3,7 +3,7 @@
    « Cache d'abord, réseau en secours ». VERSION_CACHE est renouvelé à
    chaque publication par le workflow GitHub Pages.
    ===================================================================== */
-const VERSION_CACHE = 'hydraulique-realiste-v1';
+const VERSION_CACHE = 'hydraulique-realiste-v2';
 const FICHIERS = [
   './', './index.html', './manifest.webmanifest', './css/style.css',
   './js/app.js', './js/physique.js', './js/scene3d.js', './js/sons.js',

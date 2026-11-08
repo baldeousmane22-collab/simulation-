@@ -102,8 +102,16 @@ $('c-auto').addEventListener('change', (e) => {
   if (auto.actif) { if (!R.moteur) { R.moteur = true; majMoteur(); } circuit.commande = 1; } else circuit.commande = 0;
   majCommande();
 });
-$('c-coupe').addEventListener('change', (e) => scene && scene.setCoupe(e.target.checked));
-$('c-huile').addEventListener('change', (e) => { scene && scene.setHuile(e.target.checked); $('legende').hidden = !e.target.checked; });
+$('c-coupe').addEventListener('change', (e) => {
+  if (scene) scene.setCoupe(e.target.checked);
+  $('explication').hidden = !e.target.checked;
+  $('legende').hidden = !(e.target.checked || $('c-huile').checked);
+});
+$('b-expl').addEventListener('click', () => {
+  const r = $('explication').classList.toggle('reduite');
+  $('b-expl').textContent = r ? '+' : '–';
+});
+$('c-huile').addEventListener('change', (e) => { scene && scene.setHuile(e.target.checked); $('legende').hidden = !(e.target.checked || $('c-coupe').checked); });
 $('c-etiq').addEventListener('change', (e) => scene && scene.setEtiquettes(e.target.checked));
 $('b-reinit').addEventListener('click', () => {
   circuit.reinitialiser(); R.moteur = false; majMoteur();
@@ -246,6 +254,31 @@ function calculs(m) {
     <p class="aide">L'échauffement est accéléré ×10 pour la démonstration.</p>`;
 }
 
+/* ---------------- Explication du fonctionnement (vue en coupe) ---------------- */
+function explication(m) {
+  const L = [];
+  if (m.n < 50) {
+    L.push('<b>Moteur arrêté</b> : la pompe ne tourne pas, aucun débit. L\'huile reste au repos (bleue = sans pression).');
+  } else {
+    L.push(`<b>Pompe</b> : les deux pignons tournent en sens inverse ; l'huile aspirée (côté gauche) est emprisonnée entre les dents et le carter puis refoulée à ${fmt(m.pP)} bar — ${fmt(m.qPompe, 1)} L/min.`);
+    if (m.cavitation) L.push('<b>Aspiration</b> : dépression trop forte, l\'huile se vaporise (cavitation) → débit irrégulier, bruit.');
+  }
+  if (m.qLim > 0.3) L.push(`<b>Limiteur</b> : la pression atteint le tarage, le clapet se soulève et comprime le ressort ; ${fmt(m.qLim, 1)} L/min retournent au réservoir → chaleur.`);
+  else if (m.n > 50) L.push('<b>Limiteur</b> : clapet fermé sur son siège (pression inférieure au tarage).');
+  const s = m.tiroir;
+  if (s > 0.12) L.push('<b>Distributeur</b> : Y1 excité, le tiroir est poussé ; passages <b>P → A</b> et <b>B → T</b> ouverts.');
+  else if (s < -0.12) L.push('<b>Distributeur</b> : Y2 excité, le tiroir est poussé dans l\'autre sens ; passages <b>P → B</b> et <b>A → T</b> ouverts.');
+  else L.push(R.centre === 'tandem' ? '<b>Distributeur</b> : tiroir au centre (ressorts) ; centre tandem → <b>P → T</b> ouvert (pompe déchargée), A et B bloqués.'
+    : '<b>Distributeur</b> : tiroir au centre (ressorts) ; tous les orifices bloqués, la charge est tenue.');
+  if (m.qA > 0.3) L.push('<b>Réducteur</b> : la bille du clapet anti-retour se soulève, l\'huile passe librement vers la chambre A.');
+  else if (m.qA < -0.3) L.push(`<b>Réducteur</b> : la bille est plaquée sur son siège ; l'huile qui sort de A est freinée par le pointeau (ouvert à ${R.reducteur} %) → descente contrôlée.`);
+  else L.push('<b>Réducteur</b> : pas de débit, la bille repose sur son siège.');
+  const sens = m.v > 2 ? 'monte' : m.v < -2 ? 'descend' : 'est immobile';
+  L.push(`<b>Vérin</b> : la tige ${sens} (${fmt(Math.abs(m.v))} mm/s). Chambre A ${fmt(m.pA, 1)} bar × 19,6 cm² − chambre B ${fmt(m.pB, 1)} bar × 13,5 cm² = ${fmt(m.force / 10)} daN pour ${fmt(m.poids / 10)} daN de charge.`);
+  if (m.qT > 0.3) L.push(`<b>Retour</b> : ${fmt(m.qT, 1)} L/min traversent le filtre et retombent dans le réservoir ; la chicane les oblige à faire le tour avant d'être réaspirés.`);
+  $('expl-liste').innerHTML = L.map((t) => `<li>${t}</li>`).join('');
+}
+
 /* ------------------------------- Boucle ----------------------------- */
 let dernier = performance.now(), tCalc = 0, tMes = 0;
 function alerte(m) {
@@ -278,6 +311,7 @@ function boucle(t) {
     elMes.t.classList.toggle('alerte', m.temp > 70); elMes.asp.classList.toggle('alerte', m.pAsp < 0.75);
     elMes.ql.classList.toggle('alerte', m.qLim > 0.5);
     alerte(m);
+    if (!$('explication').hidden) explication(m);
   }
   tEchant += dt;
   if (tEchant >= 0.05 && !oscFige) {
