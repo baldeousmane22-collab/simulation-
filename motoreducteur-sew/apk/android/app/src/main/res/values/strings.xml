@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Motoréducteur SEW KA97</string>
-    <string name="title_activity_main">Motoréducteur SEW KA97</string>
+    <string name="app_name">Motoréducteur CV 301</string>
+    <string name="title_activity_main">Motoréducteur CV 301</string>
     <string name="package_name">fr.formation.motoreducteursew</string>
     <string name="custom_url_scheme">fr.formation.motoreducteursew</string>
 </resources>
