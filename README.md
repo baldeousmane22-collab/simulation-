@@ -296,6 +296,18 @@ Dossier `motoreducteur/`.
 
 ---
 
+# Motoréducteur SEW KA97/T DRN180L4 (3D réaliste)
+
+- **Lien web** : https://baldeousmane22-collab.github.io/simulation-/motoreducteur-sew/
+- **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/motoreducteur-sew/Motoreducteur-SEW-KA97.apk
+
+Motoréducteur réel du broyage (plaque : 22 kW, 1477/123 tr/min, i = 11,99, 1710 N·m, CLP HC 220 synthétique 20 L),
+moteur vertical sur réducteur à couple conique, arbre creux et bras de réaction. Vues normale, coupe, éclatée, transparente ;
+variateur 0–50 Hz et charge ; onglets **Vidange** (11 étapes animées), **Plaque**, **Cours**, **Calculs**, **Pannes** (9) et **Quiz** (12).
+Dossier `motoreducteur-sew/`.
+
+---
+
 # Banc d'accouplements 3D (alignement au comparateur)
 
 - **Lien web** : https://baldeousmane22-collab.github.io/simulation-/banc-accouplements/
