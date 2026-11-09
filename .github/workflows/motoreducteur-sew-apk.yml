@@ -139,12 +139,12 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: motoreducteur-sew
-          name: Motoréducteur du deferailleur CV 301 — APK Android
+          name: Simulation Motoréducteur du deferailleur CV 301 — APK Android
           target_commitish: ${{ github.sha }}
           make_latest: 'false'
           files: motoreducteur-sew/apk/sortie/Motoreducteur-SEW-KA97.apk
           body: |
-            APK Android de l'application **Motoréducteur du deferailleur CV 301** (version ${{ env.VERSION_NAME }}),
+            APK Android de l'application **Simulation Motoréducteur du deferailleur CV 301** (version ${{ env.VERSION_NAME }}),
             Android 7.0 minimum.
 
             **Installation** : téléchargez `Motoreducteur.apk` sur le téléphone, ouvrez-le,

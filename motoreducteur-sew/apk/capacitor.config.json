@@ -1,6 +1,6 @@
 {
   "appId": "fr.formation.motoreducteursew",
-  "appName": "Motoréducteur CV 301",
+  "appName": "Simulation Motoréducteur CV 301",
   "webDir": "www",
   "android": {
     "backgroundColor": "#14171b"
