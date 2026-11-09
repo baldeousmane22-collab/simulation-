@@ -296,7 +296,7 @@ Dossier `motoreducteur/`.
 
 ---
 
-# Motoréducteur SEW KA97/T DRN180L4 (3D réaliste)
+# Motoréducteur du deferailleur CV 301 (SEW KA97/T DRN180L4, 3D réaliste)
 
 - **Lien web** : https://baldeousmane22-collab.github.io/simulation-/motoreducteur-sew/
 - **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/motoreducteur-sew/Motoreducteur-SEW-KA97.apk
