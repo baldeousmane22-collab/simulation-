@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Motoréducteur CV 301 V2</string>
+    <string name="title_activity_main">Motoréducteur CV 301 V2</string>
+    <string name="package_name">fr.formation.motoreducteursewv2</string>
+    <string name="custom_url_scheme">fr.formation.motoreducteursewv2</string>
+</resources>

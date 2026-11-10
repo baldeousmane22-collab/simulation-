@@ -308,6 +308,18 @@ Dossier `motoreducteur-sew/`.
 
 ---
 
+# Motoréducteur du deferailleur CV 301 – version 2
+
+- **Lien web** : https://baldeousmane22-collab.github.io/simulation-/motoreducteur-sew-v2/
+- **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/motoreducteur-sew-v2/Motoreducteur-CV301-V2.apk
+
+Nouvelle version, indépendante de la première (qui reste dans `motoreducteur-sew/`). Même motoréducteur SEW KA97/T DRN180L4,
+avec des engrenages à profil en développante (hélicoïdaux et conique spirale) qui engrènent réellement, coupe animée, vue éclatée,
+transparence, nomenclature avec isolement des pièces, enregistreur de mesures, vidange en 11 étapes, 10 pannes dont une « panne mystère »,
+calculs (vitesse de bande, effort de traction) et quiz de 14 questions. Dossier `motoreducteur-sew-v2/`.
+
+---
+
 # Banc d'accouplements 3D (alignement au comparateur)
 
 - **Lien web** : https://baldeousmane22-collab.github.io/simulation-/banc-accouplements/
