@@ -362,3 +362,12 @@ qui soulève 0 à 1500 kg, frottements des joints, amortisseurs de fin de course
 **Vue en coupe** (pignons, tiroir, clapet, piston), **voir l'huile** (couleur = pression, chevrons = débit),
 **courbes** (15 s), **6 pannes** + panne mystère, **calculs** en direct, sons. Dossier `hydraulique-realiste/`
 (l'appli `hydraulique/` reste inchangée) ; projet Android dans `hydraulique-realiste/apk/`.
+
+# Clé pour boulon (caméra en direct)
+
+- **Lien web** : https://baldeousmane22-collab.github.io/simulation-/cle-boulon/
+- Dossier séparé : `cle-boulon/` (appli seule, sans lien avec les autres).
+
+On vise la tête du boulon avec la caméra, une carte ou un badge (85,6 mm) posé à côté :
+l'appli détecte la carte et la tête hexagonale, projette le gabarit à l'échelle et affiche
+la clé (ex. M20 → clé de 30). Réglage à la main possible (image figée, repères, gabarit).
