@@ -1,0 +1,8 @@
+{
+  "appId": "fr.formation.rapportdequart",
+  "appName": "Rapport de quart",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#17212b"
+  }
+}

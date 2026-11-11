@@ -371,3 +371,14 @@ qui soulève 0 à 1500 kg, frottements des joints, amortisseurs de fin de course
 On vise la tête du boulon avec la caméra, une carte ou un badge (85,6 mm) posé à côté :
 l'appli détecte la carte et la tête hexagonale, projette le gabarit à l'échelle et affiche
 la clé (ex. M20 → clé de 30). Réglage à la main possible (image figée, repères, gabarit).
+
+# Rapport de quart (journal d'entretien par poste)
+
+- **Lien web** : https://baldeousmane22-collab.github.io/simulation-/rapport-de-quart/
+- **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/rapport-de-quart/Rapport-de-quart.apk
+- Dossier séparé : `rapport-de-quart/` (appli seule, sans lien avec les autres) ; projet Android dans `rapport-de-quart/apk/`.
+
+Rapport par poste : date, équipe, poste (07h-15h, 15h-23h, 23h-07h) calculé d'après le calendrier de l'usine
+de Kamsar, interventions (équipement entretenu, travail effectué, pièce remplacée, état), inspection, remarques
+libres et consignes pour le poste suivant. Envoi sur WhatsApp, copie du texte, PDF avec signature et visa.
+Recherche par mot et filtre par poste. Les rapports restent sur le téléphone (hors connexion).
