@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Votez pour la liste CNTG — Élections des délégués CBG</title>
+<style>
+@page { size: A4; margin: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --bleu:#0b3d91; --nuit:#072a66; --rouge:#ce1126; --jaune:#fcd116; --vert:#009460; --encre:#14213d; }
+html { background:#dfe4ec; }
+body { font-family: Inter, "Helvetica Neue", Arial, sans-serif; color: var(--encre); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.page { width:210mm; height:297mm; margin:0 auto; background:#fff; position:relative; overflow:hidden; display:flex; flex-direction:column; }
+.tri { display:flex; height:4mm; flex:none; }
+.tri i { flex:1; } .tri i:nth-child(1){background:var(--rouge)} .tri i:nth-child(2){background:var(--jaune)} .tri i:nth-child(3){background:var(--vert)}
+
+/* En-tête */
+.head { background:linear-gradient(135deg,var(--nuit),var(--bleu) 60%,#1556c0); color:#fff; padding:7mm 11mm 30mm; position:relative; flex:none; }
+.head::after { content:""; position:absolute; right:-30mm; top:-30mm; width:95mm; height:95mm; border-radius:50%; border:10mm solid rgba(255,255,255,.06); }
+.logos { display:flex; align-items:center; justify-content:space-between; }
+.logo { width:27mm; height:27mm; border-radius:50%; background:#fff center/cover; border:1.2mm solid #fff; box-shadow:0 2mm 5mm rgba(0,0,0,.3); }
+.logo.cntg { background-image:url(cntg.jpg); background-size:100%; }
+.logo.cbg { background-image:url(cbg.jpg); }
+.tag { text-align:center; font-weight:800; letter-spacing:.35mm; font-size:10.5pt; text-transform:uppercase; }
+.tag span { display:inline-block; margin-top:1.5mm; background:var(--jaune); color:var(--nuit); padding:1.1mm 4mm; border-radius:10mm; font-size:9pt; }
+h1 { text-align:center; margin-top:4mm; font-weight:900; line-height:.95; text-transform:uppercase; }
+h1 small { display:block; font-size:25pt; letter-spacing:.6mm; }
+h1 b { display:block; font-size:66pt; letter-spacing:-.5mm; color:var(--jaune); text-shadow:0 1.2mm 0 rgba(0,0,0,.25); }
+.lead { text-align:center; font-size:10.6pt; line-height:1.45; margin:3mm auto 0; max-width:165mm; opacity:.95; }
+
+/* Photo */
+.photo { margin:-25mm 11mm 0; height:78mm; border-radius:5mm; background:url(photo.jpg) center 12%/cover; border:1.4mm solid #fff; box-shadow:0 4mm 10mm rgba(7,42,102,.3); position:relative; z-index:2; flex:none; overflow:hidden; }
+.photo::after { content:""; position:absolute; inset:auto 0 0 0; height:22mm; background:linear-gradient(transparent,rgba(7,42,102,.85)); }
+.photo p { position:absolute; left:0; right:0; bottom:3.2mm; z-index:1; text-align:center; color:#fff; font-weight:800; font-size:13pt; letter-spacing:.2mm; }
+.photo p em { color:var(--jaune); font-style:normal; }
+
+/* Engagements */
+.sec { padding:6mm 11mm 0; flex:1; }
+.sec h2 { text-align:center; font-size:12pt; font-weight:900; color:var(--bleu); text-transform:uppercase; letter-spacing:.6mm; display:flex; align-items:center; gap:4mm; }
+.sec h2::before,.sec h2::after { content:""; flex:1; height:.5mm; background:#cfd8ea; }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:4mm; margin-top:4.5mm; }
+.card { background:#f4f7fc; border-radius:4mm; padding:4.2mm 4.5mm 4.5mm; border-left:1.6mm solid var(--c); display:flex; gap:3.5mm; }
+.ico { flex:none; width:13mm; height:13mm; border-radius:50%; background:var(--c); display:grid; place-items:center; }
+.ico svg { width:7.4mm; height:7.4mm; fill:none; stroke:#fff; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.card h3 { font-size:10.4pt; font-weight:900; color:var(--nuit); text-transform:uppercase; line-height:1.15; margin-bottom:1.4mm; }
+.card p { font-size:8.9pt; line-height:1.42; color:#33415c; }
+
+/* Pied */
+.foot { background:linear-gradient(135deg,var(--nuit),var(--bleu)); color:#fff; text-align:center; padding:6mm 11mm 6mm; margin-top:6mm; flex:none; }
+.foot .call { font-size:13.5pt; font-weight:900; text-transform:uppercase; line-height:1.3; letter-spacing:.2mm; }
+.foot .call b { color:var(--jaune); }
+.foot .vive { margin-top:2.5mm; font-size:14pt; font-style:italic; font-weight:600; }
+@media screen and (max-width:800px){ .page{ zoom: calc(100vw / 794px); } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="tri"><i></i><i></i><i></i></div>
+  <header class="head">
+    <div class="logos">
+      <div class="logo cbg" role="img" aria-label="Logo CBG"></div>
+      <div class="tag">Élections des délégués<br><span>CBG · depuis 1963</span></div>
+      <div class="logo cntg" role="img" aria-label="Logo CNTG"></div>
+    </div>
+    <h1><small>Votez pour la liste</small><b>CNTG&nbsp;!</b></h1>
+    <p class="lead">C'est choisir l'assurance d'une défense rigoureuse de vos droits, l'amélioration continue de vos conditions de vie, et une représentativité forte face à la direction.</p>
+  </header>
+
+  <div class="photo"><p>Unis nous sommes forts, <em>désunis nous tombons&nbsp;!</em></p></div>
+
+  <section class="sec">
+    <h2>Nos engagements</h2>
+    <div class="grid">
+      <div class="card" style="--c:#e0a100">
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M3 17h18M5 17v-3a7 7 0 0 1 14 0v3M10 7.3V11M14 7.3V11M2.5 20h19"/></svg></div>
+        <div><h3>Sécurité et santé au travail</h3><p>Tolérance zéro sur les risques professionnels. Nous exigeons des équipements de pointe et des protocoles stricts sur tous les sites, de Conakry, Kamsar à Sangarédi.</p></div>
+      </div>
+      <div class="card" style="--c:#0b3d91">
+        <div class="ico"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></div>
+        <div><h3>Valorisation salariale</h3><p>Indexation juste des primes et amélioration du pouvoir d'achat face au coût de la vie.</p></div>
+      </div>
+      <div class="card" style="--c:#ce1126">
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 20.5s-8-4.9-8-10.6A4.4 4.4 0 0 1 12 7a4.4 4.4 0 0 1 8 2.9c0 5.700-8 10.600-8 10.600z"/><path d="M12 10v5M9.500 12.500h5"/></svg></div>
+        <div><h3>Couverture médicale excellente</h3><p>Une prise en charge sanitaire de qualité supérieure pour vous et vos familles.</p></div>
+      </div>
+      <div class="card" style="--c:#009460">
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 20V14M10 20V10M16 20v-7M3 9l6-5 5 4 7-5M21 3h-4M21 3v4"/></svg></div>
+        <div><h3>Équité et plan de carrière</h3><p>Transparence totale dans les promotions internes et fin des inégalités de traitement.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <p class="call">Le jour du vote, faisons le choix<br>de la <b>dignité</b>, du <b>respect</b> et du <b>progrès social</b>.</p>
+    <p class="vive">Vive la CBG&nbsp;! Vive la CNTG&nbsp;!</p>
+  </footer>
+  <div class="tri"><i></i><i></i><i></i></div>
+</div>
+</body>
+</html>
