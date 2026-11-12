@@ -137,16 +137,17 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 <script>
 (function(){
 "use strict";
-const VERN={10:{n:10,L:9,lab:"1/10",dec:1},5:{n:20,L:39,lab:"1/20",dec:2},2:{n:50,L:49,lab:"1/50",dec:2}};
+const VERN={10:{n:10,L:19,lab:"1/10",dec:1},5:{n:20,L:39,lab:"1/20",dec:2},2:{n:50,L:49,lab:"1/50",dec:2}};
 const S0=48, RT=7.4, CAL_MAX=15000, MIC_MAX=2500;
 const st={inst:"cal",mode:"libre",cal:{Ph:5,v:2345,raw:2345},mic:{v:778,raw:778},nomen:false,
   view:{cal:null,mic:null},vkey:{cal:"",mic:""},fitS:{cal:1,mic:1},
-  exo:{cal:null,mic:null,ok:0,tot:0},quiz:null,last:{main:null,loupe:null}};
+  exo:{cal:null,mic:null,ok:0,tot:0},quiz:null,reveal:false,last:{main:null,loupe:null}};
 
 const $=id=>document.getElementById(id);
 const cvMain=$("main"), cvLoupe=$("loupe");
 const locked=()=>st.mode==="exo"||st.mode==="quiz";
 const showReading=()=>st.mode==="libre"||st.mode==="cours";
+const showMarks=()=>showReading()||st.reveal;
 const fmt=(h,dec)=>(h/100).toFixed(dec).replace(".",",");
 const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
@@ -216,7 +217,7 @@ function drawCal(ctx,o){
   ctx.strokeStyle="rgba(255,255,255,.55)";ctx.lineWidth=Math.max(.08,.6/s);ctx.beginPath();ctx.moveTo(x0+.5,13.25);ctx.lineTo(x1-4.5,13.25);ctx.stroke();
   ctx.strokeStyle="#16191c";ctx.lineWidth=tw;ctx.beginPath();
   for(let j=0;j<=n;j++){const lab=(n===10)||(n===20&&j%2===0)||(n===50&&j%5===0);const len=lab?3.3:2.2;const x=pos+j*d;ctx.moveTo(x,13);ctx.lineTo(x,13+len);}ctx.stroke();
-  ctx.fillStyle="#16191c";ctx.font="600 2.5px Barlow, sans-serif";ctx.textAlign="center";
+  ctx.fillStyle="#16191c";ctx.font=(n===10?"600 1.75px":"600 2.5px")+" Barlow, sans-serif";ctx.textAlign="center";
   for(let j=0;j<=n;j++){let t=null;if(n===10)t=j;else if(n===20&&j%2===0)t=j/2;else if(n===50&&j%5===0)t=j/5;if(t!==null)ctx.fillText(String(t),pos+j*d,19.2);}
   ctx.font="600 1.8px Barlow, sans-serif";ctx.fillStyle="rgba(22,25,28,.75)";ctx.fillText(V.lab+" mm  ·  "+(Ph/100).toFixed(2).replace(".",",")+" mm",pos+L/2,22.9);
   if(o.hl){ctx.lineWidth=Math.max(.22,1.8/s);ctx.strokeStyle="#c48a1c";ctx.beginPath();ctx.moveTo(pos,13);ctx.lineTo(pos,16.3);ctx.stroke();
@@ -272,14 +273,14 @@ function nomenItems(){
   if(st.inst==="cal"){const p=st.cal.v/100,L=VERN[st.cal.Ph].L;
     return [["Règle graduée",150,9,0,-42],["Becs intérieurs",-2,-13,-6,-34],["Vis de blocage",p+L*.55,-6,24,-30],["Bec fixe",-9,50,-14,38],["Bec mobile",p+9,52,26,34],["Vernier",p+L/2,21,0,52],["Molette",p+L+7,32,40,22],["Coulisseau",p+L+9,24,46,-10],["Jauge de profondeur",230+p/2,10,0,-34]];}
   const p=st.mic.v/100,e=S0+p;
-  return [["Arceau",-18,22,-26,26],["Touche fixe",-5,0,-10,-40],["Touche mobile",(p+30)/2,-3,6,-46],["Bague de blocage",37,-12,10,-28],["Douille graduée",46,-4.6,-6,-40],["Tambour",e+22,-RT,6,-26],["Cliquet",e+35,-4.3,20,-24],["Plaque isolante",10,31,0,34]];
+  return [["Arceau",-18,22,-26,26],["Touche fixe",-5,0,-10,-40],["Touche mobile",(p+30)/2,3,0,34],["Bague de blocage",37,-12,10,-28],["Douille graduée",47,4.6,40,44],["Tambour",e+22,-RT,6,-26],["Cliquet",e+35,-4.3,20,-24],["Plaque isolante",10,31,0,34]];
 }
 function drawNomen(ctx,v,W,H){
   ctx.font="600 12px Barlow, sans-serif";ctx.textBaseline="middle";ctx.textAlign="center";
   const boxes=[];
   nomenItems().forEach(([txt,x,y,dx,dy])=>{const ax=v.ox+x*v.s,ay=v.oy+y*v.s;if(ax<-20||ax>W+20)return;
-    const w=ctx.measureText(txt).width+12;let lx=Math.min(Math.max(ax+dx,w/2+4),W-w/2-4),ly=Math.min(Math.max(ay+dy,12),H-12);
-    const dir=dy<0?-1:1;for(let g=0;g<12;g++){const hit=boxes.some(b=>Math.abs(b.x-lx)<(b.w+w)/2+3&&Math.abs(b.y-ly)<23);if(!hit)break;ly+=dir*23;if(ly<12||ly>H-12){ly=Math.min(Math.max(ly,12),H-12);lx+=(lx<W/2?1:-1)*30;}}
+    const w=ctx.measureText(txt).width+12;let lx=Math.min(Math.max(ax+dx,w/2+4),W-w/2-4),ly=Math.min(Math.max(ay+dy,64),H-12);
+    const dir=dy<0?-1:1;for(let g=0;g<12;g++){const hit=boxes.some(b=>Math.abs(b.x-lx)<(b.w+w)/2+3&&Math.abs(b.y-ly)<23);if(!hit)break;ly+=dir*23;if(ly<64||ly>H-12){ly=Math.min(Math.max(ly,64),H-12);lx+=(lx<W/2?1:-1)*30;}}
     boxes.push({x:lx,y:ly,w});
     ctx.strokeStyle="rgba(210,171,95,.9)";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(lx,ly);ctx.stroke();
     ctx.fillStyle="#d2ab5f";ctx.beginPath();ctx.arc(ax,ay,2.4,0,7);ctx.fill();
@@ -302,7 +303,7 @@ function paint(c,isL){
   const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,isL?"#30363c":"#2b3136");g.addColorStop(1,isL?"#1f2428":"#191d21");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
   const v=isL?loupeView(W,H):mainView(W,H);
   ctx.setTransform(d*v.s,0,0,d*v.s,d*v.ox,d*v.oy);
-  const o={s:v.s,hl:showReading()};
+  const o={s:v.s,hl:showMarks()};
   if(st.inst==="cal")drawCal(ctx,o);else drawMic(ctx,o);
   ctx.setTransform(d,0,0,d,0,0);
   if(!isL&&st.nomen)drawNomen(ctx,v,W,H);
@@ -326,7 +327,7 @@ function attach(c,isL){
   c.addEventListener("pointerdown",ev=>{c.setPointerCapture(ev.pointerId);pts.set(ev.pointerId,P(ev));
     if(pts.size===1){const p=P(ev),v=st.last[isL?"loupe":"main"];if(!v)return;const wx=(p.x-v.ox)/v.s,wy=(p.y-v.oy)/v.s;
       if(!locked()&&(isL||hitMovable(wx,wy))){mode="move";const inst=st.inst;st[inst].raw=st[inst].v;}else mode=isL?null:"pan";
-      if(locked()&&(isL||hitMovable(wx,wy)))flashLock();}
+    }
     else if(pts.size===2&&!isL){mode="pinch";const [a,b]=[...pts.values()];const v=st.view[st.inst];const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
       pinch={d0:Math.hypot(a.x-b.x,a.y-b.y)||1,s0:v.s,wx:(mx-v.ox)/v.s,wy:(my-v.oy)/v.s};}
     ev.preventDefault();});
@@ -346,7 +347,6 @@ function zoomAt(x,y,f){const v=st.view[st.inst];if(!v)return;const fs=st.fitS[st
 function zoomOnReading(f){const r=cvMain.getBoundingClientRect(),v=st.view[st.inst];if(!v)return;
   let wx,wy;if(st.inst==="cal"){const L=VERN[st.cal.Ph].L;wx=st.cal.v/100+L/2;wy=13;}else{wx=S0+st.mic.v/100;wy=0;}
   const fs=st.fitS[st.inst];const ns=Math.max(fs*.6,Math.min(fs*45,v.s*f));v.s=ns;v.ox=r.width/2-wx*ns;v.oy=r.height/2-wy*ns;redraw();}
-let lockT=0;function flashLock(){const b=$("lock");b.style.display="block";clearTimeout(lockT);lockT=setTimeout(()=>{if(locked())b.style.display="block";},10);}
 
 /* ---------- Commandes ---------- */
 function syncRange(){const r=$("rng");if(st.inst==="cal"){r.max=CAL_MAX;r.step=st.cal.Ph;r.value=st.cal.v;}else{r.max=MIC_MAX;r.step=1;r.value=st.mic.v;}r.disabled=locked();}
@@ -359,8 +359,10 @@ function buildFine(){
   document.querySelectorAll("#precRow .chip").forEach(c=>c.setAttribute("aria-pressed",String(+c.dataset.ph===st.cal.Ph)));
   $("rngLbl").textContent=st.inst==="cal"?"Ouverture des becs (glissez)":"Ouverture de la broche (glissez)";
   $("hint").textContent=st.inst==="cal"?"Glissez le coulisseau avec le doigt · Pincez pour zoomer · Deux doigts pour déplacer":"Glissez le tambour : à gauche/droite pour avancer, en haut/bas pour tourner · Pincez pour zoomer";
+  if(locked())$("hint").textContent="Pincez pour zoomer · Deux doigts pour déplacer";
   $("lock").style.display=locked()?"block":"none";
-  $("controls").classList.toggle("hidden",locked());
+  $("controls").classList.toggle("hidden",st.mode==="quiz"||(st.mode==="exo"&&st.inst==="mic"));
+  $("rng").classList.toggle("hidden",locked());$("rngLbl").classList.toggle("hidden",locked());$("fine").classList.toggle("hidden",locked());
   syncRange();
 }
 $("rng").addEventListener("input",e=>{if(locked())return;setVal(st.inst,+e.target.value);});
@@ -375,7 +377,7 @@ $("tCal").onclick=()=>switchInst("cal");$("tMic").onclick=()=>switchInst("mic");
 document.querySelectorAll(".modes button").forEach(b=>b.addEventListener("click",()=>switchMode(b.dataset.mode)));
 function switchInst(i){st.inst=i;$("tCal").setAttribute("aria-pressed",String(i==="cal"));$("tMic").setAttribute("aria-pressed",String(i==="mic"));
   if(st.mode==="exo")newExo(true);if(st.mode==="quiz")startQuiz();buildFine();renderPanel();redraw();}
-function switchMode(m){st.mode=m;document.querySelectorAll(".modes button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.mode===m)));
+function switchMode(m){st.mode=m;st.reveal=false;document.querySelectorAll(".modes button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.mode===m)));
   if(m==="exo")newExo(true);if(m==="quiz")startQuiz();buildFine();renderPanel();redraw();}
 
 /* ---------- Explications ---------- */
@@ -397,7 +399,7 @@ function renderReading(){const el=$("readBox");if(!el)return;const inst=st.inst,
 
 /* ---------- Exercice ---------- */
 function randVal(inst,Ph){return inst==="cal"?Ph*ri(Math.ceil(200/Ph),Math.floor(14000/Ph)):ri(50,2450);}
-function newExo(keep){const inst=st.inst;const Ph=st.cal.Ph;const v=randVal(inst,Ph);st.exo[inst]={v,Ph,done:false};st[inst].v=v;st[inst].raw=v;
+function newExo(keep){st.reveal=false;const inst=st.inst;const Ph=st.cal.Ph;const v=randVal(inst,Ph);st.exo[inst]={v,Ph,done:false};st[inst].v=v;st[inst].raw=v;
   if(!keep)renderPanel();syncRange();redraw();}
 function parseAns(s){s=String(s).trim().replace(/\s/g,"").replace(",",".");if(!/^\d*\.?\d+$/.test(s)&&!/^\d+\.?$/.test(s))return null;const x=parseFloat(s);return isFinite(x)?x:null;}
 
@@ -424,7 +426,7 @@ function startQuiz(){const inst=st.inst;const qs=[];
   for(let i=0;i<6;i++){const Ph=inst==="cal"?[10,5,2][i%3]:0;qs.push({t:"read",Ph,v:randVal(inst,Ph||5)});}
   shuffle(BANK[inst].slice()).slice(0,4).forEach(b=>qs.push({t:"mcq",b}));
   st.quiz={inst,qs:shuffle(qs),i:0,score:0,answered:false};loadQ();}
-function loadQ(){const q=st.quiz.qs[st.quiz.i];if(q&&q.t==="read"){const inst=st.quiz.inst;if(inst==="cal"){st.cal.Ph=q.Ph;st.view.cal=null;}st[inst].v=q.v;st[inst].raw=q.v;}buildFine();redraw();}
+function loadQ(){st.reveal=false;const q=st.quiz.qs[st.quiz.i];if(q&&q.t==="read"){const inst=st.quiz.inst;if(inst==="cal"){st.cal.Ph=q.Ph;st.view.cal=null;}st[inst].v=q.v;st[inst].raw=q.v;}buildFine();redraw();}
 
 /* ---------- Panneau ---------- */
 function renderPanel(){
@@ -447,7 +449,7 @@ function checkExo(){const inst=st.inst,ex=st.exo[inst];const a=parseAns($("ans")
   fb.className="fb "+(good?"ok":"bad");
   fb.innerHTML=(good?"Exact : "+fmt(ex.v,dec)+" mm.":"Pas tout à fait. La bonne lecture est "+fmt(ex.v,dec)+" mm.")+steps(explain(inst,ex.v,ex.Ph));
   document.querySelector(".score b").textContent=st.exo.ok+" / "+st.exo.tot;
-  st.mode="exo";const keepHl=false;void keepHl;}
+  st.reveal=true;redraw();}
 function renderQuiz(){
   const P=$("panel"),Q=st.quiz,inst=Q.inst,total=Q.qs.length;
   if(Q.i>=total){const sc=Q.score;const msg=sc>=8?"Très bien, la lecture est maîtrisée.":sc>=5?"Assez bien. Revoyez le cours puis refaites des exercices.":"À revoir : relisez le cours et entraînez-vous en mode Exercice.";
@@ -464,7 +466,7 @@ function renderQuiz(){
   if(q.t==="read"){$("f").addEventListener("submit",e=>{e.preventDefault();if(Q.answered)return;const a=parseAns($("ans").value);const fb=$("fb");
     if(a===null){fb.className="fb bad";fb.textContent="Écrivez un nombre, par exemple 23,45.";return;}
     Q.answered=true;const good=Math.abs(a*100-q.v)<0.5;if(good)Q.score++;const dec=inst==="cal"?VERN[q.Ph].dec:2;
-    fb.className="fb "+(good?"ok":"bad");fb.innerHTML=(good?"Exact : ":"Réponse : ")+fmt(q.v,dec)+" mm"+steps(explain(inst,q.v,q.Ph||5));$("qn").disabled=false;});}
+    fb.className="fb "+(good?"ok":"bad");fb.innerHTML=(good?"Exact : ":"Réponse : ")+fmt(q.v,dec)+" mm"+steps(explain(inst,q.v,q.Ph||5));$("qn").disabled=false;st.reveal=true;redraw();});}
   else{document.querySelectorAll(".opts button").forEach(b=>b.onclick=()=>{if(Q.answered)return;Q.answered=true;const i=+b.dataset.i;const good=i===q.b[2];if(good)Q.score++;
     document.querySelectorAll(".opts button").forEach(x=>{if(+x.dataset.i===q.b[2])x.classList.add("good");else if(x===b)x.classList.add("wrong");});
     const fb=$("fb");fb.className="fb "+(good?"ok":"bad");fb.textContent=(good?"Bonne réponse. ":"Non. ")+q.b[3];$("qn").disabled=false;});}
@@ -474,9 +476,9 @@ function renderQuiz(){
 const COURS_CAL=`
 <h2>Rôle</h2><p>Le pied à coulisse mesure des cotes <b>extérieures</b>, <b>intérieures</b> et des <b>profondeurs</b>. Sa précision dépend du vernier : 0,1 mm, 0,05 mm ou 0,02 mm.</p>
 <h2>Nomenclature</h2><ol><li>Règle graduée (en mm)</li><li>Bec fixe</li><li>Coulisseau</li><li>Bec mobile</li><li>Vernier</li><li>Vis de blocage</li><li>Becs intérieurs (alésages)</li><li>Jauge de profondeur</li><li>Molette (poussoir)</li></ol><p class="sub">Touchez le bouton « Nom » sur l'image pour voir chaque pièce.</p>
-<h2>Principe du vernier</h2><p>Les divisions du vernier sont un peu plus courtes que celles de la règle. Cette petite différence donne la précision.</p>
+<h2>Principe du vernier</h2><p>Chaque division du vernier est un peu plus courte que 1 mm ou 2 mm de la règle (ex. 39 mm ÷ 20 = 1,95 mm au lieu de 2 mm). Cette petite différence donne la précision.</p>
 <div class="tw"><table><tr><th>Vernier</th><th>Divisions</th><th>Longueur</th><th>Précision</th></tr>
-<tr><td>1/10</td><td>10</td><td>9 mm</td><td>0,1 mm</td></tr><tr><td>1/20</td><td>20</td><td>39 mm</td><td>0,05 mm</td></tr><tr><td>1/50</td><td>50</td><td>49 mm</td><td>0,02 mm</td></tr></table></div>
+<tr><td>1/10</td><td>10</td><td>19 mm</td><td>0,1 mm</td></tr><tr><td>1/20</td><td>20</td><td>39 mm</td><td>0,05 mm</td></tr><tr><td>1/50</td><td>50</td><td>49 mm</td><td>0,02 mm</td></tr></table></div>
 <h2>Lecture en 3 étapes</h2><ol><li><b>Millimètres entiers :</b> le trait de la règle juste avant le zéro du vernier.</li><li><b>Fraction :</b> cherchez le trait du vernier qui coïncide parfaitement avec un trait de la règle. Son rang × la précision.</li><li><b>Additionnez</b> les deux.</li></ol>
 <div class="ex">Vernier 1/20 : zéro après le 23 → 23 mm<br>Trait n° 9 coïncide → 9 × 0,05 = 0,45 mm<br>Lecture = 23,45 mm</div>
 <h2>Bonnes pratiques</h2><ul><li>Nettoyer les becs et la pièce.</li><li>Vérifier le zéro, becs fermés.</li><li>Mesurer au fond des becs, pièce bien perpendiculaire.</li><li>Pression légère et constante avec la molette.</li><li>Lire bien en face (erreur de parallaxe).</li><li>Bloquer la vis avant de retirer l'instrument.</li><li>Ne jamais mesurer une pièce en rotation. Ranger dans l'étui.</li></ul>`;
