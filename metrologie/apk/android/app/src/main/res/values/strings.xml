@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Métrologie atelier</string>
+    <string name="title_activity_main">Métrologie atelier</string>
+    <string name="package_name">fr.formation.metrologie</string>
+    <string name="custom_url_scheme">fr.formation.metrologie</string>
+</resources>

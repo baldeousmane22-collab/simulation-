@@ -1,0 +1,8 @@
+{
+  "appId": "fr.formation.metrologie",
+  "appName": "Métrologie atelier",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#15181b"
+  }
+}

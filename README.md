@@ -382,3 +382,14 @@ Rapport par poste : date, équipe, poste (07h-15h, 15h-23h, 23h-07h) calculé d'
 de Kamsar, interventions (équipement entretenu, travail effectué, pièce remplacée, état), inspection, remarques
 libres et consignes pour le poste suivant. Envoi sur WhatsApp, copie du texte, PDF avec signature et visa.
 Recherche par mot et filtre par poste. Les rapports restent sur le téléphone (hors connexion).
+
+# Métrologie atelier (pied à coulisse et micromètre)
+
+- **Lien web** : https://baldeousmane22-collab.github.io/simulation-/metrologie/
+- **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/metrologie/Metrologie.apk
+- Dossier séparé : `metrologie/` (appli seule, sans lien avec les autres) ; projet Android dans `metrologie/apk/`.
+
+Pied à coulisse (vernier 1/10, 1/20, 1/50) et micromètre 0–25 mm au 0,01 mm, dessinés en acier réaliste.
+On glisse le coulisseau ou on tourne le tambour au doigt, avec une loupe de lecture et le zoom par pincement.
+Modes : **Libre** (lecture expliquée en étapes), **Exercice** (mesure au hasard, correction), **Quiz** noté sur 10,
+**Cours** (nomenclature, principe, lecture, bonnes pratiques). Bouton « Nom » : nom de chaque pièce sur l'image.

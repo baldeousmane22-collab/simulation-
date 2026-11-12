@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#15181b">
+<title>Simulateur pied à coulisse et micromètre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Atelier : établi gris acier, accent laiton, vert/rouge de contrôle. Mise en page : instrument en haut, loupe, commandes, panneau du mode. */
+  --bg:#15181b; --panel:#1e2327; --panel2:#272d33; --line:#363e46; --text:#e7eaed; --muted:#9ba4ad; --accent:#d2ab5f; --ok:#62bb7e; --bad:#e3705f;
+  --display:"Barlow Condensed","Arial Narrow",sans-serif; --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);font-size:16px;-webkit-tap-highlight-color:transparent}
+.app{max-width:920px;margin:0 auto;padding:10px 12px 40px;display:flex;flex-direction:column;gap:10px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:700;font-size:1.35rem;letter-spacing:.02em;margin:0;text-wrap:balance}
+h1 span{color:var(--accent)}
+.sub{color:var(--muted);font-size:.82rem}
+.seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;background:transparent;color:var(--muted);font:600 .95rem var(--body);padding:9px 6px;border-radius:7px;cursor:pointer;min-height:42px}
+.seg button[aria-pressed="true"]{background:var(--panel2);color:var(--text);box-shadow:inset 0 -2px 0 var(--accent)}
+.seg.modes button{font-size:.88rem}
+.stage{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#1c2024}
+#main{display:block;width:100%;height:clamp(210px,32vh,400px);touch-action:none;cursor:grab}
+.tools{position:absolute;right:8px;top:8px;display:flex;gap:6px}
+.tools button,.chip,.btn{border:1px solid var(--line);background:rgba(30,35,39,.92);color:var(--text);font:600 .9rem var(--body);border-radius:8px;cursor:pointer;min-width:42px;min-height:40px}
+.tools button{font-size:1.15rem;line-height:1}
+.tools button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.lockbadge{position:absolute;left:8px;bottom:8px;background:rgba(20,23,26,.88);border:1px solid var(--line);color:var(--accent);font:600 .78rem var(--body);padding:5px 8px;border-radius:6px;display:none}
+.hint{color:var(--muted);font-size:.78rem;text-align:center}
+.loupewrap{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+#loupe{display:block;width:100%;height:170px;touch-action:none;cursor:ew-resize}
+.ltag{position:absolute;right:8px;bottom:6px;font:700 .72rem var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--accent);background:rgba(20,23,26,.8);padding:3px 7px;border-radius:5px}
+.controls{display:flex;flex-direction:column;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px}
+.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.row .lbl{color:var(--muted);font-size:.85rem;min-width:70px}
+.chip{padding:0 12px}
+.chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:#2b2a24}
+.fine{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.btn{padding:0 10px}
+.btn.primary{background:var(--accent);color:#1a1712;border-color:var(--accent)}
+.btn:disabled{opacity:.4;cursor:default}
+input[type=range]{width:100%;accent-color:var(--accent);height:32px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.reading{font:700 2.1rem var(--mono);font-variant-numeric:tabular-nums;color:var(--text)}
+.reading small{font:500 1rem var(--body);color:var(--muted);margin-left:6px}
+.steps{margin:10px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+.steps li{background:var(--panel2);border-left:3px solid var(--accent);padding:8px 10px;border-radius:0 8px 8px 0;font-size:.95rem;line-height:1.4}
+.steps li.total{border-left-color:var(--ok);font-weight:600}
+.k{font-family:var(--mono);font-weight:700;color:var(--accent)}
+.answer{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.answer input{flex:1;min-width:120px;font:700 1.4rem var(--mono);background:#121518;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.answer input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.unit{color:var(--muted);font-weight:600}
+.fb{margin-top:10px;padding:10px;border-radius:8px;font-weight:600;display:none}
+.fb.ok{display:block;background:rgba(98,187,126,.13);border:1px solid var(--ok);color:#a9e2bb}
+.fb.bad{display:block;background:rgba(227,112,95,.12);border:1px solid var(--bad);color:#f3b3a8}
+.score{display:flex;gap:14px;color:var(--muted);font-size:.88rem;margin-top:8px;flex-wrap:wrap}
+.score b{color:var(--text);font-family:var(--mono)}
+.q{font-size:1.05rem;font-weight:600;line-height:1.4;margin:4px 0 10px}
+.opts{display:flex;flex-direction:column;gap:6px}
+.opts button{text-align:left;padding:10px 12px;min-height:44px;font:500 .98rem var(--body);background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;cursor:pointer}
+.opts button.good{border-color:var(--ok);background:rgba(98,187,126,.16)}
+.opts button.wrong{border-color:var(--bad);background:rgba(227,112,95,.14)}
+.progress{height:6px;background:var(--panel2);border-radius:4px;overflow:hidden;margin-bottom:8px}
+.progress i{display:block;height:100%;background:var(--accent)}
+.cours h2{font-family:var(--display);font-size:1.25rem;margin:14px 0 6px;color:var(--accent);letter-spacing:.02em}
+.cours h2:first-child{margin-top:0}
+.cours p,.cours li{line-height:1.5;font-size:.97rem}
+.cours ol,.cours ul{padding-left:20px;margin:6px 0}
+.cours table{border-collapse:collapse;width:100%;font-size:.92rem;margin:6px 0}
+.cours td,.cours th{border:1px solid var(--line);padding:6px 8px;text-align:left}
+.cours th{background:var(--panel2)}
+.tw{overflow-x:auto}
+.ex{background:var(--panel2);padding:10px;border-radius:8px;font-family:var(--mono);font-size:.9rem;line-height:1.6}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hidden{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Métrologie <span>atelier</span></h1>
+    <div class="sub">Pied à coulisse · Micromètre · Usinage 1<sup>re</sup> année</div>
+  </header>
+
+  <div class="seg" role="group" aria-label="Instrument">
+    <button id="tCal" aria-pressed="true">Pied à coulisse</button>
+    <button id="tMic" aria-pressed="false">Micromètre</button>
+  </div>
+  <div class="seg modes" role="group" aria-label="Mode">
+    <button data-mode="libre" aria-pressed="true">Libre</button>
+    <button data-mode="exo" aria-pressed="false">Exercice</button>
+    <button data-mode="quiz" aria-pressed="false">Quiz</button>
+    <button data-mode="cours" aria-pressed="false">Cours</button>
+  </div>
+
+  <div class="stage">
+    <canvas id="main" aria-label="Instrument de mesure"></canvas>
+    <div class="lockbadge" id="lock">Instrument bloqué : lisez la mesure</div>
+    <div class="tools">
+      <button id="zIn" title="Zoomer" aria-label="Zoomer">+</button>
+      <button id="zOut" title="Dézoomer" aria-label="Dézoomer">−</button>
+      <button id="zFit" title="Recentrer" aria-label="Recentrer">⤢</button>
+      <button id="nom" title="Nomenclature" aria-label="Afficher la nomenclature" aria-pressed="false" style="font-size:.8rem;font-weight:700">Nom</button>
+    </div>
+  </div>
+  <div class="hint" id="hint">Glissez le coulisseau avec le doigt · Pincez pour zoomer · Deux doigts pour déplacer</div>
+
+  <div class="loupewrap">
+    <canvas id="loupe" aria-label="Loupe de lecture"></canvas>
+    <div class="ltag">Loupe</div>
+  </div>
+
+  <div class="controls" id="controls">
+    <div class="row" id="precRow">
+      <span class="lbl">Vernier</span>
+      <button class="chip" data-ph="10">1/10 (0,1)</button>
+      <button class="chip" data-ph="5" aria-pressed="true">1/20 (0,05)</button>
+      <button class="chip" data-ph="2">1/50 (0,02)</button>
+    </div>
+    <label for="rng" class="sub" id="rngLbl">Ouverture des becs</label>
+    <input type="range" id="rng" min="0" max="15000" step="5" value="2345">
+    <div class="fine" id="fine"></div>
+  </div>
+
+  <div class="panel" id="panel"></div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const VERN={10:{n:10,L:9,lab:"1/10",dec:1},5:{n:20,L:39,lab:"1/20",dec:2},2:{n:50,L:49,lab:"1/50",dec:2}};
+const S0=48, RT=7.4, CAL_MAX=15000, MIC_MAX=2500;
+const st={inst:"cal",mode:"libre",cal:{Ph:5,v:2345,raw:2345},mic:{v:778,raw:778},nomen:false,
+  view:{cal:null,mic:null},vkey:{cal:"",mic:""},fitS:{cal:1,mic:1},
+  exo:{cal:null,mic:null,ok:0,tot:0},quiz:null,last:{main:null,loupe:null}};
+
+const $=id=>document.getElementById(id);
+const cvMain=$("main"), cvLoupe=$("loupe");
+const locked=()=>st.mode==="exo"||st.mode==="quiz";
+const showReading=()=>st.mode==="libre"||st.mode==="cours";
+const fmt=(h,dec)=>(h/100).toFixed(dec).replace(".",",");
+const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+
+/* ---------- Lecture (calcul exact en centièmes) ---------- */
+function calParts(v,Ph){const N=Math.floor(v/100);const k=Math.round((v-N*100)/Ph);return {N,k};}
+function micParts(v){const M=Math.floor(v/100);const r=v-M*100;const half=r>=50;const c=r%50;return {M,half,c};}
+
+/* ---------- Dessin ---------- */
+function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function grad(ctx,y0,y1,kind){
+  const g=ctx.createLinearGradient(0,y0,0,y1);
+  const S={
+    chrome:[[0,"#f1f3f4"],[.08,"#cfd4d8"],[.5,"#a9b0b6"],[.88,"#c7ccd0"],[1,"#7f868c"]],
+    satin:[[0,"#dde1e4"],[.45,"#bcc2c7"],[1,"#959ca2"]],
+    cyl:[[0,"#6f767c"],[.22,"#c9ced2"],[.42,"#f4f6f7"],[.6,"#c3c8cd"],[.85,"#868d93"],[1,"#5c6268"]],
+    dark:[[0,"#5a6168"],[.4,"#3f454b"],[1,"#2a2f34"]],
+    paint:[[0,"#4b5157"],[.5,"#383d42"],[1,"#24282c"]],
+    piece:[[0,"#4d5660"],[.3,"#8a95a0"],[.5,"#a6b0ba"],[.75,"#6b7580"],[1,"#3b434b"]],
+    plate:[[0,"#7a8087"],[1,"#5a6067"]]
+  }[kind];
+  S.forEach(s=>g.addColorStop(s[0],s[1]));return g;
+}
+function poly(ctx,pts){ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);ctx.closePath();}
+function edge(ctx,s){ctx.lineWidth=Math.max(.12,.8/s);ctx.strokeStyle="rgba(30,34,38,.75)";ctx.stroke();}
+function knurl(ctx,x0,x1,y0,y1,step,s,vert){ctx.save();ctx.strokeStyle="rgba(40,44,48,.55)";ctx.lineWidth=Math.max(.1,.6/s);ctx.beginPath();
+  if(vert){for(let x=x0;x<=x1;x+=step){ctx.moveTo(x,y0);ctx.lineTo(x,y1);}}else{for(let y=y0;y<=y1;y+=step){ctx.moveTo(x0,y);ctx.lineTo(x1,y);}}ctx.stroke();ctx.restore();}
+
+function drawCal(ctx,o){
+  const Ph=st.cal.Ph,V=VERN[Ph],n=V.n,L=V.L,d=L/n,m=(L+1)/n,pos=st.cal.v/100,s=o.s;
+  const {N,k}=calParts(st.cal.v,Ph);
+  const tw=Math.max(.13,1/s);
+  // Pièce mesurée
+  if(pos>1.2){const top=34,bot=Math.min(54,34+Math.max(10,pos*0.5));ctx.fillStyle=grad(ctx,top,bot,"piece");ctx.fillRect(0,top,pos,bot-top);
+    ctx.strokeStyle="rgba(0,0,0,.4)";ctx.lineWidth=Math.max(.1,.7/s);ctx.strokeRect(0,top,pos,bot-top);}
+  // Règle (coulisse)
+  ctx.fillStyle=grad(ctx,0,20,"chrome");rr(ctx,-18,0,248,20,1.2);ctx.fill();edge(ctx,s);
+  // Jauge de profondeur
+  ctx.fillStyle=grad(ctx,9,10.6,"satin");ctx.fillRect(230,9,pos,1.6);
+  // Bec fixe extérieur + intérieur
+  ctx.fillStyle=grad(ctx,0,64,"chrome");
+  poly(ctx,[[-18,19],[0,19],[0,56],[-2.5,64],[-7,64],[-18,32]]);ctx.fill();edge(ctx,s);
+  poly(ctx,[[-8,1],[0,1],[0,-3],[-1.2,-15],[-3.6,-15],[-8,-4]]);ctx.fill();edge(ctx,s);
+  // Graduations de la règle
+  ctx.strokeStyle="#16191c";ctx.lineWidth=tw;ctx.beginPath();
+  for(let i=0;i<=200;i++){const len=i%10===0?5.6:(i%5===0?4.1:2.7);ctx.moveTo(i,13);ctx.lineTo(i,13-len);}ctx.stroke();
+  ctx.fillStyle="#16191c";ctx.font="600 3.6px Barlow, sans-serif";ctx.textAlign="center";ctx.textBaseline="alphabetic";
+  for(let i=0;i<=200;i+=10)ctx.fillText(String(i/10),i+(i===0?0:0),6.4);
+  ctx.font="600 2.4px Barlow, sans-serif";ctx.fillText("mm",210,6.2);
+  ctx.textAlign="left";ctx.font="500 1.9px Barlow, sans-serif";ctx.fillStyle="rgba(22,25,28,.65)";ctx.fillText("ACIER INOX TREMPÉ   0–150 mm",158,18);
+  // Repères surlignés (règle)
+  if(o.hl){ctx.lineWidth=Math.max(.22,1.8/s);ctx.strokeStyle="#c48a1c";ctx.beginPath();ctx.moveTo(N,13);ctx.lineTo(N,13-(N%10===0?5.6:(N%5===0?4.1:2.7)));ctx.stroke();
+    ctx.strokeStyle="#1f9a4a";const mi=N+k*m;ctx.beginPath();ctx.moveTo(mi,13);ctx.lineTo(mi,13-(mi%10===0?5.6:(mi%5===0?4.1:2.7)));ctx.stroke();}
+  // Coulisseau
+  const x0=pos-4,x1=pos+L+12;
+  ctx.fillStyle=grad(ctx,-3,0,"satin");rr(ctx,x0,-3,x1-x0,3.2,.6);ctx.fill();edge(ctx,s);
+  // vis de blocage
+  const sx=pos+L*0.55;ctx.fillStyle=grad(ctx,-8,-3,"cyl");rr(ctx,sx-3.5,-8,7,5,.8);ctx.fill();edge(ctx,s);knurl(ctx,sx-3,sx+3,-7.6,-3.4,.7,s,true);
+  // corps inférieur + bec mobile
+  ctx.fillStyle=grad(ctx,19,31,"chrome");rr(ctx,pos,19,x1-pos,11,1);ctx.fill();edge(ctx,s);
+  ctx.fillStyle=grad(ctx,19,64,"chrome");poly(ctx,[[pos,28],[pos,56],[pos+2.5,64],[pos+7,64],[pos+18,32],[pos+18,28]]);ctx.fill();edge(ctx,s);
+  ctx.fillStyle=grad(ctx,-15,0,"chrome");poly(ctx,[[pos,-2.8],[pos,-3],[pos+1.2,-15],[pos+3.6,-15],[pos+8,-4],[pos+8,-2.8]]);ctx.fill();edge(ctx,s);
+  // molette
+  ctx.fillStyle=grad(ctx,29,36,"cyl");rr(ctx,x1-9,29.5,7,5.5,2.4);ctx.fill();edge(ctx,s);knurl(ctx,x1-8.4,x1-2.6,30,34.6,.6,s,true);
+  // plaquette du vernier
+  ctx.fillStyle=grad(ctx,13,24.5,"satin");rr(ctx,x0,13,x1-x0-4,11.5,.8);ctx.fill();edge(ctx,s);
+  ctx.strokeStyle="rgba(255,255,255,.55)";ctx.lineWidth=Math.max(.08,.6/s);ctx.beginPath();ctx.moveTo(x0+.5,13.25);ctx.lineTo(x1-4.5,13.25);ctx.stroke();
+  ctx.strokeStyle="#16191c";ctx.lineWidth=tw;ctx.beginPath();
+  for(let j=0;j<=n;j++){const lab=(n===10)||(n===20&&j%2===0)||(n===50&&j%5===0);const len=lab?3.3:2.2;const x=pos+j*d;ctx.moveTo(x,13);ctx.lineTo(x,13+len);}ctx.stroke();
+  ctx.fillStyle="#16191c";ctx.font="600 2.5px Barlow, sans-serif";ctx.textAlign="center";
+  for(let j=0;j<=n;j++){let t=null;if(n===10)t=j;else if(n===20&&j%2===0)t=j/2;else if(n===50&&j%5===0)t=j/5;if(t!==null)ctx.fillText(String(t),pos+j*d,19.2);}
+  ctx.font="600 1.8px Barlow, sans-serif";ctx.fillStyle="rgba(22,25,28,.75)";ctx.fillText(V.lab+" mm  ·  "+(Ph/100).toFixed(2).replace(".",",")+" mm",pos+L/2,22.9);
+  if(o.hl){ctx.lineWidth=Math.max(.22,1.8/s);ctx.strokeStyle="#c48a1c";ctx.beginPath();ctx.moveTo(pos,13);ctx.lineTo(pos,16.3);ctx.stroke();
+    if(k>0){ctx.strokeStyle="#1f9a4a";const lab=(n===10)||(n===20&&k%2===0)||(n===50&&k%5===0);ctx.beginPath();ctx.moveTo(pos+k*d,13);ctx.lineTo(pos+k*d,13+(lab?3.3:2.2));ctx.stroke();}}
+}
+
+function drawMic(ctx,o){
+  const v=st.mic.v,pos=v/100,s=o.s,e=S0+pos,tw=Math.max(.12,1/s);
+  const {M,half,c}=micParts(v);
+  // broche
+  ctx.fillStyle=grad(ctx,-3.2,3.2,"cyl");ctx.fillRect(pos,-3.2,32-pos,6.4);
+  ctx.strokeStyle="rgba(0,0,0,.35)";ctx.lineWidth=Math.max(.1,.7/s);ctx.beginPath();ctx.moveTo(pos,-3.2);ctx.lineTo(pos,3.2);ctx.stroke();
+  // pièce
+  if(pos>0.6){ctx.fillStyle=grad(ctx,-6,6,"piece");ctx.fillRect(0,-6,pos,12);ctx.strokeStyle="rgba(0,0,0,.4)";ctx.strokeRect(0,-6,pos,12);}
+  // arceau
+  ctx.beginPath();ctx.moveTo(-21,-9);ctx.lineTo(-9,-9);ctx.lineTo(-9,12);ctx.arcTo(-9,22,1,22,10);ctx.lineTo(20,22);ctx.arcTo(30,22,30,12,10);ctx.lineTo(30,-9);ctx.lineTo(44,-9);ctx.lineTo(44,20);ctx.arcTo(44,34,30,34,14);ctx.lineTo(-10,34);ctx.arcTo(-24,34,-24,20,14);ctx.lineTo(-24,-6);ctx.arcTo(-24,-9,-21,-9,3);ctx.closePath();
+  ctx.fillStyle=grad(ctx,-9,34,"paint");ctx.fill();edge(ctx,s);
+  ctx.fillStyle=grad(ctx,24.5,31.5,"plate");rr(ctx,-14,24.6,48,6.8,1.6);ctx.fill();edge(ctx,s);
+  ctx.fillStyle="#e8eaec";ctx.font="600 2.6px Barlow, sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("0–25 mm      0,01 mm",10,28.1);
+  // bague de blocage
+  ctx.fillStyle=grad(ctx,-14,-9,"cyl");rr(ctx,34,-13.5,6,4.8,1);ctx.fill();edge(ctx,s);
+  // touche fixe
+  ctx.fillStyle=grad(ctx,-3.2,3.2,"cyl");ctx.fillRect(-9,-3.2,9,6.4);edge(ctx,s);
+  // douille graduée
+  ctx.fillStyle=grad(ctx,-4.6,4.6,"cyl");ctx.fillRect(44,-4.6,S0+29-44,9.2);edge(ctx,s);
+  ctx.strokeStyle="#15181b";ctx.lineWidth=tw;ctx.beginPath();ctx.moveTo(S0-1.2,0);ctx.lineTo(S0+28,0);
+  for(let i=0;i<=25;i++){ctx.moveTo(S0+i,0);ctx.lineTo(S0+i,i%5===0?-2.8:-2.1);}
+  for(let i=0;i<25;i++){ctx.moveTo(S0+i+.5,0);ctx.lineTo(S0+i+.5,1.7);}ctx.stroke();
+  ctx.fillStyle="#15181b";ctx.font="600 1.9px Barlow, sans-serif";ctx.textAlign="center";ctx.textBaseline="alphabetic";
+  for(let i=0;i<=25;i+=5)ctx.fillText(String(i),S0+i,-3.3);
+  if(o.hl){ctx.lineWidth=Math.max(.2,1.8/s);ctx.strokeStyle="#c48a1c";ctx.beginPath();ctx.moveTo(S0+M,0);ctx.lineTo(S0+M,M%5===0?-2.8:-2.1);ctx.stroke();
+    if(half){ctx.beginPath();ctx.moveTo(S0+M+.5,0);ctx.lineTo(S0+M+.5,1.7);ctx.stroke();}}
+  // tambour
+  ctx.fillStyle=grad(ctx,-RT,RT,"cyl");ctx.fillRect(e+1.2,-RT,28.8,2*RT);
+  poly(ctx,[[e,-RT+1.1],[e+1.2,-RT],[e+1.2,RT],[e,RT-1.1]]);ctx.fill();
+  ctx.beginPath();ctx.rect(e,-RT,30,2*RT);edge(ctx,s);
+  knurl(ctx,e+16,e+29.5,-RT+.4,RT-.4,.55,s,true);
+  ctx.strokeStyle="rgba(0,0,0,.35)";ctx.lineWidth=Math.max(.1,.6/s);ctx.beginPath();ctx.moveTo(e+15,-RT);ctx.lineTo(e+15,RT);ctx.stroke();
+  const t=v%50;
+  ctx.textAlign="left";ctx.textBaseline="middle";
+  for(let dd=0;dd<50;dd++){let a=(dd-t)*2*Math.PI/50;while(a>Math.PI)a-=2*Math.PI;while(a<-Math.PI)a+=2*Math.PI;const ca=Math.cos(a);if(ca<0.12)continue;
+    const yy=RT*Math.sin(a);const len=dd%5===0?3.2:2.0;
+    ctx.strokeStyle=(o.hl&&dd===c)?"#1f9a4a":"#15181b";ctx.lineWidth=(o.hl&&dd===c)?Math.max(.2,1.8/s):Math.max(.1*ca,.9/s);
+    ctx.beginPath();ctx.moveTo(e,yy);ctx.lineTo(e+len,yy);ctx.stroke();
+    if(dd%5===0){ctx.save();ctx.translate(e+3.7,yy);ctx.scale(1,ca);ctx.fillStyle=(o.hl&&dd===c)?"#1f9a4a":"#15181b";ctx.font="600 1.9px Barlow, sans-serif";ctx.fillText(String(dd),0,0);ctx.restore();}}
+  // cliquet
+  ctx.fillStyle=grad(ctx,-4.3,4.3,"cyl");ctx.fillRect(e+30,-4.3,10,8.6);edge(ctx,s);knurl(ctx,e+30.6,e+39.4,-3.9,3.9,.55,s,true);
+  ctx.fillStyle=grad(ctx,-3,3,"cyl");rr(ctx,e+40,-3,2.4,6,1);ctx.fill();edge(ctx,s);
+}
+
+/* ---------- Nomenclature ---------- */
+function nomenItems(){
+  if(st.inst==="cal"){const p=st.cal.v/100,L=VERN[st.cal.Ph].L;
+    return [["Règle graduée",150,9,0,-42],["Becs intérieurs",-2,-13,-6,-34],["Vis de blocage",p+L*.55,-6,24,-30],["Bec fixe",-9,50,-14,38],["Bec mobile",p+9,52,26,34],["Vernier",p+L/2,21,0,52],["Molette",p+L+7,32,40,22],["Coulisseau",p+L+9,24,46,-10],["Jauge de profondeur",230+p/2,10,0,-34]];}
+  const p=st.mic.v/100,e=S0+p;
+  return [["Arceau",-18,22,-26,26],["Touche fixe",-5,0,-10,-40],["Touche mobile",(p+30)/2,-3,6,-46],["Bague de blocage",37,-12,10,-28],["Douille graduée",46,-4.6,-6,-40],["Tambour",e+22,-RT,6,-26],["Cliquet",e+35,-4.3,20,-24],["Plaque isolante",10,31,0,34]];
+}
+function drawNomen(ctx,v,W,H){
+  ctx.font="600 12px Barlow, sans-serif";ctx.textBaseline="middle";ctx.textAlign="center";
+  const boxes=[];
+  nomenItems().forEach(([txt,x,y,dx,dy])=>{const ax=v.ox+x*v.s,ay=v.oy+y*v.s;if(ax<-20||ax>W+20)return;
+    const w=ctx.measureText(txt).width+12;let lx=Math.min(Math.max(ax+dx,w/2+4),W-w/2-4),ly=Math.min(Math.max(ay+dy,12),H-12);
+    const dir=dy<0?-1:1;for(let g=0;g<12;g++){const hit=boxes.some(b=>Math.abs(b.x-lx)<(b.w+w)/2+3&&Math.abs(b.y-ly)<23);if(!hit)break;ly+=dir*23;if(ly<12||ly>H-12){ly=Math.min(Math.max(ly,12),H-12);lx+=(lx<W/2?1:-1)*30;}}
+    boxes.push({x:lx,y:ly,w});
+    ctx.strokeStyle="rgba(210,171,95,.9)";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(lx,ly);ctx.stroke();
+    ctx.fillStyle="#d2ab5f";ctx.beginPath();ctx.arc(ax,ay,2.4,0,7);ctx.fill();
+    ctx.fillStyle="rgba(18,21,24,.92)";rr(ctx,lx-w/2,ly-10,w,20,5);ctx.fill();ctx.strokeStyle="rgba(210,171,95,.7)";ctx.stroke();
+    ctx.fillStyle="#f1e3c4";ctx.fillText(txt,lx,ly+.5);});
+}
+
+/* ---------- Vues ---------- */
+const BOUNDS={cal:{x0:-22,x1:236,y0:-18,y1:66},mic:{x0:-28,x1:122,y0:-18,y1:37}};
+function fit(b,W,H,pad){const top=54;const s=Math.min((W-2*pad)/(b.x1-b.x0),(H-top-pad)/(b.y1-b.y0));return {s,ox:(W-(b.x1-b.x0)*s)/2-b.x0*s,oy:top+(H-top-pad-(b.y1-b.y0)*s)/2-b.y0*s};}
+function mainView(W,H){const key=W+"x"+H;if(!st.view[st.inst]||st.vkey[st.inst]!==key){st.view[st.inst]=fit(BOUNDS[st.inst],W,H,10);st.fitS[st.inst]=st.view[st.inst].s;st.vkey[st.inst]=key;}return st.view[st.inst];}
+function loupeView(W,H){
+  if(st.inst==="cal"){const L=VERN[st.cal.Ph].L,p=st.cal.v/100;const s=Math.min(W/(L+14),H/23);return {s,ox:W/2-(p+L/2)*s,oy:H/2-13.5*s};}
+  const p=st.mic.v/100;const s=Math.min(W/20,H/16.5);return {s,ox:W/2-(S0+p+1)*s,oy:H/2};
+}
+function size(c){const r=c.getBoundingClientRect();const d=Math.min(window.devicePixelRatio||1,3);const w=Math.max(1,Math.round(r.width*d)),h=Math.max(1,Math.round(r.height*d));if(c.width!==w||c.height!==h){c.width=w;c.height=h;}return {W:r.width,H:r.height,d};}
+function paint(c,isL){
+  const {W,H,d}=size(c);const ctx=c.getContext("2d");
+  ctx.setTransform(d,0,0,d,0,0);
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,isL?"#30363c":"#2b3136");g.addColorStop(1,isL?"#1f2428":"#191d21");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  const v=isL?loupeView(W,H):mainView(W,H);
+  ctx.setTransform(d*v.s,0,0,d*v.s,d*v.ox,d*v.oy);
+  const o={s:v.s,hl:showReading()};
+  if(st.inst==="cal")drawCal(ctx,o);else drawMic(ctx,o);
+  ctx.setTransform(d,0,0,d,0,0);
+  if(!isL&&st.nomen)drawNomen(ctx,v,W,H);
+  st.last[isL?"loupe":"main"]=v;
+}
+let raf=0;function redraw(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;paint(cvMain,false);paint(cvLoupe,true);});}
+
+/* ---------- Interaction ---------- */
+function setVal(inst,h,fromRaw){
+  if(inst==="cal"){const Ph=st.cal.Ph;h=Math.max(0,Math.min(CAL_MAX,h));if(!fromRaw)st.cal.raw=h;st.cal.v=Math.round(h/Ph)*Ph;}
+  else{h=Math.max(0,Math.min(MIC_MAX,h));if(!fromRaw)st.mic.raw=h;st.mic.v=Math.round(h);}
+  syncRange();redraw();if(st.mode==="libre"||st.mode==="cours")renderReading();
+}
+function hitMovable(x,y){
+  if(st.inst==="cal"){const p=st.cal.v/100,L=VERN[st.cal.Ph].L;return x>=p-6&&x<=p+Math.max(L+14,20)&&y>=-17&&y<=66;}
+  const e=S0+st.mic.v/100;return x>=e-2&&x<=e+44&&y>=-9&&y<=9;
+}
+function attach(c,isL){
+  const pts=new Map();let mode=null,pinch=null;
+  const P=ev=>{const r=c.getBoundingClientRect();return {x:ev.clientX-r.left,y:ev.clientY-r.top};};
+  c.addEventListener("pointerdown",ev=>{c.setPointerCapture(ev.pointerId);pts.set(ev.pointerId,P(ev));
+    if(pts.size===1){const p=P(ev),v=st.last[isL?"loupe":"main"];if(!v)return;const wx=(p.x-v.ox)/v.s,wy=(p.y-v.oy)/v.s;
+      if(!locked()&&(isL||hitMovable(wx,wy))){mode="move";const inst=st.inst;st[inst].raw=st[inst].v;}else mode=isL?null:"pan";
+      if(locked()&&(isL||hitMovable(wx,wy)))flashLock();}
+    else if(pts.size===2&&!isL){mode="pinch";const [a,b]=[...pts.values()];const v=st.view[st.inst];const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+      pinch={d0:Math.hypot(a.x-b.x,a.y-b.y)||1,s0:v.s,wx:(mx-v.ox)/v.s,wy:(my-v.oy)/v.s};}
+    ev.preventDefault();});
+  c.addEventListener("pointermove",ev=>{if(!pts.has(ev.pointerId))return;const prev=pts.get(ev.pointerId),p=P(ev);pts.set(ev.pointerId,p);
+    const dx=p.x-prev.x,dy=p.y-prev.y;const v=isL?st.last.loupe:st.view[st.inst];if(!v)return;
+    if(mode==="move"&&pts.size===1){const inst=st.inst;let delta=dx/v.s*100;if(inst==="mic")delta+=(-dy/v.s)/(2*Math.PI*RT)*0.5*100;
+      st[inst].raw=Math.max(0,Math.min(inst==="cal"?CAL_MAX:MIC_MAX,st[inst].raw+delta));setVal(inst,st[inst].raw,true);}
+    else if(mode==="pan"&&pts.size===1){v.ox+=dx;v.oy+=dy;redraw();}
+    else if(mode==="pinch"&&pts.size===2){const [a,b]=[...pts.values()];const d=Math.hypot(a.x-b.x,a.y-b.y);const fs=st.fitS[st.inst];
+      const ns=Math.max(fs*.6,Math.min(fs*45,pinch.s0*d/pinch.d0));const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;v.s=ns;v.ox=mx-pinch.wx*ns;v.oy=my-pinch.wy*ns;redraw();}
+    ev.preventDefault();});
+  const up=ev=>{pts.delete(ev.pointerId);if(pts.size===0){mode=null;pinch=null;}else if(pts.size===1&&!isL){mode="pan";}};
+  c.addEventListener("pointerup",up);c.addEventListener("pointercancel",up);
+  if(!isL)c.addEventListener("wheel",ev=>{ev.preventDefault();const p=P(ev);zoomAt(p.x,p.y,ev.deltaY<0?1.2:1/1.2);},{passive:false});
+}
+function zoomAt(x,y,f){const v=st.view[st.inst];if(!v)return;const fs=st.fitS[st.inst];const ns=Math.max(fs*.6,Math.min(fs*45,v.s*f));const wx=(x-v.ox)/v.s,wy=(y-v.oy)/v.s;v.s=ns;v.ox=x-wx*ns;v.oy=y-wy*ns;redraw();}
+function zoomOnReading(f){const r=cvMain.getBoundingClientRect(),v=st.view[st.inst];if(!v)return;
+  let wx,wy;if(st.inst==="cal"){const L=VERN[st.cal.Ph].L;wx=st.cal.v/100+L/2;wy=13;}else{wx=S0+st.mic.v/100;wy=0;}
+  const fs=st.fitS[st.inst];const ns=Math.max(fs*.6,Math.min(fs*45,v.s*f));v.s=ns;v.ox=r.width/2-wx*ns;v.oy=r.height/2-wy*ns;redraw();}
+let lockT=0;function flashLock(){const b=$("lock");b.style.display="block";clearTimeout(lockT);lockT=setTimeout(()=>{if(locked())b.style.display="block";},10);}
+
+/* ---------- Commandes ---------- */
+function syncRange(){const r=$("rng");if(st.inst==="cal"){r.max=CAL_MAX;r.step=st.cal.Ph;r.value=st.cal.v;}else{r.max=MIC_MAX;r.step=1;r.value=st.mic.v;}r.disabled=locked();}
+function buildFine(){
+  const f=$("fine");f.innerHTML="";
+  const defs=st.inst==="cal"?[["−1 mm",-100],["−"+fmt(st.cal.Ph,2),-st.cal.Ph],["+"+fmt(st.cal.Ph,2),st.cal.Ph],["+1 mm",100]]:[["−0,5",-50],["−0,01",-1],["+0,01",1],["+0,5",50]];
+  defs.forEach(([t,dv])=>{const b=document.createElement("button");b.className="btn";b.textContent=t;b.disabled=locked();
+    b.addEventListener("click",()=>{const inst=st.inst;setVal(inst,st[inst].v+dv);});f.appendChild(b);});
+  $("precRow").classList.toggle("hidden",st.inst!=="cal");
+  document.querySelectorAll("#precRow .chip").forEach(c=>c.setAttribute("aria-pressed",String(+c.dataset.ph===st.cal.Ph)));
+  $("rngLbl").textContent=st.inst==="cal"?"Ouverture des becs (glissez)":"Ouverture de la broche (glissez)";
+  $("hint").textContent=st.inst==="cal"?"Glissez le coulisseau avec le doigt · Pincez pour zoomer · Deux doigts pour déplacer":"Glissez le tambour : à gauche/droite pour avancer, en haut/bas pour tourner · Pincez pour zoomer";
+  $("lock").style.display=locked()?"block":"none";
+  $("controls").classList.toggle("hidden",locked());
+  syncRange();
+}
+$("rng").addEventListener("input",e=>{if(locked())return;setVal(st.inst,+e.target.value);});
+document.querySelectorAll("#precRow .chip").forEach(c=>c.addEventListener("click",()=>{
+  if(st.mode==="quiz")return;st.cal.Ph=+c.dataset.ph;
+  if(st.mode==="exo"){newExo();}else setVal("cal",st.cal.v);
+  st.view.cal=null;buildFine();redraw();}));
+$("zIn").onclick=()=>zoomOnReading(1.6);$("zOut").onclick=()=>zoomOnReading(1/1.6);
+$("zFit").onclick=()=>{st.view[st.inst]=null;redraw();};
+$("nom").onclick=()=>{st.nomen=!st.nomen;$("nom").setAttribute("aria-pressed",String(st.nomen));redraw();};
+$("tCal").onclick=()=>switchInst("cal");$("tMic").onclick=()=>switchInst("mic");
+document.querySelectorAll(".modes button").forEach(b=>b.addEventListener("click",()=>switchMode(b.dataset.mode)));
+function switchInst(i){st.inst=i;$("tCal").setAttribute("aria-pressed",String(i==="cal"));$("tMic").setAttribute("aria-pressed",String(i==="mic"));
+  if(st.mode==="exo")newExo(true);if(st.mode==="quiz")startQuiz();buildFine();renderPanel();redraw();}
+function switchMode(m){st.mode=m;document.querySelectorAll(".modes button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.mode===m)));
+  if(m==="exo")newExo(true);if(m==="quiz")startQuiz();buildFine();renderPanel();redraw();}
+
+/* ---------- Explications ---------- */
+function explain(inst,v,Ph){
+  if(inst==="cal"){const V=VERN[Ph],{N,k}=calParts(v,Ph);const fr=k*Ph;
+    return ["<b>1. Règle :</b> le zéro du vernier est juste après le trait <span class='k'>"+N+"</span> de la règle → <span class='k'>"+N+" mm</span>.",
+      "<b>2. Vernier "+V.lab+" :</b> "+(k===0?"le zéro du vernier coïncide exactement avec un trait de la règle → <span class='k'>+ 0 mm</span>.":"le trait n° <span class='k'>"+k+"</span> du vernier coïncide avec un trait de la règle → "+k+" × "+fmt(Ph,2)+" = <span class='k'>"+fmt(fr,V.dec)+" mm</span>."),
+      "<b>Lecture :</b> "+N+" + "+fmt(fr,V.dec)+" = <span class='k'>"+fmt(v,V.dec)+" mm</span>"];}
+  const {M,half,c}=micParts(v);
+  return ["<b>1. Douille, traits du haut :</b> le dernier trait visible est <span class='k'>"+M+"</span> → <span class='k'>"+M+" mm</span>.",
+    "<b>2. Douille, traits du bas :</b> "+(half?"un demi-millimètre est visible après le "+M+" → <span class='k'>+ 0,50 mm</span>.":"aucun demi-millimètre visible après le "+M+" → <span class='k'>+ 0 mm</span>."),
+    "<b>3. Tambour :</b> la division <span class='k'>"+c+"</span> est sur la ligne de référence → "+c+" × 0,01 = <span class='k'>"+fmt(c,2)+" mm</span>.",
+    "<b>Lecture :</b> "+M+" + "+(half?"0,50":"0")+" + "+fmt(c,2)+" = <span class='k'>"+fmt(v,2)+" mm</span>"];
+}
+const steps=a=>"<ol class='steps'>"+a.map((t,i)=>"<li"+(i===a.length-1?" class='total'":"")+">"+t+"</li>").join("")+"</ol>";
+function curDec(){return st.inst==="cal"?VERN[st.cal.Ph].dec:2;}
+function renderReading(){const el=$("readBox");if(!el)return;const inst=st.inst,v=st[inst].v,Ph=st.cal.Ph;
+  el.innerHTML="<div class='reading'>"+fmt(v,curDec())+"<small>mm</small></div>"+steps(explain(inst,v,Ph));}
+
+/* ---------- Exercice ---------- */
+function randVal(inst,Ph){return inst==="cal"?Ph*ri(Math.ceil(200/Ph),Math.floor(14000/Ph)):ri(50,2450);}
+function newExo(keep){const inst=st.inst;const Ph=st.cal.Ph;const v=randVal(inst,Ph);st.exo[inst]={v,Ph,done:false};st[inst].v=v;st[inst].raw=v;
+  if(!keep)renderPanel();syncRange();redraw();}
+function parseAns(s){s=String(s).trim().replace(/\s/g,"").replace(",",".");if(!/^\d*\.?\d+$/.test(s)&&!/^\d+\.?$/.test(s))return null;const x=parseFloat(s);return isFinite(x)?x:null;}
+
+/* ---------- Quiz ---------- */
+const BANK={cal:[
+ ["Un vernier de 20 divisions donne une précision de :",["0,1 mm","0,05 mm","0,02 mm","0,01 mm"],1,"1 mm ÷ 20 = 0,05 mm."],
+ ["Un vernier au 1/50 donne une précision de :",["0,5 mm","0,2 mm","0,02 mm","0,05 mm"],2,"1 mm ÷ 50 = 0,02 mm."],
+ ["Pour lire les millimètres entiers, on regarde :",["le trait de la règle juste avant le zéro du vernier","le dernier trait du vernier","le trait du vernier qui coïncide","la vis de blocage"],0,"Le zéro du vernier est le repère de lecture : on prend le trait de la règle situé juste avant."],
+ ["Le trait du vernier qui coïncide avec un trait de la règle donne :",["les millimètres entiers","la fraction de millimètre","la profondeur","l'erreur de mesure"],1,"Son rang × la précision = la fraction de millimètre."],
+ ["Pour mesurer un alésage (diamètre intérieur), on utilise :",["les becs extérieurs","les becs intérieurs","la jauge de profondeur","la molette"],1,"Les becs intérieurs, en haut de l'instrument, s'écartent dans l'alésage."],
+ ["Pour éviter l'erreur de parallaxe, on lit la graduation :",["de côté","bien en face, perpendiculairement","en serrant fort","sans bloquer la vis"],1,"L'œil doit être bien en face du trait lu."],
+ ["Avant de mesurer, becs fermés, on vérifie que :",["le zéro du vernier est sur le zéro de la règle","la molette tourne","la jauge sort","la vis est desserrée"],0,"C'est la vérification du zéro de l'instrument."],
+ ["Sur un vernier 1/20, le trait n° 9 coïncide. La fraction vaut :",["0,9 mm","0,45 mm","0,09 mm","0,18 mm"],1,"9 × 0,05 = 0,45 mm."]],
+ mic:[
+ ["Le pas de la vis d'un micromètre au 0,01 mm est de :",["1 mm","0,5 mm","0,01 mm","0,25 mm"],1,"Un tour de tambour fait avancer la broche de 0,5 mm."],
+ ["Combien de divisions sur le tambour ?",["10","25","50","100"],2,"0,5 mm ÷ 50 = 0,01 mm par division."],
+ ["Un tour complet du tambour déplace la touche mobile de :",["0,5 mm","1 mm","0,01 mm","5 mm"],0,"C'est le pas de la vis micrométrique."],
+ ["Les traits sous la ligne de référence de la douille indiquent :",["les millimètres","les demi-millimètres","les centièmes","les dixièmes"],1,"Ils sont décalés de 0,5 mm par rapport aux traits du haut."],
+ ["Pour serrer la pièce toujours avec la même force, on tourne :",["le tambour","le cliquet (friction)","la bague de blocage","l'arceau"],1,"Le cliquet glisse dès que la bonne pression est atteinte."],
+ ["Pourquoi tenir le micromètre par la plaque isolante ?",["Pour qu'il ne glisse pas","Pour éviter que la chaleur des mains le dilate","Pour lire plus vite","Pour bloquer la broche"],1,"La chaleur de la main dilate l'arceau et fausse la mesure."],
+ ["Douille : 7 mm et un demi-mm visible ; tambour sur 28. La lecture est :",["7,28 mm","7,78 mm","35,5 mm","7,528 mm"],1,"7 + 0,5 + 0,28 = 7,78 mm."],
+ ["Un micromètre 25–50 mm mesure des pièces de :",["0 à 25 mm","25 à 50 mm","0 à 50 mm","50 à 75 mm"],1,"Chaque micromètre couvre une plage de 25 mm."]]};
+function startQuiz(){const inst=st.inst;const qs=[];
+  for(let i=0;i<6;i++){const Ph=inst==="cal"?[10,5,2][i%3]:0;qs.push({t:"read",Ph,v:randVal(inst,Ph||5)});}
+  shuffle(BANK[inst].slice()).slice(0,4).forEach(b=>qs.push({t:"mcq",b}));
+  st.quiz={inst,qs:shuffle(qs),i:0,score:0,answered:false};loadQ();}
+function loadQ(){const q=st.quiz.qs[st.quiz.i];if(q&&q.t==="read"){const inst=st.quiz.inst;if(inst==="cal"){st.cal.Ph=q.Ph;st.view.cal=null;}st[inst].v=q.v;st[inst].raw=q.v;}buildFine();redraw();}
+
+/* ---------- Panneau ---------- */
+function renderPanel(){
+  const P=$("panel"),inst=st.inst,name=inst==="cal"?"pied à coulisse":"micromètre";
+  if(st.mode==="libre"){P.innerHTML="<div class='sub'>Lecture du "+name+"</div><div id='readBox'></div>";renderReading();return;}
+  if(st.mode==="cours"){P.innerHTML="<div class='cours'>"+(inst==="cal"?COURS_CAL:COURS_MIC)+"</div><div style='margin-top:12px' class='sub'>Lecture actuelle de l'instrument</div><div id='readBox'></div>";renderReading();return;}
+  if(st.mode==="exo"){const ex=st.exo[inst];const dec=inst==="cal"?VERN[ex.Ph].dec:2;
+    P.innerHTML="<div class='q'>Lisez la mesure indiquée par le "+name+(inst==="cal"?" (vernier "+VERN[ex.Ph].lab+")":"")+".</div>"+
+      "<div class='sub'>Utilisez la loupe ou pincez l'image pour zoomer. Réponse avec "+dec+" décimale"+(dec>1?"s":"")+".</div>"+
+      "<form class='answer' id='f' autocomplete='off'><input id='ans' inputmode='decimal' placeholder='ex : "+(inst==="cal"?(dec===1?"23,7":"23,45"):"7,78")+"' aria-label='Votre lecture en mm'><span class='unit'>mm</span><button class='btn primary' id='chk'>Vérifier</button></form>"+
+      "<div class='fb' id='fb'></div><div class='row' style='margin-top:10px'><button class='btn' id='nx' type='button'>Nouvelle mesure</button></div>"+
+      "<div class='score'>Réussies : <b>"+st.exo.ok+" / "+st.exo.tot+"</b></div>";
+    $("f").addEventListener("submit",e=>{e.preventDefault();checkExo();});$("nx").onclick=()=>newExo();return;}
+  if(st.mode==="quiz")renderQuiz();
+}
+function checkExo(){const inst=st.inst,ex=st.exo[inst];const a=parseAns($("ans").value);const fb=$("fb");
+  if(a===null){fb.className="fb bad";fb.innerHTML="Écrivez un nombre, par exemple 23,45.";return;}
+  const good=Math.abs(a*100-ex.v)<0.5;if(!ex.done){st.exo.tot++;if(good)st.exo.ok++;ex.done=true;}
+  const dec=inst==="cal"?VERN[ex.Ph].dec:2;
+  fb.className="fb "+(good?"ok":"bad");
+  fb.innerHTML=(good?"Exact : "+fmt(ex.v,dec)+" mm.":"Pas tout à fait. La bonne lecture est "+fmt(ex.v,dec)+" mm.")+steps(explain(inst,ex.v,ex.Ph));
+  document.querySelector(".score b").textContent=st.exo.ok+" / "+st.exo.tot;
+  st.mode="exo";const keepHl=false;void keepHl;}
+function renderQuiz(){
+  const P=$("panel"),Q=st.quiz,inst=Q.inst,total=Q.qs.length;
+  if(Q.i>=total){const sc=Q.score;const msg=sc>=8?"Très bien, la lecture est maîtrisée.":sc>=5?"Assez bien. Revoyez le cours puis refaites des exercices.":"À revoir : relisez le cours et entraînez-vous en mode Exercice.";
+    P.innerHTML="<div class='q'>Quiz terminé</div><div class='reading'>"+sc+" / "+total+"</div><p>"+msg+"</p><button class='btn primary' id='rq'>Recommencer le quiz</button>";$("rq").onclick=()=>{startQuiz();renderQuiz();};return;}
+  const q=Q.qs[Q.i];
+  let h="<div class='progress'><i style='width:"+(Q.i/total*100)+"%'></i></div><div class='sub'>Question "+(Q.i+1)+" / "+total+" · Score "+Q.score+"</div>";
+  if(q.t==="read"){const dec=inst==="cal"?VERN[q.Ph].dec:2;
+    h+="<div class='q'>Quelle est la mesure indiquée par le "+(inst==="cal"?"pied à coulisse (vernier "+VERN[q.Ph].lab+")":"micromètre")+" ?</div>"+
+      "<form class='answer' id='f' autocomplete='off'><input id='ans' inputmode='decimal' placeholder='"+(dec===1?"0,0":"0,00")+"' aria-label='Votre lecture en mm'><span class='unit'>mm</span><button class='btn primary'>Valider</button></form><div class='fb' id='fb'></div>";}
+  else{h+="<div class='q'>"+q.b[0]+"</div><div class='opts'>"+q.b[1].map((o,i)=>"<button type='button' data-i='"+i+"'>"+o+"</button>").join("")+"</div><div class='fb' id='fb'></div>";}
+  h+="<div class='row' style='margin-top:10px'><button class='btn' id='qn' type='button' disabled>Question suivante</button></div>";
+  P.innerHTML=h;
+  $("qn").onclick=()=>{Q.i++;Q.answered=false;loadQ();renderQuiz();};
+  if(q.t==="read"){$("f").addEventListener("submit",e=>{e.preventDefault();if(Q.answered)return;const a=parseAns($("ans").value);const fb=$("fb");
+    if(a===null){fb.className="fb bad";fb.textContent="Écrivez un nombre, par exemple 23,45.";return;}
+    Q.answered=true;const good=Math.abs(a*100-q.v)<0.5;if(good)Q.score++;const dec=inst==="cal"?VERN[q.Ph].dec:2;
+    fb.className="fb "+(good?"ok":"bad");fb.innerHTML=(good?"Exact : ":"Réponse : ")+fmt(q.v,dec)+" mm"+steps(explain(inst,q.v,q.Ph||5));$("qn").disabled=false;});}
+  else{document.querySelectorAll(".opts button").forEach(b=>b.onclick=()=>{if(Q.answered)return;Q.answered=true;const i=+b.dataset.i;const good=i===q.b[2];if(good)Q.score++;
+    document.querySelectorAll(".opts button").forEach(x=>{if(+x.dataset.i===q.b[2])x.classList.add("good");else if(x===b)x.classList.add("wrong");});
+    const fb=$("fb");fb.className="fb "+(good?"ok":"bad");fb.textContent=(good?"Bonne réponse. ":"Non. ")+q.b[3];$("qn").disabled=false;});}
+}
+
+/* ---------- Cours ---------- */
+const COURS_CAL=`
+<h2>Rôle</h2><p>Le pied à coulisse mesure des cotes <b>extérieures</b>, <b>intérieures</b> et des <b>profondeurs</b>. Sa précision dépend du vernier : 0,1 mm, 0,05 mm ou 0,02 mm.</p>
+<h2>Nomenclature</h2><ol><li>Règle graduée (en mm)</li><li>Bec fixe</li><li>Coulisseau</li><li>Bec mobile</li><li>Vernier</li><li>Vis de blocage</li><li>Becs intérieurs (alésages)</li><li>Jauge de profondeur</li><li>Molette (poussoir)</li></ol><p class="sub">Touchez le bouton « Nom » sur l'image pour voir chaque pièce.</p>
+<h2>Principe du vernier</h2><p>Les divisions du vernier sont un peu plus courtes que celles de la règle. Cette petite différence donne la précision.</p>
+<div class="tw"><table><tr><th>Vernier</th><th>Divisions</th><th>Longueur</th><th>Précision</th></tr>
+<tr><td>1/10</td><td>10</td><td>9 mm</td><td>0,1 mm</td></tr><tr><td>1/20</td><td>20</td><td>39 mm</td><td>0,05 mm</td></tr><tr><td>1/50</td><td>50</td><td>49 mm</td><td>0,02 mm</td></tr></table></div>
+<h2>Lecture en 3 étapes</h2><ol><li><b>Millimètres entiers :</b> le trait de la règle juste avant le zéro du vernier.</li><li><b>Fraction :</b> cherchez le trait du vernier qui coïncide parfaitement avec un trait de la règle. Son rang × la précision.</li><li><b>Additionnez</b> les deux.</li></ol>
+<div class="ex">Vernier 1/20 : zéro après le 23 → 23 mm<br>Trait n° 9 coïncide → 9 × 0,05 = 0,45 mm<br>Lecture = 23,45 mm</div>
+<h2>Bonnes pratiques</h2><ul><li>Nettoyer les becs et la pièce.</li><li>Vérifier le zéro, becs fermés.</li><li>Mesurer au fond des becs, pièce bien perpendiculaire.</li><li>Pression légère et constante avec la molette.</li><li>Lire bien en face (erreur de parallaxe).</li><li>Bloquer la vis avant de retirer l'instrument.</li><li>Ne jamais mesurer une pièce en rotation. Ranger dans l'étui.</li></ul>`;
+const COURS_MIC=`
+<h2>Rôle</h2><p>Le micromètre extérieur mesure des cotes extérieures au <b>centième de millimètre</b> (0,01 mm). Chaque micromètre couvre une plage de 25 mm : 0–25, 25–50, 50–75…</p>
+<h2>Nomenclature</h2><ol><li>Arceau (corps)</li><li>Touche fixe (enclume)</li><li>Touche mobile (broche)</li><li>Bague de blocage</li><li>Douille graduée</li><li>Tambour</li><li>Cliquet (friction)</li><li>Plaque isolante</li></ol><p class="sub">Touchez le bouton « Nom » sur l'image pour voir chaque pièce.</p>
+<h2>Principe</h2><p>La broche est une vis de <b>pas 0,5 mm</b> : un tour de tambour la fait avancer de 0,5 mm. Le tambour a <b>50 divisions</b> : 0,5 ÷ 50 = <b>0,01 mm</b> par division.</p>
+<h2>Lecture en 3 étapes</h2><ol><li><b>Millimètres :</b> dernier trait visible au-dessus de la ligne de la douille.</li><li><b>Demi-millimètre :</b> si un trait du bas est visible après ce millimètre, ajoutez 0,5 mm.</li><li><b>Centièmes :</b> la division du tambour alignée sur la ligne de référence × 0,01.</li></ol>
+<div class="ex">Douille : 7 mm<br>Demi-mm visible : + 0,50 mm<br>Tambour sur 28 : + 0,28 mm<br>Lecture = 7,78 mm</div>
+<h2>Bonnes pratiques</h2><ul><li>Nettoyer les touches et la pièce.</li><li>Vérifier le zéro (touches en contact, ou avec la cale étalon pour 25–50).</li><li>Toujours serrer avec le cliquet : 2 ou 3 clics.</li><li>Tenir par la plaque isolante : la chaleur des mains dilate l'arceau.</li><li>Mesurer une pièce à température ambiante.</li><li>Pour ranger, laisser un petit jeu entre les touches.</li></ul>`;
+
+/* ---------- Démarrage ---------- */
+attach(cvMain,false);attach(cvLoupe,true);
+if(window.ResizeObserver){new ResizeObserver(()=>redraw()).observe(cvMain);}window.addEventListener("resize",redraw);
+buildFine();renderPanel();redraw();
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(redraw);
+window.__sim={st,calParts,micParts,explain,parseAns,fmt};
+})();
+</script>
+</body>
+</html>
