@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Générateur de codes d'activation</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <style>
+    :root { --fond: #0f172a; --carte: #16213b; --bord: #26334f; --texte: #e2e8f0; --doux: #94a3b8; --accent: #f59e0b; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--fond); color: var(--texte); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: 16px; }
+    main { max-width: 640px; margin: 0 auto; }
+    h1 { font-size: 20px; margin: 0 0 4px; } h2 { font-size: 16px; color: #fde68a; margin: 0 0 8px; }
+    .carte { background: var(--carte); border: 1px solid var(--bord); border-radius: 12px; padding: 12px; margin: 12px 0; }
+    label { display: block; font-size: 13px; color: var(--doux); margin: 8px 0 3px; }
+    input, select, textarea { width: 100%; background: #0b1220; color: var(--texte); border: 1px solid var(--bord); border-radius: 8px; padding: 8px; font: inherit; }
+    textarea { min-height: 80px; font: 12px ui-monospace, Consolas, monospace; }
+    button, a.btn { display: inline-block; font: inherit; border-radius: 8px; padding: 8px 12px; margin: 8px 6px 0 0; cursor: pointer; border: 1px solid var(--bord); background: #1e293b; color: var(--texte); text-decoration: none; }
+    .prim { background: var(--accent); border-color: var(--accent); color: #111; font-weight: 700; }
+    .wa { background: #16a34a; border-color: #16a34a; color: #fff; }
+    .note { color: var(--doux); font-size: 12.5px; }
+    .ok { color: #86efac; } .ko { color: #fca5a5; }
+    .ligne { display: flex; gap: 8px; } .ligne > div { flex: 1; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    td, th { border-bottom: 1px solid var(--bord); padding: 4px 6px; text-align: left; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>🔑 Générateur de codes d'activation</h1>
+  <p class="note">Outil du vendeur. Tout se passe dans ce navigateur : la clé privée n'est envoyée nulle part.</p>
+
+  <section class="carte">
+    <h2>1. Votre clé privée</h2>
+    <p id="etat-cle" class="note">Aucune clé chargée.</p>
+    <label for="fichier">Fichier <b>cle-privee-NE-PAS-PARTAGER.json</b></label>
+    <input type="file" id="fichier" accept=".json,application/json">
+    <label><input type="checkbox" id="memoriser" style="width:auto"> Mémoriser la clé sur cet appareil (seulement sur votre téléphone / ordinateur personnel)</label>
+    <button type="button" id="oublier" hidden>Oublier la clé</button>
+  </section>
+
+  <section class="carte">
+    <h2>2. Nouveau client</h2>
+    <label for="client">Nom du client</label>
+    <input id="client" maxlength="40" placeholder="ex. Mamadou Diallo – IRAM Boké">
+    <div class="ligne">
+      <div><label for="appareil">Identifiant de l'appareil</label><input id="appareil" maxlength="9" placeholder="K7Q2-M9XD" autocomplete="off" style="text-transform:uppercase"></div>
+      <div><label for="appli">Application</label><select id="appli"><option value="broyage">Chaîne de broyage 3D</option></select></div>
+    </div>
+    <div class="ligne">
+      <div><label for="duree">Durée de la licence</label>
+        <select id="duree"><option value="0">Illimitée</option><option value="30">30 jours</option><option value="90">3 mois</option><option value="182">6 mois</option><option value="365" selected>1 an</option><option value="date">Jusqu'à une date…</option></select></div>
+      <div><label for="date">Date de fin</label><input type="date" id="date" disabled></div>
+    </div>
+    <label for="prix">Prix payé (pour votre suivi, facultatif)</label>
+    <input id="prix" maxlength="20" placeholder="ex. 150 000 GNF">
+    <button type="button" class="prim" id="generer">Générer le code</button>
+    <p id="msg" class="note"></p>
+  </section>
+
+  <section class="carte" id="resultat" hidden>
+    <h2>3. Code à envoyer au client</h2>
+    <textarea id="code" readonly></textarea>
+    <button type="button" id="copier">Copier le code</button>
+    <button type="button" id="copier-msg">Copier le message complet</button>
+    <a class="btn wa" id="whatsapp" target="_blank" rel="noopener">Envoyer par WhatsApp</a>
+    <p class="note">Le client colle le code dans l'écran « Activation » de l'appli (APK ou site). Sur le site, le lien du message active directement.</p>
+  </section>
+
+  <section class="carte">
+    <h2>Ventes enregistrées sur cet appareil</h2>
+    <div id="historique" class="note">Aucune vente.</div>
+    <button type="button" id="export">Exporter en CSV (Excel)</button>
+  </section>
+</main>
+<script src="js/generateur.js"></script>
+</body>
+</html>

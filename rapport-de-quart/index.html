@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rapport de quart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Plan : carnet d'atelier sur une colonne (téléphone d'abord). Neutres ardoise, accent rouille bauxite,
+   une couleur par poste (matin, après-midi, nuit). Titres en condensé façon plaque signalétique. */
+:root{
+  --bg:#e9edf1; --surface:#ffffff; --surface-2:#f3f5f8; --ink:#17212b; --muted:#566371; --line:#d2d9e0;
+  --accent:#9a3c1e; --accent-ink:#ffffff; --accent-soft:#f6e6df;
+  --matin-bg:#fbefd2; --matin-fg:#7a5200;
+  --aprem-bg:#dcecf6; --aprem-fg:#14506f;
+  --nuit-bg:#e2e2f6; --nuit-fg:#34357f;
+  --repos-bg:#e6e9ed; --repos-fg:#56616d;
+  --ok:#2a7348; --ok-bg:#dff1e6; --warn:#8a5a00; --warn-bg:#fbefd2; --bad:#a8322b; --bad-bg:#f8dfdc;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#10161c; --surface:#19222b; --surface-2:#202b36; --ink:#e6ebf0; --muted:#9aa8b5; --line:#2e3a47;
+    --accent:#e58257; --accent-ink:#1d0e07; --accent-soft:#3a231a;
+    --matin-bg:#3d3011; --matin-fg:#f1cf7d;
+    --aprem-bg:#143246; --aprem-fg:#9fd0ec;
+    --nuit-bg:#25265a; --nuit-fg:#c2c3f5;
+    --repos-bg:#2a333d; --repos-fg:#a9b4bf;
+    --ok:#7fd0a0; --ok-bg:#163523; --warn:#f1cf7d; --warn-bg:#3d3011; --bad:#f29d96; --bad-bg:#44201d;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#10161c; --surface:#19222b; --surface-2:#202b36; --ink:#e6ebf0; --muted:#9aa8b5; --line:#2e3a47;
+  --accent:#e58257; --accent-ink:#1d0e07; --accent-soft:#3a231a;
+  --matin-bg:#3d3011; --matin-fg:#f1cf7d;
+  --aprem-bg:#143246; --aprem-fg:#9fd0ec;
+  --nuit-bg:#25265a; --nuit-fg:#c2c3f5;
+  --repos-bg:#2a333d; --repos-fg:#a9b4bf;
+  --ok:#7fd0a0; --ok-bg:#163523; --warn:#f1cf7d; --warn-bg:#3d3011; --bad:#f29d96; --bad-bg:#44201d;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;-webkit-text-size-adjust:100%}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px 32px}
+header.top{background:var(--ink);color:var(--bg)}
+header.top .in{max-width:720px;margin:0 auto;padding:14px 16px 0}
+.brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.brand h1{font-family:var(--display);font-weight:700;font-size:28px;letter-spacing:.04em;text-transform:uppercase;margin:0;line-height:1}
+.brand span{font-size:13px;opacity:.75}
+nav.tabs{display:flex;gap:4px;margin-top:12px}
+nav.tabs a{flex:1;text-align:center;text-decoration:none;color:inherit;opacity:.7;padding:10px 8px;font-weight:600;font-size:15px;border-bottom:3px solid transparent}
+nav.tabs a[aria-current="page"]{opacity:1;border-bottom-color:var(--accent)}
+nav.tabs a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a.btn:focus-visible,label.chip:focus-within{outline:3px solid var(--accent);outline-offset:2px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-top:14px}
+h2{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:.05em;text-transform:uppercase;margin:0 0 10px;text-wrap:balance}
+h2 small{font-family:var(--body);font-weight:400;font-size:13px;letter-spacing:0;text-transform:none;color:var(--muted);margin-left:6px}
+label.f{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:4px}
+input[type=text],input[type=date],input[type=search],select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-height:44px}
+textarea{min-height:84px;resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stack{display:flex;flex-direction:column;gap:10px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+label.chip{position:relative;display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);font-weight:600;font-variant-numeric:tabular-nums;cursor:pointer}
+label.chip input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+label.chip.on{border-color:transparent}
+.p-m{background:var(--matin-bg)!important;color:var(--matin-fg)!important}
+.p-a{background:var(--aprem-bg)!important;color:var(--aprem-fg)!important}
+.p-n{background:var(--nuit-bg)!important;color:var(--nuit-fg)!important}
+.p-r{background:var(--repos-bg)!important;color:var(--repos-fg)!important}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.warn{background:var(--warn-bg);color:var(--warn)} .pill.bad{background:var(--bad-bg);color:var(--bad)}
+.pill.ex{background:var(--accent-soft);color:var(--accent)}
+.hint{font-size:13px;color:var(--muted);margin:8px 0 0}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:12px}
+.week button{font:inherit;border:1px solid var(--line);border-radius:8px;padding:6px 2px;cursor:pointer;text-align:center;min-height:54px;line-height:1.2}
+.week button b{display:block;font-size:12px;font-weight:600;opacity:.85}
+.week button span{display:block;white-space:nowrap;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.week button.sel{outline:2px solid var(--ink);outline-offset:1px}
+.item{border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:12px;background:var(--surface)}
+.item + .item{margin-top:10px}
+.item .hd{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.item .hd b{font-family:var(--display);font-size:17px;letter-spacing:.05em;text-transform:uppercase}
+.btn{font:inherit;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;text-decoration:none}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;border-style:dashed;width:100%;margin-top:10px;color:var(--accent)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.small{min-height:36px;padding:0 10px;font-size:14px}
+.savebar{position:sticky;bottom:0;background:var(--bg);padding:12px 0;margin-top:14px;display:flex;gap:10px;border-top:1px solid var(--line)}
+.savebar .primary{flex:1}
+.err{background:var(--bad-bg);color:var(--bad);border-radius:8px;padding:10px 12px;margin-top:12px;font-weight:500}
+.empty{color:var(--muted);text-align:center;padding:18px 8px}
+.rcard{display:block;width:100%;text-align:left;font:inherit;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin-top:10px;cursor:pointer}
+.rcard .l1{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+.rcard .l1 b{font-size:16px}
+.rcard .l2{color:var(--muted);font-size:14px;margin-top:4px;overflow-wrap:anywhere}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);margin-top:14px;overflow:hidden}
+.sheet .sh{background:var(--ink);color:var(--bg);padding:14px}
+.sheet .sh h2{margin:0;font-size:24px}
+.sheet .sh p{margin:4px 0 0;font-size:14px;opacity:.85}
+.sheet .sb{padding:14px}
+.meta{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:15px;margin:0 0 4px}
+.meta dt{color:var(--muted)} .meta dd{margin:0;font-weight:500;overflow-wrap:anywhere}
+.sheet h3{font-family:var(--display);font-size:17px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);border-bottom:1px solid var(--line);padding-bottom:4px;margin:18px 0 8px}
+.sheet .row{padding:8px 0;border-bottom:1px dashed var(--line)}
+.sheet .row:last-child{border-bottom:0}
+.sheet .row .t{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap;font-weight:600}
+.sheet .row p{margin:4px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.sheet .row .k{color:var(--muted);font-size:13px;font-weight:600}
+.free{white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
+.toast{position:fixed;left:50%;top:12px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:500;font-size:14px;max-width:calc(100% - 32px);text-align:center;z-index:10}
+.foot{color:var(--muted);font-size:13px;margin-top:22px;text-align:center}
+.filters{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+[hidden]{display:none!important}
+@media (max-width:420px){.grid2{grid-template-columns:1fr}.brand h1{font-size:25px}}
+@media (prefers-reduced-motion:no-preference){.toast{animation:up .18s ease-out}@keyframes up{from{transform:translate(-50%,-8px)}to{transform:translate(-50%,0)}}}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <div class="brand"><h1>Rapport de quart</h1><span>Journal d'entretien par poste</span></div>
+  <nav class="tabs" aria-label="Sections">
+    <a href="#nouveau" id="tab-nouveau">Nouveau rapport</a>
+    <a href="#rapports" id="tab-rapports">Mes rapports</a>
+  </nav>
+</div></header>
+<main class="wrap">
+  <section id="v-nouveau"></section>
+  <section id="v-rapports" hidden></section>
+  <section id="v-detail" hidden></section>
+  <p class="foot" id="foot"></p>
+</main>
+<datalist id="dl-equip">
+  <option value="Culbuteur de wagons"><option value="Trémie"><option value="Alimentateur"><option value="Concasseur"><option value="Convoyeur"><option value="Crible"><option value="Déferrailleur"><option value="Réducteur"><option value="Motoréducteur"><option value="Accouplement"><option value="Pompe"><option value="Groupe hydraulique"><option value="Graissage centralisé">
+</datalist>
+<script src="vendor/jspdf.umd.min.js"></script>
+<script>
+(function(){
+"use strict";
+/* ---------- Calendrier des postes de Kamsar : cycle de 28 jours, jeudi 22/10/2026 = jour 0 ---------- */
+var ROWS={"07h-15h":"DAABBBCCDDAAABBCCDDDAABBCCCD","15h-23h":"CDDAAABBCCDDDAABBCCCDDAABBBC","23h-07h":"BCCDDDAABBCCCDDAABBBCCDDAAAB","Repos":"ABBCCCDDAABBBCCDDAAABBCCDDDA"};
+var POSTES=["07h-15h","15h-23h","23h-07h"];
+var PCLASS={"07h-15h":"p-m","15h-23h":"p-a","23h-07h":"p-n","Repos":"p-r"};
+var TYPES=["Dépannage","Entretien préventif","Remplacement de pièce","Graissage","Réglage / alignement","Nettoyage","Autre"];
+var ETATS=["Terminé","En cours","À suivre"];
+var CONSTATS=["Bon état","À surveiller","Anomalie"];
+var JOURS=["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
+var JC=["Di","Lu","Ma","Me","Je","Ve","Sa"];
+var MOIS=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+
+function pad(n){return (n<10?"0":"")+n}
+function ymd(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
+function parts(s){var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||"");return m?[+m[1],+m[2],+m[3]]:null}
+function addDays(s,n){var p=parts(s);var d=new Date(p[0],p[1]-1,p[2]+n);return ymd(d)}
+function cycleIndex(s){var p=parts(s);if(!p)return -1;var n=Math.round((Date.UTC(p[0],p[1]-1,p[2])-Date.UTC(2026,9,22))/86400000);return ((n%28)+28)%28}
+function posteFor(s,team){var i=cycleIndex(s);if(i<0)return "";for(var k in ROWS){if(ROWS[k].charAt(i)===team)return k}return ""}
+function frDate(s){var p=parts(s);if(!p)return "";var d=new Date(p[0],p[1]-1,p[2]);return JOURS[d.getDay()]+" "+p[2]+(p[2]===1?"er":"")+" "+MOIS[p[1]-1]+" "+p[0]}
+function shortDate(s){var p=parts(s);if(!p)return "";var d=new Date(p[0],p[1]-1,p[2]);return JC[d.getDay()]+" "+pad(p[2])+"/"+pad(p[1])+"/"+p[0]}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function clone(o){return JSON.parse(JSON.stringify(o))}
+function $(id){return document.getElementById(id)}
+function trim(s){return String(s==null?"":s).replace(/^\s+|\s+$/g,"")}
+
+/* ---------- Stockage : cet appareil, plus le compte quand la page le permet ---------- */
+var mem={};
+function lsGet(k){try{var v=localStorage.getItem(k);return v==null?(k in mem?mem[k]:null):v}catch(e){return k in mem?mem[k]:null}}
+function lsSet(k,v){mem[k]=v;try{localStorage.setItem(k,v)}catch(e){}}
+function lsDel(k){delete mem[k];try{localStorage.removeItem(k)}catch(e){}}
+function readJson(k,def){try{var v=lsGet(k);return v?JSON.parse(v):def}catch(e){return def}}
+
+function str(v){return typeof v==="string"?v:(v==null?"":String(v))}
+function norm(r){
+  if(!r||typeof r!=="object"||typeof r.id!=="string"||!r.id)return null;
+  if(r.deleted)return {id:r.id,deleted:true,updatedAt:+r.updatedAt||0};
+  if(!parts(r.date))return null;
+  return {id:r.id,date:r.date,team:"ABCD".indexOf(str(r.team))>=0&&str(r.team).length===1?r.team:"D",poste:POSTES.indexOf(r.poste)>=0?r.poste:POSTES[0],
+    nom:str(r.nom),fonction:str(r.fonction),secteur:str(r.secteur),remarques:str(r.remarques),consignes:str(r.consignes),
+    interventions:(Array.isArray(r.interventions)?r.interventions:[]).filter(function(v){return v&&typeof v==="object"}).map(function(v){return {equip:str(v.equip),type:TYPES.indexOf(v.type)>=0?v.type:"Autre",travail:str(v.travail),piece:str(v.piece),etat:ETATS.indexOf(v.etat)>=0?v.etat:ETATS[0]}}),
+    inspections:(Array.isArray(r.inspections)?r.inspections:[]).filter(function(v){return v&&typeof v==="object"}).map(function(v){return {point:str(v.point),constat:CONSTATS.indexOf(v.constat)>=0?v.constat:CONSTATS[1],obs:str(v.obs)}}),
+    createdAt:+r.createdAt||0,updatedAt:+r.updatedAt||0};
+}
+function normAll(o){var out={};if(o&&typeof o==="object"&&!Array.isArray(o))Object.keys(o).forEach(function(k){var r=norm(o[k]);if(r)out[r.id]=r});return out}
+var S={reports:normAll(readJson("rq.reports",{})),prefs:readJson("rq.prefs",{team:"D",nom:"",fonction:"",secteur:"Broyage"}),
+       view:"nouveau",currentId:null,filter:{q:"",poste:""},confirmDel:false,error:""};
+if(!S.prefs||typeof S.prefs!=="object"||Array.isArray(S.prefs))S.prefs={team:"D",nom:"",fonction:"",secteur:"Broyage"};
+if("ABCD".indexOf(S.prefs.team)<0||!S.prefs.team)S.prefs.team="D";
+var cloud={col:null,readonly:false,ok:false,queue:Promise.resolve()};
+var dlCap=null;
+var inClaude=!!(window.claude&&typeof window.claude.use==="function");
+var CapN=window.Capacitor,isNative=false;
+try{isNative=!!(CapN&&typeof CapN.isNativePlatform==="function"&&CapN.isNativePlatform()&&typeof CapN.nativePromise==="function")}catch(e){}
+
+function persist(){lsSet("rq.reports",JSON.stringify(S.reports))}
+function pushCloud(r){
+  if(!cloud.col||cloud.readonly)return;
+  var body=clone(r);
+  cloud.queue=cloud.queue.then(function(){return cloud.col.doc(r.id).set(body)}).then(function(){cloud.ok=true;renderFoot()},function(e){
+    if(e&&e.code==="invalid_argument"){cloud.readonly=true;cloud.ok=false;renderFoot()}
+  });
+}
+function initCloud(){
+  if(!inClaude)return;
+  Promise.all([window.claude.use("db"),window.claude.use("user")]).then(function(a){
+    var db=a[0],user=a[1];if(!db||!user)return;
+    return user.id().then(function(uid){
+      if(!uid)return;
+      cloud.col=db.collection("data/users/"+uid);
+      var timer=new Promise(function(_,rej){setTimeout(function(){rej(new Error("timeout"))},10000)});
+      return Promise.race([cloud.col.get(),timer]).then(function(snap){
+        var remote={},changed=false;
+        snap.docs.forEach(function(d){var r=norm(d.data());if(r&&r.id===d.id)remote[r.id]=r});
+        Object.keys(remote).forEach(function(id){var l=S.reports[id],r=remote[id];
+          if(!l||(r.updatedAt||0)>(l.updatedAt||0)){S.reports[id]=clone(r);changed=true}});
+        cloud.ok=Object.keys(remote).length>0;
+        Object.keys(S.reports).forEach(function(id){var l=S.reports[id],r=remote[id];
+          if(!r||(l.updatedAt||0)>(r.updatedAt||0))pushCloud(l)});
+        if(changed){persist();if(S.view==="rapports")renderList();else if(S.view==="detail"&&!S.confirmDel)renderDetail();updateTabs()}
+        renderFoot();
+      });
+    });
+  }).catch(function(){cloud.col=null});
+  window.claude.use("downloads").then(function(d){dlCap=d||null;if(S.view==="detail")renderDetail()}).catch(function(){});
+}
+
+/* ---------- Brouillon ---------- */
+function blankIv(){return {equip:"",type:TYPES[0],travail:"",piece:"",etat:ETATS[0]}}
+function blankIn(){return {point:"",constat:CONSTATS[0],obs:""}}
+function defaultDate(team){
+  var now=new Date(),t=ymd(now);
+  if(now.getHours()<7){var y=addDays(t,-1);if(posteFor(y,team)==="23h-07h")return y}
+  return t;
+}
+function newDraft(){
+  var team=S.prefs.team||"D",date=defaultDate(team),p=posteFor(date,team);
+  return {id:null,date:date,team:team,poste:p==="Repos"?"":p,posteAuto:true,nom:S.prefs.nom||"",fonction:S.prefs.fonction||"",
+          secteur:S.prefs.secteur||"Broyage",interventions:[blankIv()],inspections:[],remarques:"",consignes:""};
+}
+function hasContent(d){return !!(d&&(trim(d.remarques)||trim(d.consignes)||(d.interventions||[]).some(function(v){return trim(v.equip)||trim(v.travail)||trim(v.piece)})||(d.inspections||[]).some(function(v){return trim(v.point)||trim(v.obs)})))}
+function validDraft(d){
+  if(!d||typeof d!=="object"||!parts(d.date)||!Array.isArray(d.interventions)||!Array.isArray(d.inspections))return null;
+  if(d.id&&(!S.reports[d.id]||S.reports[d.id].deleted))return null;
+  if(!d.id&&!hasContent(d))return null;
+  var n=norm({id:d.id||"x",date:d.date,team:d.team,poste:d.poste,nom:d.nom,fonction:d.fonction,secteur:d.secteur,remarques:d.remarques,consignes:d.consignes,interventions:d.interventions,inspections:d.inspections});
+  n.id=d.id||null;n.poste=POSTES.indexOf(d.poste)>=0?d.poste:"";n.posteAuto=!!d.posteAuto;n.createdAt=d.createdAt;return n;
+}
+var draft=validDraft(readJson("rq.draft",null))||newDraft();
+var stash=validDraft(readJson("rq.stash",null));if(stash&&stash.id)stash=null;
+var draftTimer=null;
+function writeDraft(){clearTimeout(draftTimer);if(draft.id||hasContent(draft))lsSet("rq.draft",JSON.stringify(draft));else lsDel("rq.draft")}
+function saveDraftSoon(){clearTimeout(draftTimer);draftTimer=setTimeout(writeDraft,400)}
+function afterEdit(){clearTimeout(draftTimer);lsDel("rq.draft");if(stash){draft=stash;stash=null;lsDel("rq.stash");writeDraft()}else draft=newDraft()}
+
+/* ---------- Formulaire ---------- */
+function opt(list,val){return list.map(function(o){return '<option'+(o===val?' selected':'')+'>'+esc(o)+'</option>'}).join("")}
+function posteBoxHtml(){
+  var cal=posteFor(draft.date,draft.team),h='<div class="chips" role="radiogroup" aria-label="Poste">';
+  POSTES.forEach(function(p,i){var on=draft.poste===p;
+    h+='<label class="chip'+(on?' on '+PCLASS[p]:'')+'"><input type="radio" name="poste" id="poste-'+i+'" value="'+p+'"'+(on?' checked':'')+'>'+p+'</label>'});
+  h+='</div><p class="hint">';
+  if(cal==="Repos")h+="D'après le calendrier de Kamsar, l'équipe "+esc(draft.team)+" est au repos ce jour. Choisis le poste travaillé.";
+  else if(cal)h+="Calendrier de Kamsar : équipe "+esc(draft.team)+" au poste "+cal+" le "+esc(frDate(draft.date))+".";
+  else h+="Choisis une date.";
+  if(draft.poste==="23h-07h")h+=" Pour le poste de nuit, mets la date du début du poste (le soir).";
+  if(cal&&cal!=="Repos"&&draft.poste&&draft.poste!==cal)h+=' <button type="button" class="btn small" data-act="poste-cal">Revenir au calendrier</button>';
+  h+='</p><div class="week" aria-label="Sept jours autour de la date">';
+  for(var i=-3;i<=3;i++){var d=addDays(draft.date,i),p=posteFor(d,draft.team),pp=parts(d),dd=new Date(pp[0],pp[1]-1,pp[2]);
+    h+='<button type="button" class="'+PCLASS[p]+(i===0?' sel':'')+'" data-act="pick-date" data-d="'+d+'" title="'+esc(frDate(d))+'"><b>'+JC[dd.getDay()]+' '+pp[2]+'</b><span>'+({"07h-15h":"7–15","15h-23h":"15–23","23h-07h":"23–7","Repos":"Repos"}[p]||"")+'</span></button>'}
+  return h+'</div>';
+}
+function ivHtml(){
+  if(!draft.interventions.length)return '<p class="empty">Aucune intervention pour ce poste.</p>';
+  return draft.interventions.map(function(v,i){return '<div class="item"><div class="hd"><b>Intervention '+(i+1)+'</b><button type="button" class="btn small danger" data-act="del-iv" data-i="'+i+'">Retirer</button></div><div class="stack">'+
+    '<div class="grid2"><div><label class="f" for="iv-'+i+'-equip">Équipement entretenu</label><input type="text" id="iv-'+i+'-equip" list="dl-equip" value="'+esc(v.equip)+'" placeholder="Ex. Convoyeur CV 301" autocomplete="off"></div>'+
+    '<div><label class="f" for="iv-'+i+'-type">Type de travail</label><select id="iv-'+i+'-type">'+opt(TYPES,v.type)+'</select></div></div>'+
+    '<div><label class="f" for="iv-'+i+'-travail">Travail effectué</label><textarea id="iv-'+i+'-travail" placeholder="Décris ce que tu as fait.">'+esc(v.travail)+'</textarea></div>'+
+    '<div class="grid2"><div><label class="f" for="iv-'+i+'-piece">Pièce remplacée</label><input type="text" id="iv-'+i+'-piece" value="'+esc(v.piece)+'" placeholder="Ex. 1 rouleau porteur" autocomplete="off"></div>'+
+    '<div><label class="f" for="iv-'+i+'-etat">État</label><select id="iv-'+i+'-etat">'+opt(ETATS,v.etat)+'</select></div></div></div></div>'}).join("");
+}
+function inHtml(){
+  if(!draft.inspections.length)return '<p class="empty">Aucun point d\'inspection noté.</p>';
+  return draft.inspections.map(function(v,i){return '<div class="item"><div class="hd"><b>Point '+(i+1)+'</b><button type="button" class="btn small danger" data-act="del-in" data-i="'+i+'">Retirer</button></div><div class="stack">'+
+    '<div class="grid2"><div><label class="f" for="in-'+i+'-point">Équipement ou point contrôlé</label><input type="text" id="in-'+i+'-point" list="dl-equip" value="'+esc(v.point)+'" placeholder="Ex. Réducteur du concasseur" autocomplete="off"></div>'+
+    '<div><label class="f" for="in-'+i+'-constat">Constat</label><select id="in-'+i+'-constat">'+opt(CONSTATS,v.constat)+'</select></div></div>'+
+    '<div><label class="f" for="in-'+i+'-obs">Observation</label><textarea id="in-'+i+'-obs" placeholder="Bruit, fuite, jeu, température, usure…">'+esc(v.obs)+'</textarea></div></div></div>'}).join("");
+}
+function renderForm(){
+  var d=draft;
+  $("v-nouveau").innerHTML=
+  '<form id="form" novalidate>'+
+  '<div class="card"><h2>'+(d.id?"Modifier le rapport":"Poste")+'</h2><div class="grid2">'+
+    '<div><label class="f" for="f-date">Date du poste</label><input type="date" id="f-date" value="'+esc(d.date)+'"></div>'+
+    '<div><label class="f" for="f-team">Équipe</label><select id="f-team">'+["A","B","C","D"].map(function(t){return '<option value="'+t+'"'+(t===d.team?" selected":"")+'>Équipe '+t+'</option>'}).join("")+'</select></div></div>'+
+    '<div id="poste-box" style="margin-top:12px">'+posteBoxHtml()+'</div></div>'+
+  '<div class="card"><h2>Rédacteur</h2><div class="stack">'+
+    '<div><label class="f" for="f-nom">Nom et prénom</label><input type="text" id="f-nom" value="'+esc(d.nom)+'" placeholder="Ton nom" autocomplete="name"></div>'+
+    '<div class="grid2"><div><label class="f" for="f-fonction">Fonction</label><input type="text" id="f-fonction" value="'+esc(d.fonction)+'" placeholder="Ex. Mécanicien ajusteur" autocomplete="off"></div>'+
+    '<div><label class="f" for="f-secteur">Secteur</label><input type="text" id="f-secteur" value="'+esc(d.secteur)+'" placeholder="Ex. Broyage" autocomplete="off"></div></div></div></div>'+
+  '<div class="card"><h2>Interventions <small>équipement entretenu, pièce remplacée</small></h2><div id="iv-list">'+ivHtml()+'</div>'+
+    '<button type="button" class="btn ghost" data-act="add-iv">Ajouter une intervention</button></div>'+
+  '<div class="card"><h2>Inspection <small>ce que tu as contrôlé</small></h2><div id="in-list">'+inHtml()+'</div>'+
+    '<button type="button" class="btn ghost" data-act="add-in">Ajouter un point d\'inspection</button></div>'+
+  '<div class="card"><h2>Remarques</h2><div class="stack">'+
+    '<div><label class="f" for="f-remarques">Remarques libres</label><textarea id="f-remarques" placeholder="Tout ce qui mérite d\'être noté.">'+esc(d.remarques)+'</textarea></div>'+
+    '<div><label class="f" for="f-consignes">Consignes pour le poste suivant</label><textarea id="f-consignes" placeholder="Ce que l\'équipe suivante doit savoir ou finir.">'+esc(d.consignes)+'</textarea></div></div></div>'+
+  '<div id="form-err" class="err" role="alert"'+(S.error?"":" hidden")+'>'+esc(S.error)+'</div>'+
+  '<div class="savebar"><button type="submit" class="btn primary">'+(d.id?"Enregistrer les modifications":"Enregistrer le rapport")+'</button>'+
+  '<button type="button" class="btn" data-act="reset">'+(d.id?"Annuler":"Vider")+'</button></div></form>';
+}
+function val(id){var e=$(id);return e?e.value:""}
+function readForm(){
+  if(!$("form"))return;
+  draft.date=val("f-date")||draft.date;draft.team=val("f-team")||draft.team;
+  draft.nom=val("f-nom");draft.fonction=val("f-fonction");draft.secteur=val("f-secteur");
+  draft.interventions.forEach(function(v,i){if(!$("iv-"+i+"-equip"))return;v.equip=val("iv-"+i+"-equip");v.type=val("iv-"+i+"-type");v.travail=val("iv-"+i+"-travail");v.piece=val("iv-"+i+"-piece");v.etat=val("iv-"+i+"-etat")});
+  draft.inspections.forEach(function(v,i){if(!$("in-"+i+"-point"))return;v.point=val("in-"+i+"-point");v.constat=val("in-"+i+"-constat");v.obs=val("in-"+i+"-obs")});
+  draft.remarques=val("f-remarques");draft.consignes=val("f-consignes");
+}
+function syncPoste(){
+  if(draft.posteAuto){var p=posteFor(draft.date,draft.team);draft.poste=p==="Repos"?"":p}
+  $("poste-box").innerHTML=posteBoxHtml();
+}
+function setError(m){S.error=m||"";var e=$("form-err");if(e){e.textContent=S.error;e.hidden=!S.error;if(S.error)e.scrollIntoView({block:"center"})}}
+function cleanReport(d){
+  var r=clone(d);
+  r.nom=trim(r.nom);r.fonction=trim(r.fonction);r.secteur=trim(r.secteur);r.remarques=trim(r.remarques);r.consignes=trim(r.consignes);
+  r.interventions=r.interventions.map(function(v){return {equip:trim(v.equip),type:v.type,travail:trim(v.travail),piece:trim(v.piece),etat:v.etat}}).filter(function(v){return v.equip||v.travail||v.piece});
+  r.inspections=r.inspections.map(function(v){return {point:trim(v.point),constat:v.constat,obs:trim(v.obs)}}).filter(function(v){return v.point||v.obs});
+  delete r.posteAuto;return r;
+}
+function submitForm(){
+  readForm();var r=cleanReport(draft);
+  if(!parts(r.date))return setError("Indique la date du poste.");
+  if(POSTES.indexOf(r.poste)<0)return setError("Choisis le poste : 07h-15h, 15h-23h ou 23h-07h.");
+  if(!r.interventions.length&&!r.inspections.length&&!r.remarques&&!r.consignes)return setError("Le rapport est vide. Note au moins une intervention, un point d'inspection ou une remarque.");
+  var now=Date.now(),isNew=!r.id;
+  if(isNew){r.id="r"+now.toString(36)+Math.random().toString(36).slice(2,7);r.createdAt=now}
+  r.updatedAt=now;
+  S.reports[r.id]=r;persist();pushCloud(r);
+  S.prefs={team:r.team,nom:r.nom,fonction:r.fonction,secteur:r.secteur};lsSet("rq.prefs",JSON.stringify(S.prefs));
+  S.view="detail";$("v-nouveau").innerHTML="";
+  if(isNew){clearTimeout(draftTimer);lsDel("rq.draft");draft=newDraft()}else afterEdit();
+  S.error="";S.currentId=r.id;go("detail");toast(isNew?"Rapport enregistré":"Modifications enregistrées");
+}
+
+/* ---------- Liste ---------- */
+var EXAMPLE={id:"exemple",example:true,date:"2026-11-11",team:"D",poste:"15h-23h",nom:"",fonction:"",secteur:"Broyage",
+  interventions:[{equip:"Convoyeur",type:"Remplacement de pièce",travail:"Rouleau porteur bloqué repéré à l'inspection. Bande vide soulevée, rouleau déposé et remplacé, rotation contrôlée à la main puis en marche.",piece:"1 rouleau porteur",etat:"Terminé"},
+    {equip:"Culbuteur de wagons",type:"Graissage",travail:"Graissage des galets et contrôle de la pression au coffret des manomètres.",piece:"",etat:"Terminé"}],
+  inspections:[{point:"Réducteur du concasseur",constat:"À surveiller",obs:"Légère fuite d'huile au joint de l'arbre de sortie. Niveau d'huile correct."},
+    {point:"Accouplement moteur-réducteur",constat:"Bon état",obs:""}],
+  remarques:"Poste calme, pas d'arrêt de production lié à la mécanique.",consignes:"Recontrôler la fuite du réducteur et prévoir le joint au prochain arrêt."};
+function liveReports(){return Object.keys(S.reports).map(function(k){return S.reports[k]}).filter(function(r){return r&&!r.deleted&&parts(r.date)})}
+function sorted(list){return list.slice().sort(function(a,b){if(a.date!==b.date)return a.date<b.date?1:-1;var pa=POSTES.indexOf(a.poste),pb=POSTES.indexOf(b.poste);if(pa!==pb)return pb-pa;return (b.updatedAt||0)-(a.updatedAt||0)})}
+function fold(s){s=String(s||"").toLowerCase();try{s=s.normalize("NFD").replace(/[\u0300-\u036f]/g,"")}catch(e){}return s}
+function haystack(r){return fold([r.nom,r.secteur,r.remarques,r.consignes].concat(r.interventions.map(function(v){return v.equip+" "+v.type+" "+v.travail+" "+v.piece}),r.inspections.map(function(v){return v.point+" "+v.constat+" "+v.obs})).join(" "))}
+function summary(r){
+  var eq=r.interventions.map(function(v){return v.equip||v.type}).filter(Boolean),bits=[];
+  if(r.interventions.length)bits.push(r.interventions.length+" intervention"+(r.interventions.length>1?"s":"")+(eq.length?" : "+eq.join(", "):""));
+  if(r.inspections.length)bits.push(r.inspections.length+" point"+(r.inspections.length>1?"s":"")+" d'inspection");
+  if(!bits.length)bits.push("Remarques seulement");
+  return bits.join(" · ");
+}
+function cardHtml(r){return '<button type="button" class="rcard" data-act="open" data-id="'+esc(r.id)+'"><span class="l1"><b>'+esc(shortDate(r.date))+'</b><span>'+(r.example?'<span class="pill ex">Exemple</span> ':'')+'<span class="pill '+PCLASS[r.poste]+'">'+esc(r.poste)+' · Éq. '+esc(r.team)+'</span></span></span><span class="l2">'+esc(summary(r))+'</span></button>'}
+function listBodyHtml(){
+  var all=sorted(liveReports());
+  if(!all.length)return '<p class="hint">Tu n\'as pas encore de rapport. Voici à quoi ressemble un rapport rempli.</p>'+cardHtml(EXAMPLE);
+  var q=fold(trim(S.filter.q)),list=all.filter(function(r){return (!S.filter.poste||r.poste===S.filter.poste)&&(!q||haystack(r).indexOf(q)>=0)});
+  if(!list.length)return '<p class="empty">Aucun rapport ne correspond à cette recherche.</p>';
+  return '<p class="hint">'+list.length+' rapport'+(list.length>1?"s":"")+(list.length!==all.length?" sur "+all.length:"")+'</p>'+list.map(cardHtml).join("");
+}
+function renderList(){
+  var has=liveReports().length>0,h="";
+  if(has){h+='<div class="filters"><div><label class="f" for="q">Rechercher un équipement, une pièce, un mot</label><input type="search" id="q" value="'+esc(S.filter.q)+'" placeholder="Ex. roulement, CV 301, fuite"></div><div class="chips" role="radiogroup" aria-label="Filtrer par poste">';
+    [""].concat(POSTES).forEach(function(p,i){var on=S.filter.poste===p;h+='<label class="chip'+(on?' on '+(p?PCLASS[p]:'p-r'):'')+'"><input type="radio" name="fposte" id="fposte-'+i+'" value="'+p+'"'+(on?" checked":"")+'>'+(p||"Tous")+'</label>'});
+    h+='</div></div>'}
+  h+='<div id="list-body">'+listBodyHtml()+'</div>';
+  $("v-rapports").innerHTML=h;
+}
+
+/* ---------- Détail, texte, PDF ---------- */
+function current(){if(S.currentId==="exemple")return EXAMPLE;var r=S.reports[S.currentId];return r&&!r.deleted?r:null}
+function constatClass(c){return c==="Bon état"?"ok":c==="Anomalie"?"bad":"warn"}
+function etatClass(e){return e==="Terminé"?"ok":e==="À suivre"?"bad":"warn"}
+function reportText(r){
+  var L=["*RAPPORT DE QUART*"];
+  if(r.secteur)L.push(r.secteur);
+  L.push("Date : "+frDate(r.date),"Poste : "+r.poste+" · Équipe "+r.team);
+  if(r.nom)L.push("Rédigé par : "+r.nom+(r.fonction?" ("+r.fonction+")":""));
+  if(r.interventions.length){L.push("","*INTERVENTIONS*");r.interventions.forEach(function(v,i){
+    L.push((i+1)+". "+(v.equip||"Équipement non précisé")+" — "+v.type);
+    if(v.travail)L.push("   Travail : "+v.travail.replace(/\n/g,"\n   "));
+    if(v.piece)L.push("   Pièce remplacée : "+v.piece);
+    L.push("   État : "+v.etat)})}
+  if(r.inspections.length){L.push("","*INSPECTION*");r.inspections.forEach(function(v){L.push("- "+(v.point||"Point non précisé")+" : "+v.constat+(v.obs?" — "+v.obs:""))})}
+  if(r.remarques)L.push("","*REMARQUES*",r.remarques);
+  if(r.consignes)L.push("","*CONSIGNES POUR LE POSTE SUIVANT*",r.consignes);
+  return L.join("\n");
+}
+function pdfReady(){return !!(window.jspdf&&window.jspdf.jsPDF)&&(dlCap||!inClaude)}
+function renderDetail(){
+  var r=current();if(!r){go("rapports");return}
+  var h='<div class="actions"><button type="button" class="btn small" data-act="back">‹ Mes rapports</button></div>';
+  if(r.example)h+='<p class="hint">Ceci est un exemple. Il disparaît de la liste dès que tu enregistres ton premier rapport.</p>';
+  h+='<article class="sheet"><div class="sh"><h2>Rapport de quart</h2><p>'+esc(r.secteur||"")+'</p></div><div class="sb">'+
+    '<dl class="meta"><dt>Date</dt><dd>'+esc(frDate(r.date))+'</dd><dt>Poste</dt><dd><span class="pill '+PCLASS[r.poste]+'">'+esc(r.poste)+'</span> · Équipe '+esc(r.team)+'</dd>'+
+    (r.nom?'<dt>Rédigé par</dt><dd>'+esc(r.nom)+(r.fonction?', '+esc(r.fonction):'')+'</dd>':'')+'</dl>';
+  if(r.interventions.length){h+='<h3>Interventions</h3>';r.interventions.forEach(function(v,i){
+    h+='<div class="row"><div class="t"><span>'+(i+1)+'. '+esc(v.equip||"Équipement non précisé")+' — '+esc(v.type)+'</span><span class="pill '+etatClass(v.etat)+'">'+esc(v.etat)+'</span></div>'+
+      (v.travail?'<p>'+esc(v.travail)+'</p>':'')+(v.piece?'<p><span class="k">Pièce remplacée : </span>'+esc(v.piece)+'</p>':'')+'</div>'})}
+  if(r.inspections.length){h+='<h3>Inspection</h3>';r.inspections.forEach(function(v){
+    h+='<div class="row"><div class="t"><span>'+esc(v.point||"Point non précisé")+'</span><span class="pill '+constatClass(v.constat)+'">'+esc(v.constat)+'</span></div>'+(v.obs?'<p>'+esc(v.obs)+'</p>':'')+'</div>'})}
+  if(r.remarques)h+='<h3>Remarques</h3><p class="free">'+esc(r.remarques)+'</p>';
+  if(r.consignes)h+='<h3>Consignes pour le poste suivant</h3><p class="free">'+esc(r.consignes)+'</p>';
+  h+='</div></article><div class="actions">'+
+    '<a class="btn primary" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(reportText(r))+'">Envoyer sur WhatsApp</a>'+
+    '<button type="button" class="btn" data-act="copy">Copier le texte</button>'+
+    (pdfReady()?'<button type="button" class="btn" data-act="pdf">'+(isNative?"Partager le PDF":"Télécharger en PDF")+'</button>':'')+'</div>';
+  if(!r.example){h+='<div class="actions"><button type="button" class="btn" data-act="edit">Modifier</button>'+
+    (S.confirmDel?'<button type="button" class="btn danger" data-act="del-yes">Confirmer la suppression</button><button type="button" class="btn" data-act="del-no">Garder le rapport</button>'
+                 :'<button type="button" class="btn danger" data-act="del">Supprimer</button>')+'</div>'}
+  $("v-detail").innerHTML=h;
+}
+function pdfSafe(s){return String(s==null?"":s).replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,"-").replace(/œ/g,"oe").replace(/Œ/g,"OE").replace(/…/g,"...").replace(/ | /g," ").replace(/[^\x0A\x20-\x7E\xA1-\xFF]/g,"")}
+function buildPdf(r){
+  var doc=new window.jspdf.jsPDF({unit:"mm",format:"a4"}),W=210,M=15,CW=W-2*M,y=0;
+  function need(h){if(y+h>275){doc.addPage();y=M+3}}
+  function para(txt,size,style,indent,color){doc.setFont("helvetica",style||"normal");doc.setFontSize(size);var c=color||[23,33,43];doc.setTextColor(c[0],c[1],c[2]);
+    var lh=size*0.44,lines=doc.splitTextToSize(pdfSafe(txt),CW-(indent||0));lines.forEach(function(l){need(lh);doc.text(l,M+(indent||0),y);y+=lh})}
+  function section(t){need(16);y+=5;doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(154,60,30);doc.text(pdfSafe(t).toUpperCase(),M,y);y+=1.8;doc.setDrawColor(154,60,30);doc.setLineWidth(0.4);doc.line(M,y,W-M,y);y+=6}
+  doc.setFillColor(23,33,43);doc.rect(0,0,W,30,"F");doc.setTextColor(255,255,255);
+  doc.setFont("helvetica","bold");doc.setFontSize(20);doc.text("RAPPORT DE QUART",M,14);
+  doc.setFont("helvetica","normal");doc.setFontSize(11);if(r.secteur)doc.text(pdfSafe(r.secteur),M,22);
+  doc.setFont("helvetica","bold");doc.setFontSize(12);doc.text(pdfSafe("Poste "+r.poste+" · Équipe "+r.team),W-M,14,{align:"right"});
+  doc.setFont("helvetica","normal");doc.setFontSize(11);doc.text(pdfSafe(frDate(r.date)),W-M,22,{align:"right"});
+  y=40;
+  if(r.nom)para("Rédigé par : "+r.nom+(r.fonction?" ("+r.fonction+")":""),11,"normal");
+  if(r.interventions.length){section("Interventions");r.interventions.forEach(function(v,i){
+    need(14);para((i+1)+". "+(v.equip||"Équipement non précisé")+" - "+v.type+"   ["+v.etat+"]",11,"bold");y+=0.8;
+    if(v.travail)para(v.travail,10.5,"normal",5);
+    if(v.piece)para("Pièce remplacée : "+v.piece,10.5,"normal",5);
+    y+=3})}
+  if(r.inspections.length){section("Inspection");r.inspections.forEach(function(v){
+    need(10);para((v.point||"Point non précisé")+" : "+v.constat,11,"bold");y+=0.8;if(v.obs)para(v.obs,10.5,"normal",5);y+=3})}
+  if(r.remarques){section("Remarques");para(r.remarques,10.5,"normal")}
+  if(r.consignes){section("Consignes pour le poste suivant");para(r.consignes,10.5,"normal")}
+  need(32);y+=16;doc.setDrawColor(120,130,140);doc.setLineWidth(0.2);doc.line(M,y,M+70,y);doc.line(W-M-70,y,W-M,y);
+  doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(86,99,113);doc.text(pdfSafe("Signature du rédacteur"),M,y+4);doc.text("Visa du chef de poste",W-M-70,y+4);
+  var n=doc.getNumberOfPages();for(var p=1;p<=n;p++){doc.setPage(p);doc.setFontSize(8);doc.setTextColor(120,130,140);doc.text("Page "+p+" / "+n,W-M,290,{align:"right"});doc.text(pdfSafe("Rapport de quart - "+shortDate(r.date)+" - "+r.poste),M,290)}
+  return doc;
+}
+function savePdf(){
+  var r=current();if(!r||!pdfReady())return;
+  var doc,name="Rapport_quart_"+r.date+"_"+r.poste+"_equipe-"+r.team+".pdf";
+  try{doc=buildPdf(r)}catch(e){toast("Le PDF n'a pas pu être créé.");return}
+  if(isNative){
+    var b64=doc.output("datauristring");b64=b64.slice(b64.indexOf("base64,")+7);
+    CapN.nativePromise("Filesystem","writeFile",{path:name,data:b64,directory:"CACHE"}).then(function(res){
+      return CapN.nativePromise("Share","share",{title:"Rapport de quart",dialogTitle:"Envoyer le PDF",files:[res.uri]})
+    }).then(null,function(e){if(e&&/cancel/i.test(String(e.message||e)))return;toast("Le PDF n'a pas pu être partagé. Utilise « Copier le texte ».")});
+    return;
+  }
+  if(dlCap){dlCap.save({filename:name,data:doc.output("blob")}).then(function(){toast("PDF enregistré")},function(e){if(e&&e.code==="declined")return;toast("Le PDF n'a pas pu être enregistré ici. Utilise « Copier le texte ».")})}
+  else{try{doc.save(name)}catch(e){toast("Le PDF n'a pas pu être enregistré.")}}
+}
+function copyText(){
+  var r=current();if(!r)return;var t=reportText(r);
+  function fallback(){try{var ta=document.createElement("textarea");ta.value=t;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();var ok=document.execCommand("copy");document.body.removeChild(ta);toast(ok?"Texte copié":"Copie impossible ici")}catch(e){toast("Copie impossible ici")}}
+  try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){toast("Texte copié")},fallback)}else fallback()}catch(e){fallback()}
+}
+
+/* ---------- Navigation ---------- */
+var toastTimer=null,started=false;
+function toast(m){var o=document.querySelector(".toast");if(o)o.remove();var t=document.createElement("div");t.className="toast";t.setAttribute("role","status");t.textContent=m;document.body.appendChild(t);clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.remove()},2600)}
+function updateTabs(){
+  var n=liveReports().length;$("tab-rapports").textContent="Mes rapports"+(n?" ("+n+")":"");
+  $("tab-nouveau").textContent=draft.id?"Modification":"Nouveau rapport";
+  if(S.view==="nouveau"){$("tab-nouveau").setAttribute("aria-current","page");$("tab-rapports").removeAttribute("aria-current")}
+  else{$("tab-rapports").setAttribute("aria-current","page");$("tab-nouveau").removeAttribute("aria-current")}
+}
+function renderFoot(){
+  var s=cloud.ok&&!cloud.readonly?"Tes rapports sont enregistrés sur cet appareil et sauvegardés dans ton compte.":"Tes rapports sont enregistrés sur cet appareil.";
+  $("foot").textContent=s+" Postes calculés d'après le calendrier de l'usine de Kamsar. Application conçue par Baldé Ousmane, mécanicien ajusteur.";
+}
+function show(){
+  $("v-nouveau").hidden=S.view!=="nouveau";$("v-rapports").hidden=S.view!=="rapports";$("v-detail").hidden=S.view!=="detail";
+  if(S.view==="nouveau")renderForm();else if(S.view==="rapports")renderList();else renderDetail();
+  updateTabs();
+}
+function go(v,replace){
+  if(S.view==="nouveau"&&v!=="nouveau"){readForm();writeDraft();S.error=""}
+  S.view=v;S.confirmDel=false;
+  var h=v==="nouveau"?"#nouveau":v==="rapports"?"#rapports":"#rapport";
+  if(inClaude){try{if(location.hash!==h)history.replaceState(null,"",h)}catch(e){try{location.hash=h}catch(e2){}}}
+  else{try{if(location.hash!==h){if(replace)history.replaceState(null,"",h);else location.hash=h}}catch(e){}}
+  show();window.scrollTo(0,0);
+}
+function fromHash(){var h=location.hash,cur=S.view==="nouveau"?"#nouveau":S.view==="rapports"?"#rapports":"#rapport";if(started&&(h===cur||(h===""&&cur==="#nouveau")))return;started=true;if(h==="#rapports"||(h==="#rapport"&&!current())){go("rapports",true)}else if(h==="#rapport"){go("detail",true)}else go("nouveau",true)}
+
+/* ---------- Événements ---------- */
+document.addEventListener("click",function(ev){
+  var a=ev.target.closest("nav.tabs a");
+  if(a){ev.preventDefault();go(a.id==="tab-nouveau"?"nouveau":"rapports");return}
+  var b=ev.target.closest("[data-act]");if(!b)return;var act=b.getAttribute("data-act"),i=+b.getAttribute("data-i");
+  if(act==="add-iv"){readForm();draft.interventions.push(blankIv());$("iv-list").innerHTML=ivHtml();saveDraftSoon();var e1=$("iv-"+(draft.interventions.length-1)+"-equip");if(e1)e1.focus()}
+  else if(act==="del-iv"){readForm();draft.interventions.splice(i,1);$("iv-list").innerHTML=ivHtml();saveDraftSoon()}
+  else if(act==="add-in"){readForm();draft.inspections.push(blankIn());$("in-list").innerHTML=inHtml();saveDraftSoon();var e2=$("in-"+(draft.inspections.length-1)+"-point");if(e2)e2.focus()}
+  else if(act==="del-in"){readForm();draft.inspections.splice(i,1);$("in-list").innerHTML=inHtml();saveDraftSoon()}
+  else if(act==="pick-date"){readForm();draft.date=b.getAttribute("data-d");$("f-date").value=draft.date;draft.posteAuto=true;syncPoste();saveDraftSoon()}
+  else if(act==="poste-cal"){readForm();draft.posteAuto=true;syncPoste();saveDraftSoon()}
+  else if(act==="reset"){readForm();var wasEdit=!!draft.id,id=draft.id;
+    if((wasEdit||hasContent(draft))&&!b.getAttribute("data-armed")){b.setAttribute("data-armed","1");b.classList.add("danger");b.textContent=wasEdit?"Toucher encore pour annuler":"Toucher encore pour vider";setTimeout(function(){if(b.isConnected){b.removeAttribute("data-armed");b.classList.remove("danger");b.textContent=wasEdit?"Annuler":"Vider"}},3500);return}
+    S.error="";if(wasEdit){S.view="detail";$("v-nouveau").innerHTML="";afterEdit();if(S.reports[id]&&!S.reports[id].deleted){S.currentId=id;go("detail")}else go("rapports")}
+    else{clearTimeout(draftTimer);lsDel("rq.draft");draft=newDraft();show();window.scrollTo(0,0)}}
+  else if(act==="open"){S.currentId=b.getAttribute("data-id");go("detail")}
+  else if(act==="back"){go("rapports")}
+  else if(act==="copy"){copyText()}
+  else if(act==="pdf"){savePdf()}
+  else if(act==="edit"){var r=current();if(!r||r.example)return;clearTimeout(draftTimer);if(!draft.id&&hasContent(draft)){stash=clone(draft);lsSet("rq.stash",JSON.stringify(stash))}draft=clone(r);draft.posteAuto=false;S.error="";writeDraft();go("nouveau")}
+  else if(act==="del"){S.confirmDel=true;renderDetail()}
+  else if(act==="del-no"){S.confirmDel=false;renderDetail()}
+  else if(act==="del-yes"){var d=current();if(!d||d.example)return;var tomb={id:d.id,deleted:true,updatedAt:Date.now()};S.reports[d.id]=tomb;persist();pushCloud(tomb);if(draft.id===d.id)afterEdit();S.currentId=null;go("rapports");toast("Rapport supprimé")}
+});
+document.addEventListener("input",function(ev){
+  var t=ev.target;
+  if(t.id==="q"){S.filter.q=t.value;$("list-body").innerHTML=listBodyHtml();return}
+  if(t.closest&&t.closest("#form")){if(t.name==="poste")return;readForm();if(S.error)setError("");if(t.id==="f-date"||t.id==="f-team"){draft.posteAuto=true;syncPoste()}saveDraftSoon()}
+});
+document.addEventListener("change",function(ev){
+  var t=ev.target;
+  if(t.name==="poste"){readForm();draft.poste=t.value;draft.posteAuto=false;$("poste-box").innerHTML=posteBoxHtml();if(S.error)setError("");saveDraftSoon();var f=document.querySelector('input[name="poste"]:checked');if(f)f.focus()}
+  else if(t.name==="fposte"){S.filter.poste=t.value;renderList()}
+  else if(t.id==="f-date"||t.id==="f-team"){readForm();draft.posteAuto=true;syncPoste();saveDraftSoon()}
+});
+document.addEventListener("submit",function(ev){ev.preventDefault();if(ev.target.id==="form")submitForm()});
+document.addEventListener("keydown",function(ev){var t=ev.target;if(ev.key==="Enter"&&t&&t.tagName==="INPUT"&&t.closest("#form")){ev.preventDefault();t.blur()}});
+window.addEventListener("hashchange",fromHash);
+
+window.addEventListener("pagehide",function(){if(S.view==="nouveau"){readForm();writeDraft()}});
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden"&&S.view==="nouveau"){readForm();writeDraft()}});
+window.__rq={posteFor:posteFor,cycleIndex:cycleIndex,reportText:reportText,buildPdf:buildPdf};
+renderFoot();fromHash();initCloud();
+})();
+</script>
+</body>
+</html>

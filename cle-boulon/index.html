@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clé pour boulon — caméra en direct</title>
+<meta name="theme-color" content="#1f5f8b">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Idée de mise en page : un outil d'atelier en une colonne. La photo en haut, le résultat en gros juste dessous, le tableau de référence en bas. */
+:root{
+  --bg:#eef0f1;
+  --surface:#ffffff;
+  --ink:#1b2328;
+  --muted:#5c6970;
+  --line:#cfd5d8;
+  --accent:#1f5f8b;      /* bleu acier : actions et mesure du boulon */
+  --ref:#b5651d;         /* cuivre : objet de référence */
+  --ok:#2e7d4f;
+  --warn:#a86a00;
+  --font-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --font-body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#14181b;--surface:#1e2428;--ink:#e8ecee;--muted:#9aa6ac;--line:#353e44;
+    --accent:#6fb1dc;--ref:#e09a55;--ok:#6cc08e;--warn:#e0aa45;color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14181b;--surface:#1e2428;--ink:#e8ecee;--muted:#9aa6ac;--line:#353e44;
+  --accent:#6fb1dc;--ref:#e09a55;--ok:#6cc08e;--warn:#e0aa45;color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.45}
+main{max-width:560px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:14px}
+h1{font-family:var(--font-display);font-weight:700;font-size:30px;line-height:1.05;margin:0;letter-spacing:.01em;text-wrap:balance}
+h2{font-family:var(--font-display);font-weight:600;font-size:21px;margin:0 0 8px;text-wrap:balance}
+p{margin:0}
+.lead{color:var(--muted);font-size:15px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.btn{flex:1 1 150px;display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:10px 14px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:#fff;font:600 16px var(--font-body);cursor:pointer;text-align:center}
+:root[data-theme="dark"] .btn{color:#10202b}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn{color:#10202b}}
+.btn.alt{background:transparent;color:var(--accent)}
+.btn:focus-visible,select:focus-visible,input:focus-visible,canvas:focus-visible{outline:3px solid var(--ref);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+#stage{position:relative;width:100%;aspect-ratio:1/1;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#20262a}
+#cv{width:100%;height:100%;display:block;touch-action:none}
+#badge{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.62);color:#fff;font-size:13px;padding:3px 8px;border-radius:4px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+.field{flex:1 1 150px;display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--muted)}
+select,input[type=number]{min-height:44px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:500 16px var(--font-body);padding:8px 10px;width:100%}
+#result{border-left:6px solid var(--ok)}
+#result.warn{border-left-color:var(--warn)}
+#key{font-family:var(--font-display);font-weight:700;font-size:56px;line-height:1;font-variant-numeric:tabular-nums}
+#vis{font-size:19px;font-weight:600;margin-top:4px}
+#detail{color:var(--muted);font-size:15px;margin-top:6px;font-variant-numeric:tabular-nums}
+#advice{margin-top:8px;font-size:15px}
+ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px}
+.cell{border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-variant-numeric:tabular-nums;display:flex;justify-content:space-between;gap:6px;font-size:15px}
+.cell b{font-weight:600}
+.cell.hit{border-color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok)}
+.note{font-size:13.5px;color:var(--muted)}
+[hidden]{display:none!important}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.segb{flex:1;min-height:46px;padding:6px 8px;background:var(--surface);color:var(--ink);border:0;font:600 15px var(--font-body);cursor:pointer}
+.segb.on{background:var(--accent);color:#fff}
+:root[data-theme="dark"] .segb.on{color:#10202b}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .segb.on{color:#10202b}}
+.segb:focus-visible{outline:3px solid var(--ref);outline-offset:-3px}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper .btn{flex:0 0 60px;font-size:28px;line-height:1}
+#gab{flex:1;text-align:center;font-weight:600;font-size:17px;font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Clé pour boulon</h1>
+    <p class="lead">Visez la tête du boulon avec la caméra, une carte posée à côté. L'appli projette en direct un gabarit de clé à l'échelle, comme un projecteur de profil.</p>
+  </header>
+
+  <div class="actions">
+    <button class="btn" id="live" type="button">Démarrer la caméra</button>
+    <button class="btn" id="freeze" type="button" hidden>Figer l'image</button>
+    <label class="btn alt" for="gal">Choisir une photo</label>
+    <input class="sr" id="gal" type="file" accept="image/*">
+  </div>
+
+  <div id="stage">
+    <canvas id="cv" tabindex="0" aria-label="Photo avec les repères de mesure"></canvas>
+    <div id="badge">Exemple : boulon M20</div>
+  </div>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--ref)"></i>Repères de la carte</span>
+    <span><i class="dot" style="background:var(--accent)"></i>Gabarit ou repères du boulon</span>
+  </div>
+
+  <div class="stepper">
+    <div id="autoState" class="note" style="flex:1" aria-live="polite">Détection automatique : chargement…</div>
+    <button id="autoBtn" class="segb on" type="button" aria-pressed="true" style="flex:0 0 auto;border:1px solid var(--line);border-radius:8px;padding:6px 14px">Auto activé</button>
+  </div>
+
+  <div class="seg" role="group" aria-label="Méthode de mesure">
+    <button id="mHex" class="segb on" type="button" aria-pressed="true">Projection de profil</button>
+    <button id="mPts" class="segb" type="button" aria-pressed="false">Mesure par repères</button>
+  </div>
+  <div class="stepper" id="stepper">
+    <button id="minus" class="btn alt" type="button" aria-label="Gabarit plus petit">−</button>
+    <div id="gab">Gabarit : clé de 30</div>
+    <button id="plus" class="btn alt" type="button" aria-label="Gabarit plus grand">+</button>
+  </div>
+
+  <section class="card" id="result" aria-live="polite">
+    <div id="key">Clé de 30</div>
+    <div id="vis">Vis M20</div>
+    <div id="detail"></div>
+    <div id="advice"></div>
+  </section>
+
+  <section class="card">
+    <h2>Objet de référence</h2>
+    <div class="row">
+      <label class="field" for="refsel">Ce qui est sur la photo
+        <select id="refsel">
+          <option value="85.6">Carte ou badge, grand côté (85,6 mm)</option>
+          <option value="54">Carte ou badge, petit côté (54 mm)</option>
+          <option value="custom">Autre longueur connue (règle, pièce…)</option>
+        </select>
+      </label>
+      <label class="field" for="refmm" id="refmmwrap" hidden>Longueur en mm
+        <input id="refmm" type="number" inputmode="decimal" min="1" max="1000" step="0.1" value="100">
+      </label>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Comment faire</h2>
+    <ol>
+      <li>Posez une carte (badge, carte bancaire, carte d'identité) juste à côté de la tête, à la même hauteur qu'elle.</li>
+      <li>Touchez « Démarrer la caméra » et visez bien de face, le téléphone parallèle à la tête, la carte et la tête dans l'image.</li>
+      <li>L'appli encadre toute seule la carte (cuivre) et la tête hexagonale (bleu), puis affiche la clé. Tenez le téléphone stable une seconde.</li>
+      <li>Si elle ne trouve pas : rapprochez-vous, éclairez mieux, nettoyez la tête, ou posez la carte sur un fond uni.</li>
+      <li>Réglage à la main : touchez « Figer l'image », puis déplacez les repères. Dès que vous touchez un repère, l'automatique se met en pause.</li>
+      <li>Glissez les deux repères cuivre sur les deux bords opposés de la carte.</li>
+      <li>Projection de profil : glissez l'hexagone bleu sur la tête, tournez-le avec la poignée ronde, puis changez de taille avec − et + jusqu'à ce qu'il épouse exactement les plats.</li>
+      <li>Mesure par repères : glissez les deux repères bleus sur deux côtés plats opposés de la tête (pas sur les pointes).</li>
+      <li>Écartez deux doigts pour zoomer, un doigt pour déplacer la photo.</li>
+    </ol>
+  </section>
+
+  <section class="card">
+    <h2>Tableau vis → clé (tête hexagonale)</h2>
+    <div class="grid" id="grid"></div>
+    <p class="note" style="margin-top:10px">Tailles ISO. Sur les anciens boulons DIN : M10 = clé de 17, M12 = 19, M14 = 22, M22 = 32. Vérifiez toujours avec la clé en main avant de serrer.</p>
+  </section>
+</main>
+
+<script>
+(function(){
+"use strict";
+// [diamètre M, clé ISO, clé ancienne DIN éventuelle]
+var TABLE=[[3,5.5],[4,7],[5,8],[6,10],[8,13],[10,16,17],[12,18,19],[14,21,22],[16,24],[18,27],[20,30],[22,34,32],[24,36],[27,41],[30,46],[33,50],[36,55],[39,60],[42,65],[45,70],[48,75],[52,80],[56,85],[60,90],[64,95]];
+var KEYS=[];
+TABLE.forEach(function(r){
+  KEYS.push({key:r[1],m:r[0],std:"ISO"});
+  if(r[2]) KEYS.push({key:r[2],m:r[0],std:"ancien DIN"});
+});
+KEYS.sort(function(a,b){return a.key-b.key});
+
+function fr(n,d){return n.toFixed(d==null?1:d).replace(".",",")}
+function keyTxt(k){return (k%1?fr(k,1):String(k))}
+
+// Fonction pure : mesure sur plats (mm) -> clé
+function matchKey(mm){
+  var best=0,i;
+  for(i=1;i<KEYS.length;i++) if(Math.abs(KEYS[i].key-mm)<Math.abs(KEYS[best].key-mm)) best=i;
+  var k=KEYS[best], err=mm-k.key;
+  var other=null;
+  if(err>0 && best<KEYS.length-1) other=KEYS[best+1];
+  if(err<0 && best>0) other=KEYS[best-1];
+  var sure=true;
+  if(other){
+    var half=Math.abs(other.key-k.key)/2;
+    if(Math.abs(err)>half*0.6) sure=false;
+  }
+  var out=mm<KEYS[0].key*0.8||mm>KEYS[KEYS.length-1].key*1.1;
+  return {k:k,other:other,sure:sure&&!out,out:out,err:err};
+}
+window.__matchKey=matchKey;
+
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+var stage=document.getElementById("stage"),badge=document.getElementById("badge");
+var img=null,iw=0,ih=0;
+var view={s:1,x:0,y:0};
+var pts=[{x:0,y:0,t:"ref"},{x:0,y:0,t:"ref"},{x:0,y:0,t:"bolt"},{x:0,y:0,t:"bolt"}];
+var cssVar=function(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()};
+var W=0,H=0,dpr=1;
+var mode="hex",hex={x:0,y:0,a:0,ki:0},rotPos=null;
+function pxPerMm(){
+  var dr=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y),L=refLen();
+  return (dr>2&&L>0)?dr/L:NaN;
+}
+function hexR(){return KEYS[hex.ki].key*pxPerMm()/Math.sqrt(3)}
+function rotHandle(){var R=hexR();return {x:hex.x+R*Math.cos(hex.a),y:hex.y+R*Math.sin(hex.a)}}
+
+function demoImage(){
+  var c=document.createElement("canvas");c.width=1200;c.height=1200;
+  var g=c.getContext("2d"),i;
+  var bg=g.createLinearGradient(0,0,1200,1200);bg.addColorStop(0,"#6f777c");bg.addColorStop(1,"#4f575c");
+  g.fillStyle=bg;g.fillRect(0,0,1200,1200);
+  g.globalAlpha=.07;g.strokeStyle="#fff";
+  for(i=0;i<160;i++){var y=Math.random()*1200;g.beginPath();g.moveTo(0,y);g.lineTo(1200,y+Math.random()*30-15);g.stroke();}
+  g.globalAlpha=1;
+  // rondelle + tête hexagonale : 6 px par mm, 30 mm sur plats
+  var cx=600,cy=380,s=180,R=s/Math.sqrt(3);
+  g.fillStyle="rgba(0,0,0,.35)";g.beginPath();g.arc(cx+8,cy+10,150,0,7);g.fill();
+  var wg=g.createRadialGradient(cx-40,cy-40,20,cx,cy,150);wg.addColorStop(0,"#c9cdd0");wg.addColorStop(1,"#8d9498");
+  g.fillStyle=wg;g.beginPath();g.arc(cx,cy,144,0,7);g.fill();
+  var hg=g.createLinearGradient(cx-R,cy-R,cx+R,cy+R);hg.addColorStop(0,"#5d646a");hg.addColorStop(1,"#474d52");
+  g.fillStyle=hg;g.beginPath();
+  for(i=0;i<6;i++){var b=i*Math.PI/3;g.lineTo(cx+R*Math.cos(b),cy+R*Math.sin(b));}g.closePath();g.fill();
+  g.strokeStyle="rgba(255,255,255,.35)";g.lineWidth=3;g.beginPath();g.arc(cx,cy,s/2-24,0,7);g.stroke();
+  g.fillStyle="rgba(235,238,240,.8)";g.font="600 34px Arial";g.textAlign="center";g.fillText("8.8",cx,cy+12);
+  // carte 85,6 x 54 mm
+  var x=120,y0=760,w=85.6*6,h=54*6,r=18;
+  g.fillStyle="rgba(0,0,0,.3)";g.fillRect(x+8,y0+10,w,h);
+  g.fillStyle="#e9e6dc";g.beginPath();
+  g.moveTo(x+r,y0);g.arcTo(x+w,y0,x+w,y0+h,r);g.arcTo(x+w,y0+h,x,y0+h,r);g.arcTo(x,y0+h,x,y0,r);g.arcTo(x,y0,x+w,y0,r);g.fill();
+  g.fillStyle="#7d8b93";g.fillRect(x+30,y0+40,110,140);
+  g.fillStyle="#5d666b";g.fillRect(x+170,y0+50,280,18);g.fillRect(x+170,y0+90,200,14);g.fillRect(x+170,y0+125,240,14);
+  g.fillStyle="#3a4449";g.font="600 30px Arial";g.textAlign="left";g.fillText("BADGE",x+30,y0+h-40);
+  return c;
+}
+
+function resize(){
+  var r=stage.getBoundingClientRect();
+  dpr=Math.min(window.devicePixelRatio||1,3);
+  W=r.width;H=r.height;
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  draw();
+}
+function fit(){
+  view.s=Math.min(W/iw,H/ih);
+  view.x=(W-iw*view.s)/2;view.y=(H-ih*view.s)/2;
+}
+function setImage(source,w,h,demo){
+  img=source;iw=w;ih=h;
+  var r=stage.getBoundingClientRect();W=r.width;H=r.height;
+  fit();
+  if(demo){
+    pts[0].x=120;pts[0].y=922;pts[1].x=120+85.6*6;pts[1].y=922;
+    pts[2].x=600;pts[2].y=290;pts[3].x=600;pts[3].y=470;
+  }else{
+    pts[0].x=iw*.2;pts[0].y=ih*.75;pts[1].x=iw*.8;pts[1].y=ih*.75;
+    pts[2].x=iw*.5;pts[2].y=ih*.28;pts[3].x=iw*.5;pts[3].y=ih*.48;
+  }
+  hex.x=(pts[2].x+pts[3].x)/2;hex.y=(pts[2].y+pts[3].y)/2;hex.a=0;
+  var s0=pxPerMm(),m0=matchKey(Math.hypot(pts[2].x-pts[3].x,pts[2].y-pts[3].y)/(s0||1));
+  hex.ki=Math.max(0,KEYS.indexOf(m0.k));
+  badge.textContent=demo?"Exemple : boulon M20":"Votre photo";
+  resize();update();
+}
+function toS(p){return {x:p.x*view.s+view.x,y:p.y*view.s+view.y}}
+
+var drag=-1;
+function draw(){
+  if(!img)return;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle="#20262a";ctx.fillRect(0,0,W,H);
+  ctx.imageSmoothingQuality="high";
+  ctx.drawImage(img,view.x,view.y,iw*view.s,ih*view.s);
+  var cRef=cssVar("--ref")||"#b5651d",cBolt=cssVar("--accent")||"#1f5f8b";
+  if(auto&&cardQuad){
+    ctx.beginPath();cardQuad.forEach(function(q){var S=toS(q);ctx.lineTo(S.x,S.y);});ctx.closePath();
+    ctx.lineWidth=5;ctx.strokeStyle="rgba(0,0,0,.55)";ctx.stroke();ctx.lineWidth=2.5;ctx.strokeStyle=cRef;ctx.stroke();
+  }
+  pair(pts[0],pts[1],cRef);
+  if(mode==="pts") pair(pts[2],pts[3],cBolt); else drawHex(cBolt);
+  if(drag>=0&&drag<4) loupe(pts[drag],pts[drag].t==="ref"?cRef:cBolt);
+}
+function pair(a,b,col){
+  var A=toS(a),B=toS(b);
+  ctx.lineWidth=5;ctx.strokeStyle="rgba(0,0,0,.55)";ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();
+  ctx.lineWidth=2.5;ctx.strokeStyle="#fff";ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();
+  [A,B].forEach(function(P){
+    ctx.beginPath();ctx.arc(P.x,P.y,15,0,7);ctx.fillStyle="rgba(255,255,255,.22)";ctx.fill();
+    ctx.lineWidth=5;ctx.strokeStyle="rgba(0,0,0,.6)";ctx.stroke();
+    ctx.lineWidth=3;ctx.strokeStyle=col;ctx.stroke();
+    ctx.beginPath();ctx.arc(P.x,P.y,2.5,0,7);ctx.fillStyle="#fff";ctx.fill();
+  });
+}
+function drawHex(col){
+  var R=hexR();if(!(R>0))return;
+  var C=toS(hex),r=R*view.s,i,a;
+  function path(){ctx.beginPath();for(i=0;i<6;i++){a=hex.a+i*Math.PI/3;ctx.lineTo(C.x+r*Math.cos(a),C.y+r*Math.sin(a));}ctx.closePath();}
+  path();ctx.lineWidth=6;ctx.strokeStyle="rgba(0,0,0,.6)";ctx.stroke();
+  path();ctx.lineWidth=3;ctx.strokeStyle="#fff";ctx.stroke();
+  path();ctx.lineWidth=1.5;ctx.strokeStyle=col;ctx.stroke();
+  // réticule, comme sur l'écran d'un projecteur de profil
+  ctx.save();ctx.setLineDash([6,5]);ctx.lineWidth=1.2;ctx.strokeStyle="rgba(255,255,255,.85)";
+  var f=r*0.866,pa=hex.a+Math.PI/6;
+  ctx.beginPath();
+  ctx.moveTo(C.x-f*Math.cos(pa),C.y-f*Math.sin(pa));ctx.lineTo(C.x+f*Math.cos(pa),C.y+f*Math.sin(pa));
+  ctx.moveTo(C.x+f*Math.sin(pa),C.y-f*Math.cos(pa));ctx.lineTo(C.x-f*Math.sin(pa),C.y+f*Math.cos(pa));
+  ctx.stroke();ctx.restore();
+  var Hd=toS(rotHandle());
+  ctx.beginPath();ctx.arc(Hd.x,Hd.y,11,0,7);ctx.fillStyle=col;ctx.fill();
+  ctx.lineWidth=3;ctx.strokeStyle="#fff";ctx.stroke();
+}
+function loupe(p,col){
+  var P=toS(p),R=58,z=Math.max(view.s*3,1.2);
+  var lx=P.x<W/2?W-R-10:R+10, ly=P.y<H/2?H-R-10:R+10;
+  ctx.save();ctx.beginPath();ctx.arc(lx,ly,R,0,7);ctx.clip();
+  ctx.fillStyle="#20262a";ctx.fillRect(lx-R,ly-R,2*R,2*R);
+  ctx.drawImage(img,lx-p.x*z,ly-p.y*z,iw*z,ih*z);
+  ctx.strokeStyle="#fff";ctx.lineWidth=1.5;ctx.beginPath();
+  ctx.moveTo(lx-R,ly);ctx.lineTo(lx-6,ly);ctx.moveTo(lx+6,ly);ctx.lineTo(lx+R,ly);
+  ctx.moveTo(lx,ly-R);ctx.lineTo(lx,ly-6);ctx.moveTo(lx,ly+6);ctx.lineTo(lx,ly+R);ctx.stroke();
+  ctx.restore();
+  ctx.beginPath();ctx.arc(lx,ly,R,0,7);ctx.lineWidth=4;ctx.strokeStyle=col;ctx.stroke();
+}
+
+// Gestes : un doigt sur un repère = le déplacer ; un doigt ailleurs = déplacer la photo ; deux doigts = zoom
+var ptrs={},last=null,pinch=null;
+function pos(e){var r=cv.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
+cv.addEventListener("pointerdown",function(e){
+  e.preventDefault();
+  try{cv.setPointerCapture(e.pointerId)}catch(_){}
+  var p=pos(e);ptrs[e.pointerId]=p;
+  var ids=Object.keys(ptrs);
+  if(ids.length===1){
+    var best=-1,bd=34;
+    var cand=[[0,pts[0]],[1,pts[1]]];
+    if(mode==="pts"){cand.push([2,pts[2]],[3,pts[3]]);}
+    else if(hexR()>0){cand.push([11,rotHandle()]);}
+    cand.forEach(function(c){var S=toS(c[1]),d=Math.hypot(S.x-p.x,S.y-p.y);if(d<bd){bd=d;best=c[0];}});
+    if(best<0&&mode==="hex"&&hexR()>0){
+      var C=toS(hex);
+      if(Math.hypot(C.x-p.x,C.y-p.y)<Math.max(hexR()*view.s*0.866,30)) best=10;
+    }
+    if(best===11) rotPos=rotHandle();
+    if(best>=0&&auto) setAuto(false);
+    drag=best;last=p;
+  }else if(ids.length===2){
+    drag=-1;var a=ptrs[ids[0]],b=ptrs[ids[1]];
+    pinch={d:Math.hypot(a.x-b.x,a.y-b.y),cx:(a.x+b.x)/2,cy:(a.y+b.y)/2};
+  }
+  draw();
+});
+cv.addEventListener("pointermove",function(e){
+  if(!ptrs[e.pointerId])return;
+  var p=pos(e);ptrs[e.pointerId]=p;
+  var ids=Object.keys(ptrs);
+  if(ids.length===1&&last){
+    var dx=p.x-last.x,dy=p.y-last.y;
+    if(drag===10){
+      hex.x=Math.max(0,Math.min(iw,hex.x+dx/view.s));
+      hex.y=Math.max(0,Math.min(ih,hex.y+dy/view.s));
+    }else if(drag===11){
+      rotPos.x+=dx/view.s;rotPos.y+=dy/view.s;
+      hex.a=Math.atan2(rotPos.y-hex.y,rotPos.x-hex.x);
+    }else if(drag>=0){
+      pts[drag].x=Math.max(0,Math.min(iw,pts[drag].x+dx/view.s));
+      pts[drag].y=Math.max(0,Math.min(ih,pts[drag].y+dy/view.s));
+      update();
+    }else{view.x+=dx;view.y+=dy;}
+    last=p;
+  }else if(ids.length===2&&pinch){
+    var a=ptrs[ids[0]],b=ptrs[ids[1]];
+    var d=Math.hypot(a.x-b.x,a.y-b.y),cx=(a.x+b.x)/2,cy=(a.y+b.y)/2;
+    zoomAt(pinch.cx,pinch.cy,d/(pinch.d||1));
+    view.x+=cx-pinch.cx;view.y+=cy-pinch.cy;
+    pinch={d:d,cx:cx,cy:cy};
+  }
+  draw();
+});
+function end(e){
+  delete ptrs[e.pointerId];
+  var ids=Object.keys(ptrs);
+  pinch=null;drag=-1;
+  last=ids.length===1?ptrs[ids[0]]:null;
+  draw();
+}
+cv.addEventListener("pointerup",end);cv.addEventListener("pointercancel",end);
+cv.addEventListener("wheel",function(e){e.preventDefault();var p=pos(e);zoomAt(p.x,p.y,e.deltaY<0?1.15:1/1.15);draw();},{passive:false});
+function zoomAt(cx,cy,f){
+  var min=Math.min(W/iw,H/ih)*0.5,ns=Math.max(min,Math.min(view.s*f,40));
+  f=ns/view.s;
+  view.x=cx-(cx-view.x)*f;view.y=cy-(cy-view.y)*f;view.s=ns;
+}
+
+var refsel=document.getElementById("refsel"),refmm=document.getElementById("refmm"),refwrap=document.getElementById("refmmwrap");
+function refLen(){
+  if(refsel.value==="custom"){var v=parseFloat(String(refmm.value).replace(",","."));return v>0?v:NaN;}
+  return parseFloat(refsel.value);
+}
+function refresh(){update();draw();}
+refsel.addEventListener("change",function(){refwrap.hidden=refsel.value!=="custom";refresh();});
+refmm.addEventListener("input",refresh);
+var bHex=document.getElementById("mHex"),bPts=document.getElementById("mPts"),stepper=document.getElementById("stepper"),elGab=document.getElementById("gab");
+function setMode(m){
+  mode=m;
+  bHex.classList.toggle("on",m==="hex");bPts.classList.toggle("on",m==="pts");
+  bHex.setAttribute("aria-pressed",m==="hex");bPts.setAttribute("aria-pressed",m==="pts");
+  stepper.hidden=m!=="hex";refresh();
+}
+bHex.addEventListener("click",function(){setMode("hex")});
+bPts.addEventListener("click",function(){setMode("pts")});
+function step(d){if(auto)setAuto(false);hex.ki=Math.max(0,Math.min(KEYS.length-1,hex.ki+d));refresh();}
+document.getElementById("minus").addEventListener("click",function(){step(-1)});
+document.getElementById("plus").addEventListener("click",function(){step(1)});
+
+var elKey=document.getElementById("key"),elVis=document.getElementById("vis"),elDet=document.getElementById("detail"),elAdv=document.getElementById("advice"),elRes=document.getElementById("result");
+function update(){
+  var dr=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
+  var db=Math.hypot(pts[2].x-pts[3].x,pts[2].y-pts[3].y);
+  var L=refLen();
+  if(!(dr>2)||!(L>0)){
+    elKey.textContent="—";elVis.textContent="Mesure impossible";
+    elDet.textContent="";elAdv.textContent="Écartez les deux repères cuivre sur la carte et indiquez sa longueur.";
+    elRes.className="card warn";markGrid(null);return;
+  }
+  if(mode==="hex"){
+    var g=KEYS[hex.ki];
+    elGab.textContent="Gabarit : clé de "+keyTxt(g.key);
+    elKey.textContent="Clé de "+keyTxt(g.key);
+    elVis.textContent="Vis M"+g.m+(g.std==="ISO"?"":" ("+g.std+")");
+    if(auto&&autoMm){
+      var am=matchKey(autoMm);
+      elDet.textContent="Tête détectée : "+fr(autoMm,1)+" mm sur plats";
+      if(am.sure){elAdv.textContent="Détection automatique de la carte et de la tête.";elRes.className="card";}
+      else{elAdv.textContent="La mesure est entre deux tailles. Essayez la clé de "+keyTxt(am.k.key)+", puis celle de "+keyTxt(am.other.key)+". Rapprochez-vous et tenez le téléphone bien de face.";elRes.className="card warn";}
+      markGrid(g);return;
+    }
+    elDet.textContent="Gabarit projeté : "+fr(g.key,1)+" mm sur plats";
+    elAdv.textContent="Si l'hexagone épouse exactement les plats de la tête, c'est la bonne clé. Sinon changez de taille avec − et +.";
+    elRes.className="card";markGrid(g);return;
+  }
+  var mm=db/dr*L,m=matchKey(mm);
+  elDet.textContent="Mesuré sur plats : "+fr(mm,1)+" mm";
+  if(m.out){
+    elKey.textContent="—";elVis.textContent="Hors tableau";
+    elAdv.textContent="La mesure ne correspond à aucune clé de M3 à M64. Vérifiez les repères et l'objet de référence.";
+    elRes.className="card warn";markGrid(null);return;
+  }
+  elKey.textContent="Clé de "+keyTxt(m.k.key);
+  elVis.textContent="Vis M"+m.k.m+(m.k.std==="ISO"?"":" ("+m.k.std+")");
+  if(m.sure){
+    elAdv.textContent="La mesure tombe à "+fr(Math.abs(m.err),1)+" mm de cette taille.";
+    elRes.className="card";
+  }else{
+    elAdv.textContent="La mesure est entre deux tailles. Essayez la clé de "+keyTxt(m.k.key)+", puis celle de "+keyTxt(m.other.key)+" (M"+m.other.m+"). Zoomez pour placer les repères plus précisément.";
+    elRes.className="card warn";
+  }
+  markGrid(m.k);
+}
+
+var grid=document.getElementById("grid");
+TABLE.forEach(function(r){
+  var d=document.createElement("div");d.className="cell";d.dataset.m=r[0];
+  d.innerHTML="<span>M"+r[0]+"</span><b>"+keyTxt(r[1])+"</b>";
+  grid.appendChild(d);
+});
+function markGrid(k){
+  Array.prototype.forEach.call(grid.children,function(c){c.classList.toggle("hit",!!k&&Number(c.dataset.m)===k.m);});
+}
+
+function loadFile(f){
+  if(!f)return;
+  var url=URL.createObjectURL(f),im=new Image();
+  im.onload=function(){
+    stopCam();
+    var max=2200,sc=Math.min(1,max/Math.max(im.naturalWidth,im.naturalHeight));
+    var c=document.createElement("canvas");
+    c.width=Math.round(im.naturalWidth*sc);c.height=Math.round(im.naturalHeight*sc);
+    c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+    URL.revokeObjectURL(url);
+    setImage(c,c.width,c.height,false);
+    cardQuad=null;autoMm=0;hist=[];schedule(50);
+    stage.scrollIntoView({block:"start",behavior:"smooth"});
+  };
+  im.onerror=function(){
+    URL.revokeObjectURL(url);
+    elAdv.textContent="Cette image ne s'ouvre pas. Reprenez la photo ou choisissez un fichier JPG ou PNG.";
+    elRes.className="card warn";
+  };
+  im.src=url;
+}
+// ---------- Détection automatique (OpenCV) : carte + tête hexagonale ----------
+var auto=true,cvReady=false,cardQuad=null,autoMm=0,hist=[],detTimer=0;
+var elAuto=document.getElementById("autoState"),bAuto=document.getElementById("autoBtn");
+var work=document.createElement("canvas"),wctx=work.getContext("2d",{willReadFrequently:true});
+function setAuto(v){
+  auto=v;bAuto.classList.toggle("on",v);bAuto.setAttribute("aria-pressed",v);
+  bAuto.textContent=v?"Auto activé":"Auto en pause";
+  if(!v){cardQuad=null;autoMm=0;hist=[];elAuto.textContent="Détection automatique en pause : réglage à la main.";}
+  else{elAuto.textContent=cvReady?"Détection automatique : recherche…":"Détection automatique : chargement…";if(mode!=="hex")setMode("hex");schedule(50);}
+  refresh();
+}
+bAuto.addEventListener("click",function(){setAuto(!auto)});
+function schedule(ms){clearTimeout(detTimer);detTimer=setTimeout(runDetect,ms);}
+function median(a){var b=a.slice().sort(function(x,y){return x-y});return b[b.length>>1];}
+function detect(){
+  // renvoie {card:{quad,a,b}, hex:{x,y,ang,s}} en coordonnées image, ou des champs nuls
+  var cv=window.cv; // bibliothèque OpenCV (et non le canevas de la page)
+  var maxSide=720,k=Math.min(1,maxSide/Math.max(iw,ih));
+  work.width=Math.round(iw*k);work.height=Math.round(ih*k);
+  wctx.drawImage(img,0,0,work.width,work.height);
+  var src=cv.matFromImageData(wctx.getImageData(0,0,work.width,work.height));
+  var gray=new cv.Mat(),edges=new cv.Mat(),cont=new cv.MatVector(),hier=new cv.Mat();
+  var ker=cv.Mat.ones(3,3,cv.CV_8U);
+  var out={card:null,hex:null};
+  try{
+    cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);
+    cv.GaussianBlur(gray,gray,new cv.Size(5,5),0);
+    cv.Canny(gray,edges,40,120);
+    cv.morphologyEx(edges,edges,cv.MORPH_CLOSE,ker); // ferme les petits trous sans grossir le contour
+    cv.findContours(edges,cont,hier,cv.RETR_LIST,cv.CHAIN_APPROX_SIMPLE);
+    var frameA=work.width*work.height,bestCard=0,bestHex=0,i,j;
+    var hexes=[];
+    for(i=0;i<cont.size();i++){
+      var c=cont.get(i),area=cv.contourArea(c);
+      if(area<frameA*0.002||area>frameA*0.85){c.delete();continue;}
+      var peri=cv.arcLength(c,true),ap=new cv.Mat();
+      cv.approxPolyDP(c,ap,0.022*peri,true);
+      var n=ap.rows;
+      if((n===4||n===6)&&cv.isContourConvex(ap)){
+        var P=[];for(j=0;j<n;j++)P.push({x:ap.data32S[2*j]/k,y:ap.data32S[2*j+1]/k});
+        var sides=[];for(j=0;j<n;j++){var q=P[(j+1)%n];sides.push(Math.hypot(P[j].x-q.x,P[j].y-q.y));}
+        var A=area/(k*k);
+        if(n===4){
+          var l1=(sides[0]+sides[2])/2,l2=(sides[1]+sides[3])/2,L=Math.max(l1,l2),S=Math.min(l1,l2),r=L/S;
+          var par=Math.abs(sides[0]-sides[2])/L<0.12&&Math.abs(sides[1]-sides[3])/L<0.12;
+          if(par&&r>1.42&&r<1.76&&A>bestCard){
+            bestCard=A;
+            var first=l1>=l2; // côtés 0 et 2 longs ?
+            var m=function(u,v){return {x:(u.x+v.x)/2,y:(u.y+v.y)/2}};
+            var e1=first?m(P[1],P[2]):m(P[0],P[1]),e2=first?m(P[3],P[0]):m(P[2],P[3]);
+            out.card={quad:P,a:e1,b:e2,L:L};
+          }
+        }else{
+          var mn=Math.min.apply(null,sides),mx=Math.max.apply(null,sides);
+          if(mn/mx>0.62){
+            var cx=0,cy=0;P.forEach(function(q){cx+=q.x/6;cy+=q.y/6});
+            // régularité : distance des sommets au centre
+            var rs=P.map(function(q){return Math.hypot(q.x-cx,q.y-cy)}),rmn=Math.min.apply(null,rs),rmx=Math.max.apply(null,rs);
+            if(rmn/rmx>0.78) hexes.push({x:cx,y:cy,ang:Math.atan2(P[0].y-cy,P[0].x-cx),s:Math.sqrt(2*A/Math.sqrt(3)),A:A,reg:(mn/mx)*(rmn/rmx)});
+          }
+        }
+      }
+      ap.delete();c.delete();
+    }
+    // tête : l'hexagone le plus régulier, hors de la carte ; à régularité proche, le plus grand
+    var inside=function(h){
+      if(!out.card)return false;var q=out.card.quad,x=h.x,y=h.y,ins=false,a,b2;
+      for(a=0,b2=3;a<4;b2=a++){if(((q[a].y>y)!==(q[b2].y>y))&&(x<(q[b2].x-q[a].x)*(y-q[a].y)/(q[b2].y-q[a].y)+q[a].x))ins=!ins;}
+      return ins;
+    };
+    hexes=hexes.filter(function(h){return !inside(h)});
+    hexes.sort(function(u,v){return (v.reg+0.15*Math.sqrt(v.A/frameA*k*k))-(u.reg+0.15*Math.sqrt(u.A/frameA*k*k))});
+    if(hexes.length){
+      var h0=hexes[0];
+      // contours intérieur et extérieur du même bord : on fait la moyenne
+      var same=hexes.filter(function(h){return Math.hypot(h.x-h0.x,h.y-h0.y)<h0.s*0.12&&Math.abs(h.s-h0.s)/h0.s<0.12});
+      var sm=0;same.forEach(function(h){sm+=h.s/same.length});
+      out.hex={x:h0.x,y:h0.y,ang:h0.ang,s:sm};
+    }
+  }finally{src.delete();gray.delete();edges.delete();cont.delete();hier.delete();ker.delete();}
+  return out;
+}
+function runDetect(){
+  if(!auto||!cvReady||!img||!iw)return;
+  var r=null;
+  try{r=detect();}catch(e){elAuto.textContent="Détection automatique indisponible sur cet appareil : réglez à la main.";return;}
+  if(drag>=0){if(isLive)schedule(300);return;}
+  if(r.card&&r.hex){
+    cardQuad=r.card.quad;
+    pts[0].x=r.card.a.x;pts[0].y=r.card.a.y;pts[1].x=r.card.b.x;pts[1].y=r.card.b.y;
+    if(refsel.value!=="85.6"){refsel.value="85.6";refwrap.hidden=true;}
+    var mm=r.hex.s/(r.card.L/85.6);
+    hist.push(mm);if(hist.length>7)hist.shift();
+    autoMm=isLive?median(hist):mm;
+    hex.x=r.hex.x;hex.y=r.hex.y;hex.a=r.hex.ang;
+    hex.ki=Math.max(0,KEYS.indexOf(matchKey(autoMm).k));
+    elAuto.textContent="Carte et tête de boulon détectées.";
+  }else{
+    autoMm=0;hist=[];cardQuad=r.card?r.card.quad:null;
+    elAuto.textContent=r.card?"Carte trouvée, tête de boulon non trouvée : rapprochez-vous ou éclairez la tête."
+      :r.hex?"Tête trouvée, carte non trouvée : mettez la carte entière dans l'image, à côté de la tête."
+      :"Recherche de la carte et de la tête de boulon…";
+    if(r.hex){hex.x=r.hex.x;hex.y=r.hex.y;hex.a=r.hex.ang;}
+  }
+  refresh();
+  if(isLive)schedule(280);
+}
+(function loadCv(){
+  var sc=document.createElement("script");sc.async=true;sc.src="vendor/opencv.js";
+  sc.onload=function(){
+    var done=function(m){if(m&&m.Mat)window.cv=m;cvReady=true;if(auto){elAuto.textContent="Détection automatique : recherche…";schedule(30);}};
+    try{
+      if(window.cv&&typeof window.cv.then==="function")window.cv.then(done);
+      else if(window.cv&&window.cv.Mat)done(window.cv);
+      else if(window.cv)window.cv.onRuntimeInitialized=function(){done(window.cv)};
+    }catch(e){elAuto.textContent="Détection automatique indisponible : réglez à la main.";}
+  };
+  sc.onerror=function(){elAuto.textContent="Détection automatique non chargée (connexion). Réglage à la main possible.";};
+  document.head.appendChild(sc);
+})();
+
+var video=document.createElement("video");
+video.setAttribute("playsinline","");video.muted=true;
+var stream=null,isLive=false,raf=0;
+var bLive=document.getElementById("live"),bFreeze=document.getElementById("freeze");
+function loop(){if(!isLive)return;draw();raf=requestAnimationFrame(loop);}
+function camError(e){
+  var n=e&&e.name;
+  elAdv.textContent=(n==="NotAllowedError"||n==="SecurityError")
+    ?"La caméra est refusée. Autorisez la caméra pour cette appli dans le navigateur, ou touchez « Choisir une photo »."
+    :(n==="NotFoundError"||n==="OverconstrainedError")
+    ?"Aucune caméra trouvée sur cet appareil. Touchez « Choisir une photo »."
+    :"La caméra ne démarre pas. Fermez les autres applis qui l'utilisent, ou touchez « Choisir une photo ».";
+  elRes.className="card warn";
+}
+function stopCam(){
+  isLive=false;cancelAnimationFrame(raf);
+  if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null;}
+  bFreeze.hidden=true;bLive.hidden=false;bLive.textContent="Démarrer la caméra";
+}
+function startCam(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){camError({name:"NotFoundError"});return;}
+  bLive.disabled=true;
+  navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}}})
+  .then(function(st){
+    stream=st;video.srcObject=st;
+    return video.play();
+  }).then(function(){
+    return new Promise(function(ok){
+      if(video.videoWidth)ok();else video.addEventListener("loadedmetadata",function(){ok()},{once:true});
+    });
+  }).then(function(){
+    bLive.disabled=false;bLive.hidden=true;
+    bFreeze.hidden=false;bFreeze.textContent="Figer l'image";
+    setImage(video,video.videoWidth,video.videoHeight,false);
+    badge.textContent="Caméra en direct";
+    isLive=true;loop();hist=[];schedule(100);
+    stage.scrollIntoView({block:"start",behavior:"smooth"});
+  }).catch(function(e){bLive.disabled=false;stopCam();camError(e);});
+}
+bLive.addEventListener("click",startCam);
+bFreeze.addEventListener("click",function(){
+  if(!stream)return;
+  if(isLive){
+    var c=document.createElement("canvas");c.width=video.videoWidth;c.height=video.videoHeight;
+    c.getContext("2d").drawImage(video,0,0);
+    img=c;isLive=false;cancelAnimationFrame(raf);
+    bFreeze.textContent="Reprendre le direct";badge.textContent="Image figée";draw();
+  }else{
+    img=video;isLive=true;bFreeze.textContent="Figer l'image";badge.textContent="Caméra en direct";loop();schedule(100);
+  }
+});
+window.addEventListener("pagehide",stopCam);
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden&&isLive){bFreeze.click();}
+});
+["gal"].forEach(function(id){
+  var el=document.getElementById(id);
+  el.addEventListener("change",function(){loadFile(el.files&&el.files[0]);el.value="";});
+});
+
+window.addEventListener("resize",function(){if(img){var os=view.s;resize();if(!os)fit();}});
+var d=demoImage();setImage(d,d.width,d.height,true);
+})();
+</script>
+</body>
+</html>

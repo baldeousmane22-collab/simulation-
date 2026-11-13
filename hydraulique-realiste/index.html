@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Hydraulique réaliste 3D</title>
+  <meta name="description" content="Simulation hydraulique réaliste en 3D : centrale, pompe à engrenages, limiteur, distributeur 4/3, réducteur de débit, vérin chargé. Physique réelle, courbes, pannes et calculs.">
+  <meta name="theme-color" content="#11161c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Hydraulique réaliste">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="appli">
+  <section id="zone3d" aria-label="Banc hydraulique en 3D">
+    <canvas id="canvas3d" aria-label="Vue 3D du banc hydraulique"></canvas>
+    <div id="etiquettes"></div>
+
+    <div class="barre-haut">
+      <h1>Hydraulique réaliste</h1>
+      <button type="button" class="btn-rond" id="b-son" aria-pressed="false" title="Sons">🔇</button>
+      <button type="button" class="btn-rond" id="b-plein" title="Plein écran">⛶</button>
+    </div>
+
+    <div class="hud" aria-live="polite">
+      <div class="hud-p"><small>Pression pompe</small><b id="h-p">0</b><small>bar</small></div>
+      <div class="hud-p"><small>Vitesse tige</small><b id="h-v">0</b><small>mm/s</small></div>
+      <div class="hud-p"><small>Huile</small><b id="h-t">32</b><small>°C</small></div>
+      <div id="h-alerte" class="hud-alerte" hidden></div>
+    </div>
+
+    <div id="explication" class="explication" hidden aria-live="off">
+      <div class="expl-titre"><b>Fonctionnement en coupe</b><button type="button" id="b-expl" class="btn-rond petit" aria-label="Réduire">–</button></div>
+      <ul id="expl-liste"></ul>
+    </div>
+    <div class="vues" role="group" aria-label="Vues">
+      <button type="button" data-vue="ensemble">Ensemble</button>
+      <button type="button" data-vue="centrale">Centrale</button>
+      <button type="button" data-vue="distributeur">Distributeur</button>
+      <button type="button" data-vue="verin">Vérin</button>
+    </div>
+    <div class="legende" id="legende" hidden>
+      <span>0</span><i></i><span>160 bar</span>
+    </div>
+    <div id="chargement" class="chargement"><div class="roue"></div>Chargement de la 3D…</div>
+  </section>
+
+  <aside id="panneau" class="panneau">
+    <div class="barre-rapide">
+      <button type="button" id="b-moteur" class="btn-moteur" aria-pressed="false"><i class="voyant"></i><span>Moteur<small>ARRÊT</small></span></button>
+      <button type="button" id="b-monter" class="btn-cmd" title="Électroaimant Y1 (flèche ↑)">▲<span>Monter</span></button>
+      <button type="button" id="b-descendre" class="btn-cmd" title="Électroaimant Y2 (flèche ↓)">▼<span>Descendre</span></button>
+      <button type="button" id="b-replier" class="btn-rond petit" aria-label="Replier le panneau">▾</button>
+    </div>
+
+    <nav class="onglets" role="tablist">
+      <button type="button" role="tab" data-onglet="commandes" class="actif">Commandes</button>
+      <button type="button" role="tab" data-onglet="courbes">Courbes</button>
+      <button type="button" role="tab" data-onglet="pannes">Pannes</button>
+      <button type="button" role="tab" data-onglet="calculs">Calculs</button>
+    </nav>
+
+    <div class="contenu">
+      <div class="onglet actif" data-contenu="commandes">
+        <p class="aide">Démarrez le moteur, puis <b>maintenez</b> « Monter » ou « Descendre » (ou les flèches ↑ ↓ du clavier). Touchez un composant de la 3D pour ouvrir sa fiche.</p>
+        <div class="bascules">
+          <label><input type="checkbox" id="c-coupe"> Vue en coupe</label>
+          <label><input type="checkbox" id="c-huile"> Voir l'huile</label>
+          <label><input type="checkbox" id="c-etiq" checked> Étiquettes</label>
+          <label><input type="checkbox" id="c-auto"> Cycle auto</label>
+        </div>
+        <label class="curseur"><span>Tarage du limiteur <b id="v-tarage">100 bar</b></span>
+          <input type="range" id="r-tarage" min="20" max="160" step="5" value="100"></label>
+        <label class="curseur"><span>Charge sur le plateau <b id="v-charge">500 kg</b></span>
+          <input type="range" id="r-charge" min="0" max="1500" step="100" value="500"></label>
+        <label class="curseur"><span>Réducteur de débit (vitesse de descente) <b id="v-red">40 %</b></span>
+          <input type="range" id="r-red" min="5" max="100" step="5" value="40"></label>
+        <label class="curseur"><span>Ouverture du tiroir (commande proportionnelle) <b id="v-ouv">100 %</b></span>
+          <input type="range" id="r-ouv" min="20" max="100" step="5" value="100"></label>
+        <label class="choix-centre"><span>Centre du distributeur</span>
+          <select id="s-centre">
+            <option value="ferme">Fermé (tous orifices bloqués)</option>
+            <option value="tandem">Tandem (P → T, pompe déchargée)</option>
+          </select></label>
+        <div class="mesures" id="mesures"></div>
+        <div class="ligne-boutons">
+          <button type="button" id="b-reinit" class="btn-sec">↺ Réinitialiser</button>
+          <button type="button" id="b-refroidir" class="btn-sec">❄ Huile à 32 °C</button>
+        </div>
+      </div>
+
+      <div class="onglet" data-contenu="courbes">
+        <canvas id="oscillo" class="oscillo" aria-label="Courbes de pression et de course"></canvas>
+        <div class="leg-oscillo">
+          <span style="--c:#ef4444">Pression pompe P</span><span style="--c:#f59e0b">Chambre A</span>
+          <span style="--c:#38bdf8">Chambre B</span><span style="--c:#22c55e">Course (0–500 mm)</span>
+        </div>
+        <div class="ligne-boutons"><button type="button" id="b-pause-osc" class="btn-sec">⏸ Figer les courbes</button></div>
+        <p class="aide">Enregistrement des 15 dernières secondes. Observez le pic de pression quand le vérin arrive en butée, l'ouverture du limiteur, et le retard du tiroir à la commutation.</p>
+      </div>
+
+      <div class="onglet" data-contenu="pannes">
+        <p class="aide">Activez une panne et observez les manomètres, la vitesse, la température, le bruit, le voyant de niveau…</p>
+        <div id="liste-pannes" class="liste-pannes"></div>
+        <div class="carte">
+          <h3>🔍 Panne mystère</h3>
+          <p class="aide">Une panne est choisie au hasard. Faites fonctionner le banc, mesurez, puis donnez votre diagnostic.</p>
+          <button type="button" id="b-mystere" class="btn-prim">Lancer une panne mystère</button>
+          <div id="mystere-choix" class="choix" hidden></div>
+          <div id="mystere-res" class="resultat" hidden></div>
+        </div>
+      </div>
+
+      <div class="onglet" data-contenu="calculs">
+        <div id="calculs" class="calculs"></div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<div id="fiche" class="fiche" hidden role="dialog" aria-modal="true" aria-labelledby="fiche-titre">
+  <div class="fiche-boite">
+    <button type="button" class="btn-rond fermer" id="fiche-fermer" aria-label="Fermer">✕</button>
+    <h2 id="fiche-titre"></h2>
+    <div id="fiche-texte"></div>
+  </div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

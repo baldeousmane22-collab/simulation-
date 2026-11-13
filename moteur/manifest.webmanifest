@@ -1,0 +1,24 @@
+{
+  "name": "Moteur asynchrone 3D",
+  "short_name": "Moteur 3D",
+  "description": "Moteur asynchrone triphasé et variateur de fréquence en 3D : vitesse, glissement, couple, intensité, relais thermique, pannes et quiz.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
