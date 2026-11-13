@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#1f2a33">
+<title>Groupe hydraulique HPU — Simulation 3D</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#cfd3d6;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#1d2328}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#top{position:fixed;left:0;right:0;top:0;padding:6px 8px 7px;background:linear-gradient(#1f2a33ee,#1f2a33cc);color:#eef2f4;z-index:5}
+#top h1{margin:0;font-size:14px;font-weight:700;letter-spacing:.2px}
+#top .sub{font-size:10px;opacity:.7}
+#mode{margin-top:5px;font-size:12px;line-height:1.3;background:#0e151b;border-left:4px solid #d08a2a;padding:5px 8px;border-radius:4px}
+#hudg{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-top:5px}
+#hudg div{background:#0e151bcc;border-radius:5px;padding:2px 5px;font-size:9.5px;white-space:nowrap;overflow:hidden;line-height:1.2;color:#9fb0bb}
+#hudg b{display:block;font-size:12.5px;color:#fff;font-variant-numeric:tabular-nums}
+#hudg b.bad{color:#ff8a7a}
+#alarms{position:fixed;left:8px;right:8px;top:var(--th,150px);z-index:6;display:none;background:#5a1410e8;color:#fff;font-size:12.5px;padding:6px 9px;border-radius:6px}
+#toast{position:fixed;left:50%;transform:translateX(-50%);top:46%;z-index:9;background:#111c;color:#fff;padding:9px 14px;border-radius:8px;font-size:13.5px;max-width:86%;text-align:center;opacity:0;transition:opacity .4s;pointer-events:none}
+#tools{position:fixed;right:8px;top:var(--th,156px);z-index:5;display:flex;flex-direction:column;gap:6px}
+#tools button{width:44px;height:44px;border-radius:50%;border:none;background:#1f2a33dd;color:#fff;font-size:18px;box-shadow:0 2px 6px #0004}
+#legend{position:fixed;left:6px;top:var(--th,156px);z-index:4;background:#ffffffc8;border-radius:6px;padding:3px 6px;font-size:9.5px;line-height:1.45}
+#legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+#info{position:fixed;left:8px;right:8px;bottom:calc(38vh + 8px);z-index:7;display:none;background:#fffffff2;border-radius:10px;padding:10px 12px;box-shadow:0 4px 16px #0003;font-size:13.5px}
+body.collapsed #info{bottom:70px}
+#info h3{margin:0 30px 4px 0;font-size:15px;color:#7a4e00}
+#infoX{position:absolute;right:6px;top:4px;border:none;background:none;font-size:22px;color:#555}
+#sheet{position:fixed;left:0;right:0;bottom:0;height:38vh;z-index:6;background:#f3f4f2;border-radius:14px 14px 0 0;box-shadow:0 -4px 16px #0003;display:flex;flex-direction:column;transition:height .25s}
+body.collapsed #sheet{height:62px}
+#sheetToggle{border:none;background:none;height:16px;padding:0;flex:none}
+#sheetToggle span{display:block;width:44px;height:5px;border-radius:3px;background:#9aa;margin:6px auto 4px}
+#tabs{display:flex;overflow-x:auto;gap:4px;padding:0 6px 6px;flex:none;scrollbar-width:none}
+.tab{flex:none;border:none;background:#dde1e3;padding:8px 11px;border-radius:16px;font-size:13px;font-weight:600;color:#33414b}
+.tab.on{background:#1f2a33;color:#fff}
+#panes{overflow-y:auto;padding:4px 10px 18px;flex:1;-webkit-overflow-scrolling:touch}
+.pane{display:none;font-size:13.5px;line-height:1.45}
+.row{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.btn{flex:1 1 45%;min-height:46px;border:none;border-radius:9px;background:#2d3c47;color:#fff;font-size:14.5px;font-weight:600;padding:8px}
+.btn.on{background:#3d6e45}
+.btn.green{background:#3d6e45}.btn.red{background:#8a2c22}.btn.amber{background:#8a5a12}.btn.grey{background:#5d676e}
+.btn.green.on{background:#8a2c22}
+label.sl{display:block;margin-top:6px;font-weight:600}
+input[type=range]{width:100%;height:34px}
+.item{display:block;width:100%;text-align:left;margin:5px 0;border:1px solid #cdd3d6;background:#fff;border-radius:8px;padding:10px;font-size:14px;color:#1d2328}
+.item.good{background:#d8efd9;border-color:#5a9a5e}.item.badb{background:#f6d6d2;border-color:#b0483c}
+.fault .fd{display:none;background:#fff;border-radius:8px;padding:8px 10px;margin:-2px 0 8px;border-left:4px solid #8a2c22;font-size:13px}
+.fault.on .fd{display:block}.fault.on .item{background:#f6e2c4;border-color:#b07a20}
+#faultNow{font-weight:700;color:#8a2c22}
+.qe{font-size:12.5px;color:#2d5a33;margin-bottom:10px}
+h4{margin:10px 0 4px;color:#1f2a33}
+table.pl{width:100%;border-collapse:collapse;font-size:13px}
+table.pl td{border-bottom:1px solid #dde;padding:5px 4px;vertical-align:top}
+table.pl td:first-child{font-family:monospace;font-weight:700;color:#6a3a2a;white-space:nowrap}
+.note{background:#fff6e0;border-left:4px solid #d0a030;padding:6px 9px;border-radius:5px;font-size:12.5px;margin:8px 0}
+#schema{width:100%;max-width:420px;display:block;margin:0 auto;background:#fff;border-radius:8px}
+#schema text{font-family:system-ui,sans-serif}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="top">
+  <h1>Groupe hydraulique (HPU) Advanced Actuators</h1>
+  <div class="sub">HLD4 · 260 + 58 L/min · 30 kW / 400 V variateur · 24 V DC · IP65</div>
+  <div id="mode"><span id="hMode">—</span></div>
+  <div id="hudg">
+    <div>Fréquence<b id="hHz">0 Hz</b></div>
+    <div>Moteur<b id="hRpm">0</b></div>
+    <div>Débit L/min<b id="hQ">0</b></div>
+    <div>Pression<b id="hP">0</b></div>
+    <div>Serrage<b id="hF">0</b></div>
+    <div>Huile<b id="hT">0</b></div>
+    <div>Puissance<b id="hW">0</b></div>
+    <div>Niveau<b id="hL">0</b></div>
+  </div>
+</div>
+<div id="alarms"></div>
+<div id="legend">
+  <div><i style="background:#8aa6b8"></i>Aspiration</div>
+  <div><i style="background:#d08a2a"></i>Basse pression</div>
+  <div><i style="background:#c23a2a"></i>Haute pression</div>
+  <div><i style="background:#3a74c2"></i>Retour réservoir</div>
+  <div><i style="background:#6d9a6a"></i>Décharge (P1 à vide)</div>
+</div>
+<div id="tools">
+  <button id="bHome" title="Recentrer">⌖</button>
+</div>
+<div id="toast"></div>
+<div id="info"><button id="infoX">×</button><h3 id="infoT"></h3><div id="infoD"></div></div>
+
+<div id="sheet">
+  <button id="sheetToggle" aria-label="Agrandir / réduire"><span></span></button>
+  <div id="tabs">
+    <button class="tab on" data-p="pCmd">Commandes</button>
+    <button class="tab" data-p="pSch">Schéma</button>
+    <button class="tab" data-p="pParts">Pièces</button>
+    <button class="tab" data-p="pFault">Pannes</button>
+    <button class="tab" data-p="pPlate">Plaque</button>
+    <button class="tab" data-p="pCours">Cours</button>
+    <button class="tab" data-p="pQuiz">Quiz</button>
+  </div>
+  <div id="panes">
+    <div class="pane" id="pCmd" style="display:block">
+      <div class="row">
+        <button class="btn green" id="bStart">▶ Démarrer le moteur</button>
+        <button class="btn amber" id="bAuto">⟳ Cycle automatique</button>
+      </div>
+      <div class="row">
+        <button class="btn" id="bClamp">Y1 · Serrer les pinces</button>
+        <button class="btn" id="bUnclamp">Y2 · Desserrer</button>
+      </div>
+      <label class="sl">Variateur de fréquence : <span id="hzVal">50 Hz</span></label>
+      <input type="range" id="hz" min="15" max="50" step="1" value="50">
+      <div class="row">
+        <button class="btn grey" id="bSlow">🐢 Vitesse lente</button>
+        <button class="btn grey on" id="bFlow">Flux d'huile</button>
+      </div>
+      <div class="row">
+        <button class="btn grey" id="bHood">Capot : transparent</button>
+        <button class="btn grey" id="bCut">Coupe : oui</button>
+      </div>
+      <div class="row"><button class="btn red" id="bReset">Réarmer défaut variateur</button></div>
+      <div class="note">Touchez une pièce sur le modèle 3D pour voir son nom et son rôle. 1 doigt : tourner · 2 doigts : zoom (pincer) et déplacer · ⌖ : recentrer.</div>
+    </div>
+
+    <div class="pane" id="pSch">
+      <svg id="schema" viewBox="0 0 360 430" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" fill="#222"/></marker></defs>
+        <g fill="none" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+          <path id="sSuc" d="M130 405 V352 M200 405 V352" stroke="#8a8f94"/>
+          <path id="sP1" d="M130 308 V230 H165" stroke="#8a8f94"/>
+          <path id="sDec" d="M130 270 H82 V405" stroke="#8a8f94"/>
+          <path id="sP2" d="M200 308 V230 H165" stroke="#8a8f94"/>
+          <path id="sP" d="M165 230 V175 H145 V160" stroke="#8a8f94"/>
+          <path id="sRel" d="M200 230 H270 V405" stroke="#8a8f94"/>
+          <path id="sY0" d="M165 205 H290 M305 217 V405" stroke="#8a8f94"/>
+          <path id="sT" d="M185 160 V180 H240 V405" stroke="#8a8f94"/>
+          <path id="sA" d="M145 115 V80 H120 V62" stroke="#8a8f94"/>
+          <path id="sB" d="M185 115 V80 H250 V62" stroke="#8a8f94"/>
+        </g>
+        <!-- réservoir -->
+        <path d="M30 400 V418 H340 V400" fill="none" stroke="#222" stroke-width="2"/>
+        <text x="185" y="414" font-size="11" text-anchor="middle">RÉSERVOIR (bac)</text>
+        <!-- moteur + variateur -->
+        <circle cx="55" cy="330" r="20" fill="#fff" stroke="#222" stroke-width="2"/><text x="55" y="335" font-size="15" text-anchor="middle" font-weight="700">M</text>
+        <circle id="mrot" cx="55" cy="303" r="4" fill="#ddd" stroke="#222"/>
+        <rect x="18" y="360" width="74" height="24" fill="#fff" stroke="#222"/><text x="55" y="376" font-size="10" text-anchor="middle">Variateur Hz</text>
+        <line x1="55" y1="350" x2="55" y2="360" stroke="#222"/>
+        <line x1="75" y1="330" x2="180" y2="330" stroke="#222" stroke-width="2" stroke-dasharray="1 0"/>
+        <!-- pompes -->
+        <circle cx="130" cy="330" r="22" fill="#fff" stroke="#222" stroke-width="2"/><path d="M130 312 l-8 13 h16z" fill="#222"/>
+        <text x="130" y="345" font-size="9" text-anchor="middle">P1</text>
+        <circle cx="200" cy="330" r="18" fill="#fff" stroke="#222" stroke-width="2"/><path d="M200 315 l-7 11 h14z" fill="#222"/>
+        <text x="200" y="343" font-size="9" text-anchor="middle">P2</text>
+        <text x="130" y="368" font-size="9" text-anchor="middle">260 L/min</text><text x="200" y="368" font-size="9" text-anchor="middle">58 L/min</text>
+        <!-- clapets AR -->
+        <g fill="#fff" stroke="#222" stroke-width="1.6"><circle cx="130" cy="248" r="5"/><path d="M122 254 l8 -11 l8 11"/><circle cx="200" cy="248" r="5"/><path d="M192 254 l8 -11 l8 11"/></g>
+        <!-- valve de décharge -->
+        <rect x="70" y="262" width="24" height="30" fill="#fff" stroke="#222" stroke-width="1.6"/><path d="M76 286 l12 -18" stroke="#222" marker-end="url(#ar)"/>
+        <text x="62" y="258" font-size="9">Décharge 50 bar</text>
+        <!-- limiteur -->
+        <rect x="258" y="250" width="24" height="30" fill="#fff" stroke="#222" stroke-width="1.6"/><path d="M264 274 l12 -18" stroke="#222" marker-end="url(#ar)"/>
+        <text x="286" y="268" font-size="9">Limiteur</text><text x="286" y="279" font-size="9">180 bar</text>
+        <!-- filtre HP -->
+        <path d="M200 285 l8 8 l-8 8 l-8 -8z" fill="#fff" stroke="#222" stroke-width="1.6"/>
+        <!-- Y0 -->
+        <rect x="290" y="193" width="30" height="24" fill="#fff" stroke="#222" stroke-width="1.6"/><text x="305" y="209" font-size="9" text-anchor="middle">2/2</text>
+        <rect id="y0t" x="322" y="196" width="12" height="18" fill="#ddd" stroke="#222"/><text x="300" y="190" font-size="9">Y0</text>
+        <!-- distributeur 4/3 -->
+        <g id="spool">
+          <rect x="105" y="120" width="40" height="36" fill="#fff" stroke="#222" stroke-width="1.8"/>
+          <path d="M125 152 V124 M135 124 V152" stroke="#222" marker-end="url(#ar)"/>
+          <rect x="145" y="120" width="40" height="36" fill="#fff" stroke="#222" stroke-width="1.8"/>
+          <path d="M150 128 h10 M155 128 v8 M170 128 h10 M175 128 v8 M150 148 h10 M155 148 v-8 M170 148 h10 M175 148 v-8" stroke="#222" stroke-width="1.5"/>
+          <rect x="185" y="120" width="40" height="36" fill="#fff" stroke="#222" stroke-width="1.8"/>
+          <path d="M191 152 L219 124 M219 152 L191 124" stroke="#222" marker-end="url(#ar)"/>
+        </g>
+        <rect id="y1t" x="88" y="126" width="15" height="24" fill="#ddd" stroke="#222"/><text x="95" y="166" font-size="10" text-anchor="middle">Y1</text>
+        <rect id="y2t" x="227" y="126" width="15" height="24" fill="#ddd" stroke="#222"/><text x="235" y="166" font-size="10" text-anchor="middle">Y2</text>
+        <text x="140" y="172" font-size="9">P</text><text x="190" y="172" font-size="9">T</text>
+        <text x="138" y="112" font-size="9">A</text><text x="190" y="112" font-size="9">B</text>
+        <!-- clapet piloté -->
+        <g fill="#fff" stroke="#222" stroke-width="1.6"><circle cx="145" cy="95" r="5"/><path d="M137 101 l8 -11 l8 11"/></g>
+        <path d="M185 92 H153" stroke="#222" stroke-dasharray="3 3"/>
+        <text x="60" y="98" font-size="9">Clapet piloté</text>
+        <!-- vérin -->
+        <rect x="100" y="22" width="170" height="38" fill="#fff" stroke="#222" stroke-width="2"/>
+        <g id="srod"><rect x="150" y="24" width="8" height="34" fill="#444"/><rect x="158" y="38" width="150" height="8" fill="#888"/></g>
+        <text x="185" y="15" font-size="10" text-anchor="middle">Vérin de pince (double effet)</text>
+        <text x="105" y="72" font-size="9">A serrage</text><text x="235" y="72" font-size="9">B desserrage</text>
+      </svg>
+      <div class="note">Schéma de principe <b>reconstitué</b> d'après la plaque signalétique (le schéma constructeur n'est pas public). Les couleurs s'animent avec la simulation. Pour coller exactement à votre groupe, photographiez le schéma du dossier constructeur.</div>
+    </div>
+
+    <div class="pane" id="pParts"><p>Touchez un nom pour voir la pièce et son rôle :</p><div id="partsList"></div></div>
+
+    <div class="pane" id="pFault">
+      <p>Choisissez une panne, puis lancez le <b>cycle automatique</b> pour voir ses effets. Touchez-la à nouveau pour la retirer.</p>
+      <p id="faultNow">Aucune panne (fonctionnement normal)</p>
+      <div id="faultList"></div>
+    </div>
+
+    <div class="pane" id="pPlate">
+      <h4>Lecture de la plaque signalétique</h4>
+      <table class="pl">
+        <tr><td>Serial No. HLD-000022-2</td><td>Numéro de série (unique) de ce groupe.</td></tr>
+        <tr><td>HPU</td><td><b>Hydraulic Power Unit</b> = groupe (ou centrale) hydraulique.</td></tr>
+        <tr><td>Part No. HLD4-ZZXC-XSXS</td><td>Référence constructeur : à donner pour commander des pièces ou demander le schéma.</td></tr>
+        <tr><td>260 LTR/MIN + 58 LTR/MIN</td><td>Deux débits : pompe P1 de 260 L/min et pompe P2 de 58 L/min (à 50 Hz).</td></tr>
+        <tr><td>30 KW / 400 / 3</td><td>Moteur de 30 kW, 400 V, triphasé.</td></tr>
+        <tr><td>VARIABLE Hz</td><td>Alimenté par un <b>variateur de fréquence</b> : vitesse et débit réglables.</td></tr>
+        <tr><td>24 VDC</td><td>Tension de commande : bobines, capteurs, automate.</td></tr>
+        <tr><td>IP65</td><td>6 : étanche à la poussière · 5 : protégé contre les jets d'eau.</td></tr>
+        <tr><td>Coffret ELDON MAS0352515R5</td><td>Armoire électrique en acier 350 × 250 × 150 mm (H × L × P), IP66, IK10 (résistance aux chocs), certifiée UL/CSA/CE, datée du 12.07.16.</td></tr>
+        <tr><td>M-100035</td><td>Numéro de plaque / marquage constructeur.</td></tr>
+      </table>
+      <div class="note">Fabricant : Advanced Actuators Ltd (Silsden, Royaume-Uni), spécialiste des systèmes de culbuteurs de wagons (bridage, retournement).</div>
+    </div>
+
+    <div class="pane" id="pCours">
+      <h4>1. Rôle du groupe hydraulique</h4>
+      <p>Il transforme l'énergie électrique (moteur 30 kW) en énergie hydraulique (débit × pression) pour faire travailler les vérins des pinces.</p>
+      <h4>2. Pourquoi deux pompes ?</h4>
+      <p><b>Approche rapide</b> : P1 + P2 = 318 L/min à basse pression (~35 bar) → les pinces descendent vite.<br>
+      <b>Serrage</b> : au contact, la pression monte. Vers 50 bar, la <b>valve de décharge</b> renvoie P1 au réservoir. Seule P2 (58 L/min) monte à ~180 bar.<br>
+      Puissance : P(kW) = Q(L/min) × p(bar) / 600. 318 × 180 / 600 = 95 kW (impossible avec 30 kW) ; 58 × 180 / 600 = 17 kW ✔.</p>
+      <h4>3. Le cycle d'un wagon</h4>
+      <p>Veille → Y1 : serrage → maintien (clapet piloté, pompes à vide) → retournement du wagon à 180° → retour → Y2 : desserrage → wagon suivant.</p>
+      <h4>4. Effort de serrage</h4>
+      <p>F = p × S. Vérin Ø125 : S = π × 0,0625² = 0,01227 m². À 180 bar : F = 18 000 000 × 0,01227 ≈ 221 000 N ≈ 22 t.</p>
+      <h4>5. Entretien préventif</h4>
+      <p>• Chaque poste : niveau, température, fuites, bruit, manomètres.<br>• Chaque semaine : indicateurs de colmatage, propreté des grilles, flexibles (frottement, gonflement).<br>• Périodique : cartouches de filtres, analyse d'huile, reniflard, serrage des raccords, accouplement (étoile).<br>• Sécurité : consigner (électricité + pression) avant toute intervention ; faire chuter la pression des vérins.</p>
+      <div class="note">Valeurs de pression indicatives (le réglage réel est donné par le constructeur).</div>
+    </div>
+
+    <div class="pane" id="pQuiz"><p id="qScore">Score : 0 / 0</p><div id="quiz"></div></div>
+  </div>
+</div>
+<script>/*BUNDLE*/</script>
+</body>
+</html>

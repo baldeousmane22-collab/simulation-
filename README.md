@@ -393,3 +393,14 @@ Pied à coulisse (vernier 1/10, 1/20, 1/50) et micromètre 0–25 mm au 0,01 mm,
 On glisse le coulisseau ou on tourne le tambour au doigt, avec une loupe de lecture et le zoom par pincement.
 Modes : **Libre** (lecture expliquée en étapes), **Exercice** (mesure au hasard, correction), **Quiz** noté sur 10,
 **Cours** (nomenclature, principe, lecture, bonnes pratiques). Bouton « Nom » : nom de chaque pièce sur l'image.
+
+# Groupe hydraulique HPU (Advanced Actuators) — simulation 3D
+
+- **Lien web** : https://baldeousmane22-collab.github.io/simulation-/groupe-hydraulique-hpu/
+- **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/groupe-hpu/GroupeHydrauliqueHPU.apk
+- Dossier séparé : `groupe-hydraulique-hpu/` (appli seule) ; sources dans `src/`, projet Android dans `apk/`.
+
+Groupe HLD4 (260 + 58 L/min, 30 kW / 400 V à variateur, 24 V DC, IP65, coffret Eldon) en 3D réaliste :
+moteur, pompe double, bloc foré, électrovannes, manomètres, réservoir, filtres, vérin de pince sur roue de wagon.
+Cycle de bridage (approche rapide, décharge de P1, serrage 180 bar, maintien, desserrage), flux d'huile animé,
+schéma ISO animé (reconstitué d'après la plaque), 7 pannes avec causes et solutions, plaque expliquée, cours et quiz.
