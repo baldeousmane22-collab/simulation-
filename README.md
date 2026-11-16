@@ -414,5 +414,6 @@ schéma ISO animé (reconstitué d'après la plaque), 7 pannes avec causes et so
 Antidévireur (backstop) du tambour de tête d'après sa plaque : alésage 230 mm, 290 000 lb-ft (≈ 393 kN·m), huile Mobil DTE
 Heavy Medium 2 QT (≈ 1,9 L). Vues **normale, éclatée (15 repères), coupe, cames** ; simulation marche avant (roue libre) /
 arrêt bande chargée (recul, coincement des cames, appui du bras sur la butée), couple retenu et effort sur la butée,
-cames usées (dévirage). Onglets **Pièces**, **Plaque** (lecture et conversions), **Cours**, **Pannes** et **Quiz** (10 questions).
+cames usées (dévirage). Onglet **Montage** : montage et démontage pas à pas (11 étapes animées, dans les deux sens).
+Onglets **Pièces**, **Plaque** (lecture et conversions), **Cours**, **Pannes** et **Quiz** (10 questions).
 L'intérieur est reconstitué d'après le principe des antidévireurs à cames : les cotes exactes sont dans le bulletin E08.746.

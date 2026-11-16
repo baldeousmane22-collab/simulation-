@@ -95,3 +95,22 @@ export const QUIZ = [
   { q: 'Le convoyeur neuf ne démarre pas et le moteur force. Cause la plus probable ?', r: ['Antidévireur monté à l\'envers ou moteur en sens inverse', 'Trop d\'huile', 'Bras trop long'], ok: 0, e: 'Toujours vérifier la flèche de sens libre avant montage.' },
   { q: 'Avec C = 240 kN·m et un bras de 1,2 m, l\'effort sur la butée vaut :', r: ['288 kN', '200 kN', '24 kN'], ok: 1, e: 'F = C ÷ L = 240 ÷ 1,2 = 200 kN (environ 20 tonnes).' }
 ];
+
+// Montage / démontage pas à pas. pieces = clés des groupes posés à cette étape.
+export const MONTAGE = {
+  prepM: '<b>Préparation.</b> Convoyeur consigné, bande vidée ou bridée. Pièces propres, sans bavure ni rouille ; huile, joints neufs et clé dynamométrique prêts. Vérifier l\'état des pistes et des cames.',
+  prepD: '<b>Avant de démonter.</b> Consigner le convoyeur, puis <b>vider la bande ou la brider</b> : l\'antidévireur retient peut-être la charge. Vérifier que le bras n\'est plus en appui sur la butée, puis vidanger l\'huile.',
+  etapes: [
+    { t: 'Corps (bague extérieure) et bouchons', m: 'Poser la bague extérieure à plat sur l\'établi, piste propre. Monter le bouchon de vidange et le reniflard.', d: 'Déposer les bouchons. Contrôler la piste extérieure : ni empreinte, ni écaillage. Nettoyer et ranger.' },
+    { t: 'Flasque arrière, roulement et joint', m: 'Monter le roulement et le joint neuf (lèvre vers l\'huile) dans le flasque arrière, puis présenter le flasque contre le corps avec sa pâte à joint.', d: 'Déposer le flasque arrière avec son roulement et son joint. Extraire le roulement à la presse ou à l\'extracteur, jamais au marteau.' },
+    { t: 'Bague intérieure', m: 'Engager la bague intérieure dans le roulement arrière, bien dans l\'axe, sans rayer la piste.', d: 'Sortir la bague intérieure. Contrôler la piste et la rainure de clavette.' },
+    { t: 'Cage et cames', m: 'Glisser la cage garnie de ses cames entre les deux pistes. <b>Vérifier le sens d\'inclinaison des cames</b> : il fixe le sens libre. Huiler légèrement.', d: 'Sortir la cage à cames en la tenant bien droite. Repérer son sens. Contrôler l\'usure des cames et les ressorts.' },
+    { t: 'Roulement avant', m: 'Monter le roulement avant sur la bague intérieure, en poussant sur la bague intérieure du roulement.', d: 'Extraire le roulement avant à l\'extracteur.' },
+    { t: 'Flasque avant et joint', m: 'Poser le flasque avant et son joint neuf. Aligner les trous de vis avec ceux du corps.', d: 'Déposer le flasque avant et son joint. Un joint démonté ne se remonte pas.' },
+    { t: 'Bras de réaction et vis', m: 'Présenter le bras contre le flasque arrière, engager les 12 vis et serrer <b>en croix, au couple</b> du bulletin constructeur. Essayer à la main : libre dans un sens, bloqué dans l\'autre.', d: 'Desserrer les 12 vis en croix, les retirer, puis déposer le bras de réaction.' },
+    { t: 'Clavette sur l\'arbre', m: 'Nettoyer le bout d\'arbre Ø230, le graisser légèrement et poser la clavette dans sa rainure, sans jeu latéral.', d: 'Retirer la clavette. Contrôler qu\'elle n\'est pas matée ; nettoyer et protéger le bout d\'arbre.' },
+    { t: 'Antidévireur sur l\'arbre', m: '<b>Vérifier la flèche de sens libre</b> avant d\'engager. Enfiler l\'appareil sur l\'arbre en poussant sur la bague intérieure seulement, jamais sur le corps ni sur les flasques.', d: 'Élinguer l\'appareil, puis le tirer de l\'arbre à l\'extracteur en prenant appui sur la bague intérieure.' },
+    { t: 'Plaque d\'arrêt', m: 'Monter la plaque d\'arrêt en bout d\'arbre et serrer ses vis : l\'appareil ne peut plus glisser.', d: 'Déposer la plaque d\'arrêt en bout d\'arbre.' },
+    { t: 'Bras dans la butée, huile, essai', m: 'Placer le bras dans sa butée <b>avec du jeu</b> (haut, bas, côtés), sans le brider. Remplir : 2 quarts ≈ 1,9 L de Mobil DTE Heavy Medium, contrôler le niveau. Essai du moteur par brèves impulsions.', d: 'Vidanger l\'huile dans un bac. Vérifier que le bras est libre dans sa butée, non chargé.' }
+  ]
+};

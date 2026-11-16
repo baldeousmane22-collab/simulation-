@@ -48,6 +48,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px
 tr.lig{cursor:pointer}tr.lig.sel td{background:#f0a33022}
 td.n{font-weight:800;color:var(--acc);width:28px}
 p,li{font-size:13.5px;line-height:1.45}ul,ol{padding-left:20px;margin:4px 0}
+.btn:disabled{opacity:.4}#moListe li{color:var(--mut);padding:2px 0}#moListe li.fait{color:var(--txt)}#moListe li.cour{color:var(--acc);font-weight:700}
 .note{font-size:12px;color:var(--mut)}
 .q{background:var(--pan2);border-radius:10px;padding:8px 10px;margin-bottom:10px}.q p{margin:0 0 6px;font-weight:600}
 .q button{display:block;width:100%;text-align:left;margin:4px 0;padding:9px 10px;border-radius:8px;border:1px solid var(--bd);background:var(--pan);color:var(--txt);font-size:13.5px}
@@ -71,7 +72,7 @@ p,li{font-size:13.5px;line-height:1.45}ul,ol{padding-left:20px;margin:4px 0}
  </div>
  <div id="panneau">
   <div id="onglets">
-   <button data-p="pCmd" class="on">Commande</button><button data-p="pPieces">Pièces</button><button data-p="pPlaque">Plaque</button><button data-p="pCours">Cours</button><button data-p="pPannes">Pannes</button><button data-p="pQuiz">Quiz</button>
+   <button data-p="pCmd" class="on">Commande</button><button data-p="pMontage">Montage</button><button data-p="pPieces">Pièces</button><button data-p="pPlaque">Plaque</button><button data-p="pCours">Cours</button><button data-p="pPannes">Pannes</button><button data-p="pQuiz">Quiz</button>
   </div>
   <div class="page on" id="pCmd">
    <h3>Vue</h3>
@@ -96,6 +97,14 @@ p,li{font-size:13.5px;line-height:1.45}ul,ol{padding-left:20px;margin:4px 0}
    <div class="rang"><button class="btn" id="bUsure">⚠ Simuler des cames usées</button></div>
    <div class="msg" id="msg"></div>
    <p class="note">1 doigt : tourner · 2 doigts : zoomer / déplacer · toucher une pièce : son nom et son rôle.</p>
+  </div>
+  <div class="page" id="pMontage">
+   <div class="rang"><button class="btn on" id="bMont">🔧 Montage</button><button class="btn" id="bDemont">🧰 Démontage</button></div>
+   <h3 id="moTitre"></h3>
+   <div class="msg w" id="moTexte"></div>
+   <div class="rang" style="margin-top:8px"><button class="btn" id="moPrec">◀ Précédent</button><button class="btn on" id="moSuiv">Suivant ▶</button><button class="btn" id="moZero" style="flex:0 0 52px;min-width:52px" title="Recommencer">↺</button></div>
+   <ol id="moListe"></ol>
+   <p class="note">Ordre pédagogique. Les couples de serrage, jeux et outillages exacts sont ceux du bulletin constructeur E08.746.</p>
   </div>
   <div class="page" id="pPieces"><table id="tPieces"></table><p class="note">Touchez une ligne pour repérer la pièce en 3D. L'intérieur est reconstitué d'après le principe des antidévireurs à cames ; pour les cotes exactes, voir le bulletin constructeur E08.746.</p></div>
   <div class="page" id="pPlaque"></div>

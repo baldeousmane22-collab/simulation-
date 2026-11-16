@@ -1,7 +1,7 @@
 // Antidévireur RINGSPANN FRHD 1200 — vue éclatée et simulation 3D
 // Unité de la scène : 1 = 100 mm. Axe de l'arbre = Z. Sens libre (marche avant) = rotation +Z.
 import * as T from '../../hydraulique/vendor/three.min.js';
-import { PIECES, PLAQUE_HTML, COURS_HTML, PANNES_HTML, QUIZ } from './donnees.js';
+import { PIECES, PLAQUE_HTML, COURS_HTML, PANNES_HTML, QUIZ, MONTAGE } from './donnees.js';
 
 const $ = s => document.querySelector(s);
 const canvas = $('#c3d'), vue = $('#vue');
@@ -100,7 +100,8 @@ scene.add(stator, rotor, contexte);
 const groupes = [], cliquables = [];
 function piece(id, parent, ez, ancre, o = {}) {
   const g = new T.Group(); g.userData.id = id; parent.add(g);
-  groupes.push({ g, id, ez, ey: o.ey || 0, ancre: new T.Vector3(...ancre), avant: !!o.avant, rep: o.rep !== false });
+  groupes.push({ g, id, ez, ey: o.ey || 0, ancre: new T.Vector3(...ancre), avant: !!o.avant, rep: o.rep !== false, fz: 0, fy: 0, tz: 0, ty: 0,
+    cle: id + (ez > 0 && (id === 'roulement' || id === 'flasque' || id === 'joint') ? 'Av' : '') });
   return g;
 }
 function maille(g, geo, mat, x = 0, y = 0, z = 0) {
@@ -245,6 +246,7 @@ contexte.add(flLibre, flBloq, flReac);
 const cam = { az: 0.75, el: 0.3, d: 34, c: new T.Vector3(-3.5, -0.8, -1) }, cible = { az: 0.75, el: 0.3, d: 34, c: new T.Vector3(-3.5, -0.8, -1) };
 const VUES = {
   normale: { az: 0.75, el: 0.3, d: 34, c: [-3.5, -0.8, -1], large: 1 },
+  montage: { az: 1.3, el: 0.2, d: 31, c: [0, -0.3, 0.5], large: 1 },
   eclatee: { az: 1.3, el: 0.2, d: 31, c: [0, -0.3, 0.5], large: 1 },
   coupe: { az: 1.0, el: 0.22, d: 17, c: [0, 0, 0] },
   cames: { az: 0.1, el: 0.04, d: 6.2, c: [1.75, 1.75, 0.5] }
@@ -310,7 +312,7 @@ function toucher(x, y) {
   choisir(null);
 }
 function choisir(id) {
-  if (choisie && matsPiece[choisie]) matsPiece[choisie].forEach(m => m.emissive.setHex(0));
+  if (choisie && matsPiece[choisie]) matsPiece[choisie].forEach(m => m.emissive.setHex(surl.includes(choisie) ? 0x1f5a2c : 0));
   choisie = id;
   document.querySelectorAll('#tPieces tr.lig').forEach(t => t.classList.toggle('sel', t.dataset.id === id));
   const f = $('#fiche');
@@ -338,20 +340,20 @@ function majReperes() {
     if (!G.el) return;
     let vis = repOn && visibleVrai(G.g);
     if (vis) {
-      vTmp.copy(etat.ecl > 0.6 ? G.ancreE : G.ancre); G.g.localToWorld(vTmp); vTmp.project(camera);
+      vTmp.copy((etat.vue === 'montage' ? G.fz > 0.5 || G.fy > 0.5 : etat.ecl > 0.6) ? G.ancreE : G.ancre); G.g.localToWorld(vTmp); vTmp.project(camera);
       vis = vTmp.z < 1 && Math.abs(vTmp.x) < 1 && Math.abs(vTmp.y) < 1;
       if (vis) { G.el.style.left = ((vTmp.x + 1) / 2 * w) + 'px'; G.el.style.top = ((1 - vTmp.y) / 2 * h) + 'px'; }
     }
     G.el.style.display = vis ? 'flex' : 'none';
     G.el.classList.toggle('sel', G.id === choisie);
-    const tx = etat.ecl > 0.6 && w > 600 ? G.p.n + ' ' + G.p.court : '' + G.p.n; if (G.el.textContent !== tx) G.el.textContent = tx;
+    const tx = etat.ecl > 0.6 && etat.vue !== 'montage' && w > 600 ? G.p.n + ' ' + G.p.court : '' + G.p.n; if (G.el.textContent !== tx) G.el.textContent = tx;
   });
 }
 
 // ---------- état de la simulation ----------
 const C_NOM = 393, N_NOM = 60;   // kN·m (290 000 lb-ft) ; tr/min (vitesse d'exemple du tambour)
 const TH_JEU = 0.15 / 12.2;      // jeu du bras dans la butée → petit angle du stator
-const etat = { vue: 'normale', ecl: 0, eclCible: 0, marche: true, lent: false, pause: false, usure: false, C: 200, w: 0, phi: 0, k: 0, recul: 0, th: TH_JEU, bloque: false, devire: false };
+const etat = { vue: 'normale', ecl: 0, eclCible: 0, marche: true, lent: false, pause: false, usure: false, pas: 0, demont: false, C: 200, w: 0, phi: 0, k: 0, recul: 0, th: TH_JEU, bloque: false, devire: false };
 function majVue(nom) {
   etat.vue = nom; etat.eclCible = nom === 'eclatee' ? $('#sEcl').value / 100 : 0;
   document.querySelectorAll('#vues .btn').forEach(b => b.classList.toggle('on', b.dataset.v === nom));
@@ -361,7 +363,8 @@ function majVue(nom) {
   matHuile.clippingPlanes = coupe ? [huilePlan, coupePlan] : [huilePlan]; matHuile.needsUpdate = true;
   groupes.forEach(G => { if (G.avant) G.g.visible = nom !== 'cames'; });
   cageAvant.forEach(m => { m.visible = nom !== 'cames'; });
-  if (nom === 'eclatee' && !repOn) basculerRep();
+  if ((nom === 'eclatee' || nom === 'montage') && !repOn) basculerRep();
+  if (nom !== 'montage') surligner([]);
   cadrer(nom);
 }
 function basculerRep() { repOn = !repOn; $('#bRep').classList.toggle('on', repOn); }
@@ -396,12 +399,12 @@ function simuler(dt) {
 
 function appliquer() {
   const e = etat.ecl;
-  groupes.forEach(G => { G.g.position.z = G.ez * 0.75 * e; G.g.position.y = G.ey * e; });
+  groupes.forEach(G => { G.g.position.z = G.ez * 0.75 * G.fz; G.g.position.y = G.ey * G.fy; });
   rotor.rotation.z = etat.phi; tourne.rotation.z = etat.phi; stator.rotation.z = e > 0.02 ? 0 : etat.th;
   billes.forEach(b => { b.rotation.z = etat.phi * 0.42; });
   const d = D_LIBRE + (D_BLOQ - D_LIBRE) * etat.k;
   cames.forEach(m => { m.rotation.z = m.userData.a - d; });
-  const assemble = e < 0.02;
+  const assemble = e < 0.02 && (etat.vue !== 'montage' || etat.pas === NE);
   decor.visible = gButee.visible = assemble; gHuile.visible = assemble;
   const fl = assemble && etat.vue !== 'cames' && etat.vue !== 'coupe';
   flLibre.visible = fl && etat.w > 0.05; flBloq.visible = fl && !etat.marche && etat.w <= 0 && etat.C > 0;
@@ -429,6 +432,52 @@ function afficher() {
   el.className = cl; el.textContent = txt; msg.className = 'msg ' + mc; msg.innerHTML = m;
 }
 
+// ---------- montage / démontage pas à pas ----------
+const NE = MONTAGE.etapes.length;
+const ETAPE_DE = { bagueExt: 0, bouchons: 0, flasque: 1, roulement: 1, joint: 1, bagueInt: 2, cames: 3, cage: 3, roulementAv: 4, flasqueAv: 5, jointAv: 5, bras: 6, vis: 6, clavette: 8, arbre: 8, plaque: 9 };
+let surl = [];
+function surligner(ids) {
+  surl.forEach(id => { if (id !== choisie) matsPiece[id].forEach(m => m.emissive.setHex(0)); });
+  surl = ids; surl.forEach(id => matsPiece[id].forEach(m => m.emissive.setHex(0x1f5a2c)));
+}
+function cibles() {
+  const mo = etat.vue === 'montage';
+  groupes.forEach(G => {
+    if (!mo) { G.tz = G.ty = etat.eclCible; return; }
+    const s = ETAPE_DE[G.cle];
+    G.tz = s === undefined || s < etat.pas ? 0 : 1;
+    G.ty = G.cle === 'clavette' ? (etat.pas > 7 ? 0 : 1) : G.tz;
+  });
+}
+function lisser(k) {
+  let mx = 0;
+  groupes.forEach(G => {
+    G.fz += (G.tz - G.fz) * k; G.fy += (G.ty - G.fy) * k;
+    if (Math.abs(G.tz - G.fz) < 0.0005) G.fz = G.tz; if (Math.abs(G.ty - G.fy) < 0.0005) G.fy = G.ty;
+    mx = Math.max(mx, G.fz, G.fy);
+  });
+  etat.ecl = mx;
+}
+function majMontage() {
+  const d = etat.demont, i = d ? etat.pas : etat.pas - 1;        // étape qui vient d'être faite
+  const debut = d ? etat.pas === NE : etat.pas === 0, fin = d ? etat.pas === 0 : etat.pas === NE;
+  $('#bMont').classList.toggle('on', !d); $('#bDemont').classList.toggle('on', d);
+  const e = MONTAGE.etapes[i], num = d ? NE - etat.pas : etat.pas;
+  $('#moTitre').textContent = debut ? (d ? 'Démontage — avant de commencer' : 'Montage — préparation') : 'Étape ' + num + ' / ' + NE + ' — ' + e.t;
+  $('#moTexte').innerHTML = debut ? (d ? MONTAGE.prepD : MONTAGE.prepM) : (d ? e.d : e.m) + (fin ? '<br><b>' + (d ? 'Démontage terminé : nettoyer, contrôler et ranger les pièces.' : 'Montage terminé : l\'antidévireur est prêt.') + '</b>' : '');
+  $('#moPrec').disabled = debut; $('#moSuiv').disabled = fin;
+  document.querySelectorAll('#moListe li').forEach((li, j) => { li.classList.toggle('fait', j < etat.pas); li.classList.toggle('cour', !debut && j === i); });
+  const c = document.querySelector('#moListe li.cour'); if (c && c.scrollIntoView) c.scrollIntoView({ block: 'nearest' });
+  surligner(debut ? [] : [...new Set(groupes.filter(G => ETAPE_DE[G.cle] === i || (i === 7 && G.cle === 'clavette') || (i === 10 && (G.id === 'butee' || G.id === 'huile'))).map(G => G.id))]);
+}
+function sensMontage(d) { etat.demont = d; etat.pas = d ? NE : 0; majMontage(); }
+$('#moListe').innerHTML = MONTAGE.etapes.map(e => '<li>' + e.t + '</li>').join('');
+$('#bMont').onclick = () => sensMontage(false);
+$('#bDemont').onclick = () => sensMontage(true);
+$('#moSuiv').onclick = () => { etat.pas = Math.max(0, Math.min(NE, etat.pas + (etat.demont ? -1 : 1))); majMontage(); };
+$('#moPrec').onclick = () => { etat.pas = Math.max(0, Math.min(NE, etat.pas + (etat.demont ? 1 : -1))); majMontage(); };
+$('#moZero').onclick = () => sensMontage(etat.demont);
+
 // ---------- interface ----------
 document.querySelectorAll('#vues .btn').forEach(b => b.onclick = () => majVue(b.dataset.v));
 $('#sEcl').oninput = e => { etat.eclCible = e.target.value / 100; $('#vEcl').textContent = e.target.value + ' %'; };
@@ -443,6 +492,7 @@ $('#bCentre').onclick = () => cadrer(etat.vue);
 document.querySelectorAll('#onglets button').forEach(b => b.onclick = () => {
   document.querySelectorAll('#onglets button').forEach(x => x.classList.toggle('on', x === b));
   document.querySelectorAll('.page').forEach(p => p.classList.toggle('on', p.id === b.dataset.p));
+  if (b.dataset.p === 'pMontage') { majVue('montage'); majMontage(); } else if (etat.vue === 'montage') majVue('normale');
 });
 $('#tPieces').innerHTML = '<tr><th>N°</th><th>Pièce</th><th>Rôle</th></tr>' + PIECES.map(p => `<tr class="lig" data-id="${p.id}"><td class="n">${p.n}</td><td><b>${p.nom}</b><br><span class="note">${p.mat}</span></td><td>${p.role}</td></tr>`).join('');
 document.querySelectorAll('#tPieces tr.lig').forEach(t => t.onclick = () => choisir(t.dataset.id));
@@ -470,13 +520,12 @@ Object.assign(cam, { az: cible.az, el: cible.el, d: cible.d }); cam.c.copy(cible
 let tPrec = performance.now(), tAff = 0;
 function boucle(t) {
   const dt = Math.min(0.05, (t - tPrec) / 1000); tPrec = t;
-  etat.ecl += (etat.eclCible - etat.ecl) * (1 - Math.exp(-dt * 5));
-  if (Math.abs(etat.eclCible - etat.ecl) < 0.0005) etat.ecl = etat.eclCible;
-  if (!etat.pause) simuler(dt);
+  cibles(); lisser(1 - Math.exp(-dt * 5));
+  if (!etat.pause && !(etat.vue === 'montage' && etat.pas < NE)) simuler(dt);
   appliquer(); majCam(dt); renderer.render(scene, camera); majReperes();
   if (t - tAff > 150) { afficher(); tAff = t; }
   requestAnimationFrame(boucle);
 }
 requestAnimationFrame(boucle);
 window.__etat = etat;
-window.__avance = n => { for (let i = 0; i < n; i++) { etat.ecl += (etat.eclCible - etat.ecl) * 0.1; simuler(0.02); majCam(0.02); } if (Math.abs(etat.eclCible - etat.ecl) < 0.01) etat.ecl = etat.eclCible; };
+window.__avance = n => { for (let i = 0; i < n; i++) { cibles(); lisser(0.1); simuler(0.02); majCam(0.02); } };
