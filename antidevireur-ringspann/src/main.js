@@ -528,4 +528,5 @@ function boucle(t) {
 }
 requestAnimationFrame(boucle);
 window.__etat = etat;
+window.__pique = (x, y) => { toucher(x, y); return choisie; };
 window.__avance = n => { for (let i = 0; i < n; i++) { cibles(); lisser(0.1); simuler(0.02); majCam(0.02); } };
