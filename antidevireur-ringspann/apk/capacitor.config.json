@@ -1,0 +1,8 @@
+{
+  "appId": "fr.formation.antidevireur",
+  "appName": "Antidévireur FRHD",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#15181b"
+  }
+}

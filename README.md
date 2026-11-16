@@ -404,3 +404,15 @@ Groupe HLD4 (260 + 58 L/min, 30 kW / 400 V à variateur, 24 V DC, IP65, coffret 
 moteur, pompe double, bloc foré, électrovannes, manomètres, réservoir, filtres, vérin de pince sur roue de wagon.
 Cycle de bridage (approche rapide, décharge de P1, serrage 180 bar, maintien, desserrage), flux d'huile animé,
 schéma ISO animé (reconstitué d'après la plaque), 7 pannes avec causes et solutions, plaque expliquée, cours et quiz.
+
+# Antidévireur Ringspann FRHD 1200 — vue éclatée et simulation 3D
+
+- **Lien web** : https://baldeousmane22-collab.github.io/simulation-/antidevireur-ringspann/
+- **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/antidevireur/AntidevireurFRHD.apk
+- Dossier séparé : `antidevireur-ringspann/` (appli seule) ; sources dans `src/` (`bash src/build.sh`), projet Android dans `apk/`.
+
+Antidévireur (backstop) du tambour de tête d'après sa plaque : alésage 230 mm, 290 000 lb-ft (≈ 393 kN·m), huile Mobil DTE
+Heavy Medium 2 QT (≈ 1,9 L). Vues **normale, éclatée (15 repères), coupe, cames** ; simulation marche avant (roue libre) /
+arrêt bande chargée (recul, coincement des cames, appui du bras sur la butée), couple retenu et effort sur la butée,
+cames usées (dévirage). Onglets **Pièces**, **Plaque** (lecture et conversions), **Cours**, **Pannes** et **Quiz** (10 questions).
+L'intérieur est reconstitué d'après le principe des antidévireurs à cames : les cotes exactes sont dans le bulletin E08.746.

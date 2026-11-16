@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Antidévireur FRHD</string>
+    <string name="title_activity_main">Antidévireur FRHD</string>
+    <string name="package_name">fr.formation.antidevireur</string>
+    <string name="custom_url_scheme">fr.formation.antidevireur</string>
+</resources>
