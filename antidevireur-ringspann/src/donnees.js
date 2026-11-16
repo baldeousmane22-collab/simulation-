@@ -114,3 +114,24 @@ export const MONTAGE = {
     { t: 'Bras dans la butée, huile, essai', m: 'Placer le bras dans sa butée <b>avec du jeu</b> (haut, bas, côtés), sans le brider. Remplir : 2 quarts ≈ 1,9 L de Mobil DTE Heavy Medium, contrôler le niveau. Essai du moteur par brèves impulsions.', d: 'Vidanger l\'huile dans un bac. Vérifier que le bras est libre dans sa butée, non chargé.' }
   ]
 };
+
+// Points de lubrification. pos = position dans la scène (1 = 100 mm) ; fixe = true : lié au châssis.
+export const LUB = [
+  { l: 'A', type: 'huile', pos: [0, 3.95, 0], nom: 'Remplissage et reniflard', produit: 'Mobil DTE Heavy Medium (ISO VG 68)', quoi: 'Remplir par ce bouchon jusqu\'au niveau : 2 quarts ≈ 1,9 L au total. Nettoyer le reniflard à chaque contrôle : bouché, il fait monter la pression et fuir les joints.' },
+  { l: 'B', type: 'huile', pos: [-2.4, -1.25, 1.55], nom: 'Bouchon de niveau', produit: 'Contrôle seulement', quoi: 'À l\'arrêt, l\'huile doit affleurer ce bouchon. Trop bas : usure et échauffement. Trop haut : échauffement et fuites.' },
+  { l: 'C', type: 'huile', pos: [0, -3.65, 0], nom: 'Bouchon de vidange', produit: 'Huile usagée à récupérer', quoi: 'Vidanger appareil tiède, bande à l\'arrêt et consignée. Regarder l\'huile : laiteuse = eau, noire ou pailletée = usure des cames ou des roulements.' },
+  { l: 'D', type: 'graisse', pos: [1.73, 1.73, 1.55], nom: 'Graisseurs des joints (×2, un par flasque)', produit: 'Graisse au lithium NLGI 2, sans bisulfure de molybdène', quoi: 'S\'ils existent sur votre appareil : quelques coups de pompe pour former un bourrelet de graisse qui arrête la poussière de bauxite. Ne pas forcer : la graisse ne doit pas entrer dans le carter d\'huile.' },
+  { l: 'E', type: 'graisse', fixe: true, pos: [-12, 0, -1.1], nom: 'Appui du bras dans la butée', produit: 'Graisse ordinaire, film mince', quoi: 'Graisser légèrement les faces d\'appui pour éviter le grippage et la rouille. Le bras doit rester libre, avec son jeu.' }
+];
+export const LUB_HTML = `
+<p class="msg">Cet antidévireur est <b>lubrifié à l'huile</b> (plaque : Mobil DTE Heavy Medium, 2 QT). Les cames et les roulements baignent dans cette huile : <b>ils ne se graissent pas</b>.</p>
+<table id="tLub"></table>
+<h3>À ne jamais faire</h3>
+<ul>
+<li>Mettre de la graisse ou une huile avec additifs extrême-pression (EP), bisulfure de molybdène ou graphite dans le carter : les cames glisseraient.</li>
+<li>Mélanger deux huiles différentes ; dépasser le niveau.</li>
+<li>Ouvrir un bouchon sans nettoyer autour : la bauxite entrerait dans le carter.</li>
+</ul>
+<h3>Au montage</h3>
+<p>Film d'huile ou pâte de montage sur le bout d'arbre et la clavette, pour éviter la rouille de contact et faciliter le démontage.</p>
+<p class="note">Les graisseurs des joints (D) dépendent de l'exécution de l'appareil : vérifiez sur le vôtre. Les intervalles de contrôle et de vidange sont ceux du bulletin constructeur E08.746.</p>`;

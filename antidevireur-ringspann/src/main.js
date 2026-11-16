@@ -1,7 +1,7 @@
 // Antidévireur RINGSPANN FRHD 1200 — vue éclatée et simulation 3D
 // Unité de la scène : 1 = 100 mm. Axe de l'arbre = Z. Sens libre (marche avant) = rotation +Z.
 import * as T from '../../hydraulique/vendor/three.min.js';
-import { PIECES, PLAQUE_HTML, COURS_HTML, PANNES_HTML, QUIZ, MONTAGE } from './donnees.js';
+import { PIECES, PLAQUE_HTML, COURS_HTML, PANNES_HTML, QUIZ, MONTAGE, LUB, LUB_HTML } from './donnees.js';
 
 const $ = s => document.querySelector(s);
 const canvas = $('#c3d'), vue = $('#vue');
@@ -166,6 +166,9 @@ const billes = [];
   maille(gF, anneau(2.75, 3.4, 0.55, { trous, b: 0.02 }), mp, 0, 0, s * 0.925);
   maille(gF, anneau(2.2, 3.4, 0.2, { trous, b: 0.02 }), mp, 0, 0, s * 1.3);
   if (av) maille(gF, cylZ(0.15, 0.12, 6), M('flasque', 'laiton'), -2.4, -1.25, 1.44);   // bouchon de niveau
+
+  maille(gF, cylZ(0.07, 0.16, 8), M('flasque', 'laiton'), 1.73, 1.73, s * 1.46);   // graisseur du joint
+  maille(gF, new T.SphereGeometry(0.09, 10, 8), M('flasque', 'laiton'), 1.73, 1.73, s * 1.56);
 
   const gJ = piece('joint', stator, s * (av ? 11.3 : 6.2), [1.5, -1.5, s * 1.4], { avant: av });
   maille(gJ, anneau(2.0, 2.2, 0.16, { b: 0.02 }), M('joint', 'caoutchouc'), 0, 0, s * 1.3);
@@ -334,8 +337,27 @@ groupes.forEach(G => {
 });
 const vTmp = new T.Vector3();
 groupes.filter(G => G.el).sort((a, b) => a.ez - b.ez).forEach((G, i) => { G.ancreE = new T.Vector3(0, G.id === 'bras' ? 3.9 : (i % 2 ? -3.9 : 3.9), G.ancre.z); G.p = PIECES.find(q => q.id === G.id); });
+LUB.forEach(P => {
+  const d = document.createElement('div'); d.className = 'rep lub ' + P.type; d.textContent = P.l; d.title = P.nom;
+  d.onclick = () => ficheLub(P); boiteRep.appendChild(d); P.el = d; P.v = new T.Vector3(...P.pos);
+});
+function ficheLub(P) {
+  choisir(null);
+  $('#ficheT').innerHTML = `<b>${P.l} — ${P.nom}</b><br><i>${P.type === 'huile' ? 'Huile' : 'Graisse'} : ${P.produit}</i><br>${P.quoi}`;
+  $('#fiche').style.display = 'block';
+  document.querySelectorAll('#tLub tr.lig').forEach(t => t.classList.toggle('sel', t.dataset.l === P.l));
+}
 function majReperes() {
   const w = vue.clientWidth, h = vue.clientHeight;
+  LUB.forEach(P => {
+    let vis = etat.lub && etat.ecl < 0.02;
+    if (vis) {
+      vTmp.copy(P.v); if (!P.fixe) stator.localToWorld(vTmp); vTmp.project(camera);
+      vis = vTmp.z < 1 && Math.abs(vTmp.x) < 1 && Math.abs(vTmp.y) < 1;
+      if (vis) { P.el.style.left = ((vTmp.x + 1) / 2 * w) + 'px'; P.el.style.top = ((1 - vTmp.y) / 2 * h) + 'px'; }
+    }
+    P.el.style.display = vis ? 'flex' : 'none';
+  });
   groupes.forEach(G => {
     if (!G.el) return;
     let vis = repOn && visibleVrai(G.g);
@@ -353,7 +375,7 @@ function majReperes() {
 // ---------- état de la simulation ----------
 const C_NOM = 393, N_NOM = 60;   // kN·m (290 000 lb-ft) ; tr/min (vitesse d'exemple du tambour)
 const TH_JEU = 0.15 / 12.2;      // jeu du bras dans la butée → petit angle du stator
-const etat = { vue: 'normale', ecl: 0, eclCible: 0, marche: true, lent: false, pause: false, usure: false, pas: 0, demont: false, C: 200, w: 0, phi: 0, k: 0, recul: 0, th: TH_JEU, bloque: false, devire: false };
+const etat = { vue: 'normale', ecl: 0, eclCible: 0, marche: true, lent: false, pause: false, usure: false, lub: false, pas: 0, demont: false, C: 200, w: 0, phi: 0, k: 0, recul: 0, th: TH_JEU, bloque: false, devire: false };
 function majVue(nom) {
   etat.vue = nom; etat.eclCible = nom === 'eclatee' ? $('#sEcl').value / 100 : 0;
   document.querySelectorAll('#vues .btn').forEach(b => b.classList.toggle('on', b.dataset.v === nom));
@@ -492,10 +514,15 @@ $('#bCentre').onclick = () => cadrer(etat.vue);
 document.querySelectorAll('#onglets button').forEach(b => b.onclick = () => {
   document.querySelectorAll('#onglets button').forEach(x => x.classList.toggle('on', x === b));
   document.querySelectorAll('.page').forEach(p => p.classList.toggle('on', p.id === b.dataset.p));
-  if (b.dataset.p === 'pMontage') { majVue('montage'); majMontage(); } else if (etat.vue === 'montage') majVue('normale');
+  etat.lub = b.dataset.p === 'pGraissage';
+  if (b.dataset.p === 'pMontage') { majVue('montage'); majMontage(); } else if (etat.vue === 'montage' || (etat.lub && etat.vue !== 'normale')) majVue('normale');
+  if (!etat.lub && $('#ficheT').textContent && !choisie) $('#fiche').style.display = 'none';
 });
 $('#tPieces').innerHTML = '<tr><th>N°</th><th>Pièce</th><th>Rôle</th></tr>' + PIECES.map(p => `<tr class="lig" data-id="${p.id}"><td class="n">${p.n}</td><td><b>${p.nom}</b><br><span class="note">${p.mat}</span></td><td>${p.role}</td></tr>`).join('');
 document.querySelectorAll('#tPieces tr.lig').forEach(t => t.onclick = () => choisir(t.dataset.id));
+$('#pGraissage').innerHTML = LUB_HTML;
+$('#tLub').innerHTML = '<tr><th></th><th>Point</th><th>Produit</th></tr>' + LUB.map(P => `<tr class="lig" data-l="${P.l}"><td class="n ${P.type}">${P.l}</td><td><b>${P.nom}</b><br><span class="note">${P.quoi}</span></td><td>${P.produit}</td></tr>`).join('');
+document.querySelectorAll('#tLub tr.lig').forEach(t => t.onclick = () => ficheLub(LUB.find(P => P.l === t.dataset.l)));
 $('#pPlaque').innerHTML = PLAQUE_HTML; $('#pCours').innerHTML = COURS_HTML; $('#pPannes').innerHTML = PANNES_HTML;
 (function () {
   const z = $('#pQuiz'); let bon = 0, fait = 0;

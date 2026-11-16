@@ -415,5 +415,6 @@ Antidévireur (backstop) du tambour de tête d'après sa plaque : alésage 230 m
 Heavy Medium 2 QT (≈ 1,9 L). Vues **normale, éclatée (15 repères), coupe, cames** ; simulation marche avant (roue libre) /
 arrêt bande chargée (recul, coincement des cames, appui du bras sur la butée), couple retenu et effort sur la butée,
 cames usées (dévirage). Onglet **Montage** : montage et démontage pas à pas (11 étapes animées, dans les deux sens).
+Onglet **Graissage** : 5 points de lubrification repérés en 3D (remplissage, niveau, vidange, graisseurs des joints, appui du bras).
 Onglets **Pièces**, **Plaque** (lecture et conversions), **Cours**, **Pannes** et **Quiz** (10 questions).
 L'intérieur est reconstitué d'après le principe des antidévireurs à cames : les cotes exactes sont dans le bulletin E08.746.

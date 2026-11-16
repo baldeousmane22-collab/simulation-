@@ -15,6 +15,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family
 #labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .rep{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;min-width:26px;height:26px;padding:0 6px;border-radius:13px;background:rgba(21,24,27,.88);border:2px solid var(--acc);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;white-space:nowrap}
 .rep.sel{background:var(--acc);color:#111}
+.rep.lub{min-width:30px;height:30px;border-radius:15px;font-size:15px;background:#5a3d05}.rep.lub.graisse{border-color:var(--ok);background:#12451f}td.n.graisse{color:var(--ok)}
 #titre{position:absolute;left:10px;top:8px;right:120px;font-size:14px;font-weight:700;text-shadow:0 1px 3px #000;pointer-events:none}
 #titre small{display:block;font-weight:400;color:var(--mut);font-size:12px}
 #etat{position:absolute;right:8px;top:8px;padding:6px 10px;border-radius:8px;font-weight:800;font-size:13px;background:#0008;border:2px solid var(--ok);color:var(--ok);text-align:center}
@@ -72,7 +73,7 @@ p,li{font-size:13.5px;line-height:1.45}ul,ol{padding-left:20px;margin:4px 0}
  </div>
  <div id="panneau">
   <div id="onglets">
-   <button data-p="pCmd" class="on">Commande</button><button data-p="pMontage">Montage</button><button data-p="pPieces">Pièces</button><button data-p="pPlaque">Plaque</button><button data-p="pCours">Cours</button><button data-p="pPannes">Pannes</button><button data-p="pQuiz">Quiz</button>
+   <button data-p="pCmd" class="on">Commande</button><button data-p="pMontage">Montage</button><button data-p="pGraissage">Graissage</button><button data-p="pPieces">Pièces</button><button data-p="pPlaque">Plaque</button><button data-p="pCours">Cours</button><button data-p="pPannes">Pannes</button><button data-p="pQuiz">Quiz</button>
   </div>
   <div class="page on" id="pCmd">
    <h3>Vue</h3>
@@ -106,6 +107,7 @@ p,li{font-size:13.5px;line-height:1.45}ul,ol{padding-left:20px;margin:4px 0}
    <ol id="moListe"></ol>
    <p class="note">Ordre pédagogique. Les couples de serrage, jeux et outillages exacts sont ceux du bulletin constructeur E08.746.</p>
   </div>
+  <div class="page" id="pGraissage"></div>
   <div class="page" id="pPieces"><table id="tPieces"></table><p class="note">Touchez une ligne pour repérer la pièce en 3D. L'intérieur est reconstitué d'après le principe des antidévireurs à cames ; pour les cotes exactes, voir le bulletin constructeur E08.746.</p></div>
   <div class="page" id="pPlaque"></div>
   <div class="page" id="pCours"></div>
