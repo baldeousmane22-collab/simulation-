@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#15181b">
+<title>Antidévireur Ringspann FRHD 1200 — vue éclatée 3D</title>
+<style>
+:root{--bg:#15181b;--pan:#1d2126;--pan2:#262b31;--txt:#e8ecef;--mut:#9aa4ad;--acc:#f0a330;--ok:#3fbf6f;--ko:#e5484d;--bd:#343a41}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+#app{display:flex;flex-direction:column;height:100%;height:100dvh}
+#vue{position:relative;flex:1 1 52%;min-height:0;touch-action:none;overflow:hidden}
+#c3d{width:100%;height:100%;display:block;touch-action:none}
+#labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.rep{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;min-width:26px;height:26px;padding:0 6px;border-radius:13px;background:rgba(21,24,27,.88);border:2px solid var(--acc);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;white-space:nowrap}
+.rep.sel{background:var(--acc);color:#111}
+.rep.lub{min-width:30px;height:30px;border-radius:15px;font-size:15px;background:#5a3d05}.rep.lub.graisse{border-color:var(--ok);background:#12451f}td.n.graisse{color:var(--ok)}
+#titre{position:absolute;left:10px;top:8px;right:120px;font-size:14px;font-weight:700;text-shadow:0 1px 3px #000;pointer-events:none}
+#titre small{display:block;font-weight:400;color:var(--mut);font-size:12px}
+#etat{position:absolute;right:8px;top:8px;padding:6px 10px;border-radius:8px;font-weight:800;font-size:13px;background:#0008;border:2px solid var(--ok);color:var(--ok);text-align:center}
+#etat.bloque{border-color:var(--acc);color:var(--acc)}#etat.alarme{border-color:var(--ko);color:var(--ko)}
+#outils{position:absolute;right:8px;bottom:8px;display:flex;flex-direction:column;gap:6px}
+#outils button{width:44px;height:44px;border-radius:10px;border:1px solid var(--bd);background:#000a;color:#fff;font-size:19px}
+#outils button.on{background:var(--acc);color:#111}
+#fiche{position:absolute;left:8px;bottom:8px;right:62px;max-width:430px;background:rgba(21,24,27,.94);border:1px solid var(--bd);border-left:4px solid var(--acc);border-radius:10px;padding:8px 30px 8px 10px;font-size:13px;line-height:1.35;display:none}
+#fiche b{font-size:14px}#fiche i{color:var(--mut);font-style:normal}
+#fiche .x{position:absolute;right:2px;top:0;width:30px;height:30px;border:0;background:none;color:#fff;font-size:18px}
+#panneau{flex:1 1 48%;min-height:0;display:flex;flex-direction:column;background:var(--pan);border-top:1px solid var(--bd)}
+#onglets{display:flex;overflow-x:auto;flex:none;border-bottom:1px solid var(--bd);scrollbar-width:none}
+#onglets button{flex:1 0 auto;padding:11px 12px;border:0;background:none;color:var(--mut);font-size:14px;font-weight:600;border-bottom:3px solid transparent}
+#onglets button.on{color:var(--txt);border-bottom-color:var(--acc)}
+.page{display:none;flex:1;overflow-y:auto;padding:10px 12px calc(14px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
+.page.on{display:block}
+.rang{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.btn{flex:1 1 0;min-width:70px;min-height:46px;padding:8px 6px;border-radius:10px;border:1px solid var(--bd);background:var(--pan2);color:var(--txt);font-size:14px;font-weight:600}
+.btn.on{background:var(--acc);color:#111;border-color:var(--acc)}
+.btn.vert.on{background:var(--ok);border-color:var(--ok)}.btn.rouge.on{background:var(--ko);border-color:var(--ko);color:#fff}
+h3{margin:12px 0 6px;font-size:14px;color:var(--acc)}h3:first-child{margin-top:2px}
+label.cur{display:block;font-size:13px;color:var(--mut);margin:6px 0 2px}label.cur b{color:var(--txt)}
+input[type=range]{width:100%;height:34px;accent-color:var(--acc)}
+.mes{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
+.mes div{background:var(--pan2);border-radius:8px;padding:6px 8px;font-size:12px;color:var(--mut)}
+.mes div b{display:block;font-size:16px;color:var(--txt)}
+.barre{height:12px;border-radius:6px;background:var(--pan2);overflow:hidden;margin:4px 0 8px}.barre i{display:block;height:100%;width:0;background:var(--ok)}
+.msg{font-size:13px;line-height:1.4;background:var(--pan2);border-radius:8px;padding:8px 10px;border-left:4px solid var(--ok)}
+.msg.w{border-left-color:var(--acc)}.msg.a{border-left-color:var(--ko)}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid var(--bd);padding:7px 5px;text-align:left;vertical-align:top}th{color:var(--mut);font-weight:600}
+tr.lig{cursor:pointer}tr.lig.sel td{background:#f0a33022}
+td.n{font-weight:800;color:var(--acc);width:28px}
+p,li{font-size:13.5px;line-height:1.45}ul,ol{padding-left:20px;margin:4px 0}
+.btn:disabled{opacity:.4}#moListe li{color:var(--mut);padding:2px 0}#moListe li.fait{color:var(--txt)}#moListe li.cour{color:var(--acc);font-weight:700}
+.note{font-size:12px;color:var(--mut)}
+.q{background:var(--pan2);border-radius:10px;padding:8px 10px;margin-bottom:10px}.q p{margin:0 0 6px;font-weight:600}
+.q button{display:block;width:100%;text-align:left;margin:4px 0;padding:9px 10px;border-radius:8px;border:1px solid var(--bd);background:var(--pan);color:var(--txt);font-size:13.5px}
+.q button.ok{border-color:var(--ok);background:#3fbf6f22}.q button.ko{border-color:var(--ko);background:#e5484d22}
+.q .exp{font-size:12.5px;color:var(--mut);margin-top:4px;display:none}
+@media (orientation:landscape) and (min-width:700px){#app{flex-direction:row}#vue{flex:1 1 60%}#panneau{flex:0 0 380px;border-top:0;border-left:1px solid var(--bd)}}
+</style>
+</head>
+<body>
+<div id="app">
+ <div id="vue">
+  <canvas id="c3d"></canvas>
+  <div id="labels"></div>
+  <div id="titre">Antidévireur RINGSPANN FRHD 1200<small>Alésage Ø230 mm · 290 000 lb-ft (≈ 393 kN·m)</small></div>
+  <div id="etat">ROUE LIBRE</div>
+  <div id="fiche"><button class="x" id="ficheX" aria-label="Fermer">✕</button><div id="ficheT"></div></div>
+  <div id="outils">
+   <button id="bRep" title="Repères">①</button>
+   <button id="bCentre" title="Recentrer la vue">⌖</button>
+  </div>
+ </div>
+ <div id="panneau">
+  <div id="onglets">
+   <button data-p="pCmd" class="on">Commande</button><button data-p="pMontage">Montage</button><button data-p="pGraissage">Graissage</button><button data-p="pPieces">Pièces</button><button data-p="pPlaque">Plaque</button><button data-p="pCours">Cours</button><button data-p="pPannes">Pannes</button><button data-p="pQuiz">Quiz</button>
+  </div>
+  <div class="page on" id="pCmd">
+   <h3>Vue</h3>
+   <div class="rang" id="vues">
+    <button class="btn on" data-v="normale">Normale</button><button class="btn" data-v="eclatee">Éclatée</button><button class="btn" data-v="coupe">Coupe</button><button class="btn" data-v="cames">Cames</button>
+   </div>
+   <div id="zoneEcl" style="display:none"><label class="cur">Écartement des pièces : <b id="vEcl">100 %</b></label><input type="range" id="sEcl" min="0" max="100" value="100"></div>
+   <h3>Convoyeur</h3>
+   <div class="rang">
+    <button class="btn vert on" id="bMarche">▶ Marche avant</button><button class="btn rouge" id="bArret">■ Arrêt (bande chargée)</button>
+   </div>
+   <div class="rang">
+    <button class="btn" id="bLent">🐢 Vitesse lente</button><button class="btn" id="bPause">⏸ Pause</button>
+   </div>
+   <label class="cur">Couple de retour de la charge : <b id="vC">200 kN·m</b></label>
+   <input type="range" id="sC" min="0" max="480" step="10" value="200">
+   <div class="barre"><i id="bar"></i></div>
+   <div class="mes">
+    <div>Vitesse de l'arbre<b id="mN">–</b></div><div>Couple retenu<b id="mC">–</b></div>
+    <div>Effort sur la butée du bras<b id="mF">–</b></div><div>Charge / couple nominal<b id="mP">–</b></div>
+   </div>
+   <div class="rang"><button class="btn" id="bUsure">⚠ Simuler des cames usées</button></div>
+   <div class="msg" id="msg"></div>
+   <p class="note">1 doigt : tourner · 2 doigts : zoomer / déplacer · toucher une pièce : son nom et son rôle.</p>
+  </div>
+  <div class="page" id="pMontage">
+   <div class="rang"><button class="btn on" id="bMont">🔧 Montage</button><button class="btn" id="bDemont">🧰 Démontage</button></div>
+   <h3 id="moTitre"></h3>
+   <div class="msg w" id="moTexte"></div>
+   <div class="rang" style="margin-top:8px"><button class="btn" id="moPrec">◀ Précédent</button><button class="btn on" id="moSuiv">Suivant ▶</button><button class="btn" id="moZero" style="flex:0 0 52px;min-width:52px" title="Recommencer">↺</button></div>
+   <ol id="moListe"></ol>
+   <p class="note">Ordre pédagogique. Les couples de serrage, jeux et outillages exacts sont ceux du bulletin constructeur E08.746.</p>
+  </div>
+  <div class="page" id="pGraissage"></div>
+  <div class="page" id="pPieces"><table id="tPieces"></table><p class="note">Touchez une ligne pour repérer la pièce en 3D. L'intérieur est reconstitué d'après le principe des antidévireurs à cames ; pour les cotes exactes, voir le bulletin constructeur E08.746.</p></div>
+  <div class="page" id="pPlaque"></div>
+  <div class="page" id="pCours"></div>
+  <div class="page" id="pPannes"></div>
+  <div class="page" id="pQuiz"></div>
+ </div>
+</div>
+<script>/*BUNDLE*/</script>
+</body>
+</html>

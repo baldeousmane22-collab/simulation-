@@ -1,0 +1,303 @@
+{
+"steps": [
+{
+"k": "8",
+"from": [
+7,
+0
+],
+"t0": 1.0,
+"d": 0.62,
+"name": "Bague 8 (logement du roulement 4)",
+"screw": 0
+},
+{
+"k": "2",
+"from": [
+-15,
+0
+],
+"t0": 1.7,
+"d": 0.62,
+"name": "Arbre porte-meule 2 (avec sa clavette)",
+"screw": 0
+},
+{
+"k": "3",
+"from": [
+9,
+0
+],
+"t0": 2.4,
+"d": 0.62,
+"name": "Roulement 3 contre l'épaulement E",
+"screw": 0
+},
+{
+"k": "5",
+"from": [
+9,
+0
+],
+"t0": 3.1,
+"d": 0.62,
+"name": "Entretoise 5",
+"screw": 0
+},
+{
+"k": "4",
+"from": [
+7,
+0
+],
+"t0": 3.8,
+"d": 0.62,
+"name": "Roulement 4",
+"screw": 0
+},
+{
+"k": "6",
+"from": [
+5,
+0
+],
+"t0": 4.5,
+"d": 0.62,
+"name": "Rondelle frein 6 (languette dans la rainure)",
+"screw": 0
+},
+{
+"k": "7",
+"from": [
+5,
+0
+],
+"t0": 5.2,
+"d": 0.992,
+"name": "Écrou à encoches 7 vissé et serré (clé à ergot)",
+"screw": 1
+},
+{
+"k": "9",
+"from": [
+4,
+0
+],
+"t0": 6.272,
+"d": 0.62,
+"name": "Joint plat 9",
+"screw": 0
+},
+{
+"k": "16b",
+"from": [
+5,
+0
+],
+"t0": 6.972,
+"d": 0.62,
+"name": "Joint d'étanchéité 16 (droit)",
+"screw": 0
+},
+{
+"k": "10",
+"from": [
+5,
+0
+],
+"t0": 7.672,
+"d": 0.62,
+"name": "Couvercle droit 10 (appui en D)",
+"screw": 0
+},
+{
+"k": "20",
+"from": [
+4,
+0
+],
+"t0": 8.372,
+"d": 0.992,
+"name": "Vis de fixation 20",
+"screw": 1
+},
+{
+"k": "13",
+"from": [
+-4,
+0
+],
+"t0": 9.444,
+"d": 0.62,
+"name": "Tôle de protection 13",
+"screw": 0
+},
+{
+"k": "16",
+"from": [
+-5,
+0
+],
+"t0": 10.144,
+"d": 0.62,
+"name": "Joint d'étanchéité 16 (gauche)",
+"screw": 0
+},
+{
+"k": "14",
+"from": [
+-5,
+0
+],
+"t0": 10.844,
+"d": 0.62,
+"name": "Couvercle gauche 14",
+"screw": 0
+},
+{
+"k": "vg",
+"from": [
+-4,
+0
+],
+"t0": 11.544,
+"d": 0.992,
+"name": "Vis de fixation (gauche)",
+"screw": 1
+},
+{
+"k": "12",
+"from": [
+6,
+0
+],
+"t0": 12.616,
+"d": 0.62,
+"name": "Poulie à gorges 12 (sur la clavette)",
+"screw": 0
+},
+{
+"k": "rp",
+"from": [
+6,
+0
+],
+"t0": 13.316,
+"d": 0.62,
+"name": "Rondelle frein (côté poulie)",
+"screw": 0
+},
+{
+"k": "18",
+"from": [
+6,
+0
+],
+"t0": 14.016,
+"d": 0.992,
+"name": "Écrou à encoches 18 (côté poulie)",
+"screw": 1
+},
+{
+"k": "19",
+"from": [
+6,
+0
+],
+"t0": 15.088,
+"d": 0.62,
+"name": "Capuchon 19",
+"screw": 0
+},
+{
+"k": "11",
+"from": [
+0,
+5
+],
+"t0": 15.788,
+"d": 0.62,
+"name": "Carter de protection 11",
+"screw": 0
+},
+{
+"k": "17b",
+"from": [
+-7,
+0
+],
+"t0": 16.488,
+"d": 0.62,
+"name": "Flasque de serrage 17 (intérieur)",
+"screw": 0
+},
+{
+"k": "15",
+"from": [
+-8,
+0
+],
+"t0": 17.188,
+"d": 0.62,
+"name": "Meule 15 + bague de centrage",
+"screw": 0
+},
+{
+"k": "bc",
+"from": [
+-8,
+0
+],
+"t0": 17.188,
+"name": "Meule 15 + bague de centrage",
+"screw": 0,
+"dup": 1,
+"d": 0.62
+},
+{
+"k": "17",
+"from": [
+-7,
+0
+],
+"t0": 17.888,
+"d": 0.62,
+"name": "Flasque de serrage 17 (extérieur)",
+"screw": 0
+},
+{
+"k": "rm",
+"from": [
+-6,
+0
+],
+"t0": 18.588,
+"d": 0.62,
+"name": "Rondelle frein (côté meule)",
+"screw": 0
+},
+{
+"k": "em",
+"from": [
+-6,
+0
+],
+"t0": 19.288,
+"d": 0.992,
+"name": "Écrou à encoches (côté meule)",
+"screw": 1
+},
+{
+"k": "cm",
+"from": [
+-6,
+0
+],
+"t0": 20.36,
+"d": 0.62,
+"name": "Capuchon (côté meule)",
+"screw": 0
+}
+],
+"end": 21.06
+}
