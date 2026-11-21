@@ -418,3 +418,17 @@ cames usées (dévirage). Onglet **Montage** : montage et démontage pas à pas 
 Onglet **Graissage** : 5 points de lubrification repérés en 3D (remplissage, niveau, vidange, graisseurs des joints, appui du bras).
 Onglets **Pièces**, **Plaque** (lecture et conversions), **Cours**, **Pannes** et **Quiz** (10 questions).
 L'intérieur est reconstitué d'après le principe des antidévireurs à cames : les cotes exactes sont dans le bulletin E08.746.
+
+# Coupleur hydraulique Voith type T — remplissage en 3D
+
+- **Lien web** : https://baldeousmane22-collab.github.io/simulation-/coupleur-voith/
+- **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/coupleur-voith/CoupleurVoith.apk
+- Dossier séparé : `coupleur-voith/` (appli seule) ; sources dans `src/` (`bash src/build.sh`), projet Android dans `apk/`.
+
+Coupleur à remplissage constant (taille 487, moteur 110 kW – 1480 tr/min, valeurs d'exemple) entre moteur et réducteur :
+roue pompe, roue turbine, coquille, bouchon de remplissage, bouchons fusibles 140 °C, accouplement élastique.
+Onglet **Remplissage** : procédure guidée en 8 étapes (consignation, bouchon en haut, dévissage, versement à l'entonnoir,
+contrôle au repère α ≈ 67° où l'huile doit affleurer, revissage, déconsignation, démarrage), niveau d'huile visible en coupe,
+débordement si trop plein, vidange. Onglet **Marche** : démarrage progressif, anneau d'huile et tourbillon torique animés,
+glissement, couple, puissance perdue, température, courbe 30 s ; essais sous-remplissage (fusible fondu),
+surremplissage (disjonction du moteur), convoyeur bloqué. Onglets **Pièces** (12 repères), **Cours**, **Pannes**, **Quiz**.

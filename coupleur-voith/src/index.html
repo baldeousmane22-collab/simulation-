@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#15181b">
+<title>Coupleur hydraulique Voith — remplissage 3D</title>
+<style>
+:root{--bg:#15181b;--pan:#1d2126;--pan2:#262b31;--txt:#e8ecef;--mut:#9aa4ad;--acc:#f0a330;--ok:#3fbf6f;--ko:#e5484d;--bd:#343a41}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+#app{display:flex;flex-direction:column;height:100%;height:100dvh}
+#vue{position:relative;flex:1 1 52%;min-height:0;touch-action:none;overflow:hidden}
+#c3d{width:100%;height:100%;display:block;touch-action:none}
+#labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.rep{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;min-width:26px;height:26px;padding:0 6px;border-radius:13px;background:rgba(21,24,27,.88);border:2px solid var(--acc);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;white-space:nowrap}
+.rep.sel{background:var(--acc);color:#111}
+.rep.lub{min-width:30px;height:30px;border-radius:15px;font-size:15px;background:#5a3d05}.rep.lub.graisse{border-color:var(--ok);background:#12451f}td.n.graisse{color:var(--ok)}
+#titre{position:absolute;left:10px;top:8px;right:120px;font-size:14px;font-weight:700;text-shadow:0 1px 3px #000;pointer-events:none}
+#titre small{display:block;font-weight:400;color:var(--mut);font-size:12px}
+#etat{position:absolute;right:8px;top:8px;padding:6px 10px;border-radius:8px;font-weight:800;font-size:13px;background:#0008;border:2px solid var(--ok);color:var(--ok);text-align:center}
+#etat.bloque{border-color:var(--acc);color:var(--acc)}#etat.alarme{border-color:var(--ko);color:var(--ko)}
+#outils{position:absolute;right:8px;bottom:8px;display:flex;flex-direction:column;gap:6px}
+#outils button{width:44px;height:44px;border-radius:10px;border:1px solid var(--bd);background:#000a;color:#fff;font-size:19px}
+#outils button.on{background:var(--acc);color:#111}
+#fiche{position:absolute;left:8px;bottom:8px;right:62px;max-width:430px;background:rgba(21,24,27,.94);border:1px solid var(--bd);border-left:4px solid var(--acc);border-radius:10px;padding:8px 30px 8px 10px;font-size:13px;line-height:1.35;display:none}
+#fiche b{font-size:14px}#fiche i{color:var(--mut);font-style:normal}
+#fiche .x{position:absolute;right:2px;top:0;width:30px;height:30px;border:0;background:none;color:#fff;font-size:18px}
+#panneau{flex:1 1 48%;min-height:0;display:flex;flex-direction:column;background:var(--pan);border-top:1px solid var(--bd)}
+#onglets{display:flex;overflow-x:auto;flex:none;border-bottom:1px solid var(--bd);scrollbar-width:none}
+#onglets button{flex:1 0 auto;padding:11px 12px;border:0;background:none;color:var(--mut);font-size:14px;font-weight:600;border-bottom:3px solid transparent}
+#onglets button.on{color:var(--txt);border-bottom-color:var(--acc)}
+.page{display:none;flex:1;overflow-y:auto;padding:10px 12px calc(14px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
+.page.on{display:block}
+.rang{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.btn{flex:1 1 0;min-width:70px;min-height:46px;padding:8px 6px;border-radius:10px;border:1px solid var(--bd);background:var(--pan2);color:var(--txt);font-size:14px;font-weight:600}
+.btn.on{background:var(--acc);color:#111;border-color:var(--acc)}
+.btn.vert.on{background:var(--ok);border-color:var(--ok)}.btn.rouge.on{background:var(--ko);border-color:var(--ko);color:#fff}
+h3{margin:12px 0 6px;font-size:14px;color:var(--acc)}h3:first-child{margin-top:2px}
+label.cur{display:block;font-size:13px;color:var(--mut);margin:6px 0 2px}label.cur b{color:var(--txt)}
+input[type=range]{width:100%;height:34px;accent-color:var(--acc)}
+.mes{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
+.mes div{background:var(--pan2);border-radius:8px;padding:6px 8px;font-size:12px;color:var(--mut)}
+.mes div b{display:block;font-size:16px;color:var(--txt)}
+.barre{height:12px;border-radius:6px;background:var(--pan2);overflow:hidden;margin:4px 0 8px}.barre i{display:block;height:100%;width:0;background:var(--ok)}
+.msg{font-size:13px;line-height:1.4;background:var(--pan2);border-radius:8px;padding:8px 10px;border-left:4px solid var(--ok)}
+.msg.w{border-left-color:var(--acc)}.msg.a{border-left-color:var(--ko)}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid var(--bd);padding:7px 5px;text-align:left;vertical-align:top}th{color:var(--mut);font-weight:600}
+tr.lig{cursor:pointer}tr.lig.sel td{background:#f0a33022}
+td.n{font-weight:800;color:var(--acc);width:28px}
+p,li{font-size:13.5px;line-height:1.45}ul,ol{padding-left:20px;margin:4px 0}
+.btn:disabled{opacity:.4}#moListe li{color:var(--mut);padding:2px 0}#moListe li.fait{color:var(--txt)}#moListe li.cour{color:var(--acc);font-weight:700}
+.note{font-size:12px;color:var(--mut)}
+.q{background:var(--pan2);border-radius:10px;padding:8px 10px;margin-bottom:10px}.q p{margin:0 0 6px;font-weight:600}
+.q button{display:block;width:100%;text-align:left;margin:4px 0;padding:9px 10px;border-radius:8px;border:1px solid var(--bd);background:var(--pan);color:var(--txt);font-size:13.5px}
+.q button.ok{border-color:var(--ok);background:#3fbf6f22}.q button.ko{border-color:var(--ko);background:#e5484d22}
+.q .exp{font-size:12.5px;color:var(--mut);margin-top:4px;display:none}
+#etat.marche{border-color:var(--ok);color:var(--ok)}#etat.arret{border-color:var(--mut);color:var(--mut)}
+#graph{width:100%;height:120px;background:var(--pan2);border-radius:8px;display:block;margin:6px 0}
+.leg{font-size:12px;color:var(--mut)}.leg i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin:0 4px 0 8px}
+#etapes li{color:var(--mut);padding:3px 0;font-size:13.5px}#etapes li.fait{color:var(--ok)}#etapes li.cour{color:var(--acc);font-weight:700}
+.btn.gros{min-height:58px;font-size:15px}
+@media (orientation:landscape) and (min-width:700px){#app{flex-direction:row}#vue{flex:1 1 60%}#panneau{flex:0 0 380px;border-top:0;border-left:1px solid var(--bd)}}
+</style>
+</head>
+<body>
+<div id="app">
+ <div id="vue">
+  <canvas id="c3d"></canvas>
+  <div id="labels"></div>
+  <div id="titre">Coupleur hydraulique VOITH type T<small>Remplissage constant · taille 487 · moteur 110 kW – 1480 tr/min</small></div>
+  <div id="etat" class="arret">ARRÊT</div>
+  <div id="fiche"><button class="x" id="ficheX" aria-label="Fermer">✕</button><div id="ficheT"></div></div>
+  <div id="outils">
+   <button id="bRep" title="Repères">①</button>
+   <button id="bCentre" title="Recentrer la vue">⌖</button>
+  </div>
+ </div>
+ <div id="panneau">
+  <div id="onglets">
+   <button data-p="pRemp" class="on">Remplissage</button><button data-p="pCmd">Marche</button><button data-p="pPieces">Pièces</button><button data-p="pCours">Cours</button><button data-p="pPannes">Pannes</button><button data-p="pQuiz">Quiz</button>
+  </div>
+  <div class="page on" id="pRemp">
+   <div class="rang" id="vues">
+    <button class="btn" data-v="normale">Normale</button><button class="btn on" data-v="coupe">Coupe</button><button class="btn" data-v="eclatee">Éclatée</button>
+   </div>
+   <h3 id="eTitre"></h3>
+   <div class="msg w" id="eTexte"></div>
+   <div class="mes">
+    <div>Huile dans le coupleur<b id="rV">–</b></div><div>Taux de remplissage<b id="rF">–</b></div>
+    <div>Position du bouchon<b id="rA">–</b></div><div>Quantité prescrite<b id="rC">–</b></div>
+   </div>
+   <div class="barre"><i id="rBar"></i></div>
+   <div class="rang"><button class="btn" id="bConsigne">🔒 Consigner le moteur</button></div>
+   <label class="cur">Tourner le coupleur à la main : <b id="vAng">0°</b></label>
+   <input type="range" id="sAng" min="-180" max="180" step="1" value="0">
+   <div class="rang"><button class="btn" id="bPos0">↑ Bouchon en haut</button><button class="btn" id="bPosC">↻ Repère de contrôle</button></div>
+   <div class="rang"><button class="btn" id="bBouchon">🔧 Dévisser le bouchon</button><button class="btn gros" id="bVerser">🛢 Verser (maintenir)</button></div>
+   <div class="rang"><button class="btn" id="bVidange">Vidanger</button><button class="btn" id="bRemiseZero">↺ Recommencer</button></div>
+   <ol id="etapes"></ol>
+   <p class="note">Valeurs d'exemple pour la formation : la quantité et l'angle de contrôle réels sont donnés par la notice Voith et la plaque du coupleur.</p>
+  </div>
+  <div class="page" id="pCmd">
+   <h3>Moteur</h3>
+   <div class="rang">
+    <button class="btn vert" id="bMarche">▶ Démarrer</button><button class="btn rouge" id="bArret">■ Arrêter</button>
+   </div>
+   <div class="rang">
+    <button class="btn" id="bLent">🐢 Vitesse lente</button><button class="btn" id="bPause">⏸ Pause</button>
+   </div>
+   <label class="cur">Charge du convoyeur : <b id="vCh">80 %</b> du couple nominal</label>
+   <input type="range" id="sCh" min="0" max="250" step="5" value="80">
+   <label class="cur">Réglage rapide du remplissage : <b id="vF">68 %</b></label>
+   <input type="range" id="sF" min="0" max="95" step="1" value="68">
+   <div class="mes">
+    <div>Vitesse moteur (roue pompe)<b id="mNp">–</b></div><div>Vitesse sortie (roue turbine)<b id="mNt">–</b></div>
+    <div>Glissement<b id="mS">–</b></div><div>Couple transmis<b id="mC">–</b></div>
+    <div>Puissance perdue en chaleur<b id="mP">–</b></div><div>Température de l'huile<b id="mT">–</b></div>
+   </div>
+   <div class="barre"><i id="bar"></i></div>
+   <canvas id="graph" width="600" height="240"></canvas>
+   <div class="leg"><i style="background:#5aa9e6"></i>moteur<i style="background:#3fbf6f"></i>sortie<i style="background:#e5484d"></i>température (0–160 °C)</div>
+   <div class="msg" id="msg"></div>
+   <div class="rang" style="margin-top:8px"><button class="btn" id="bBloque">⛔ Bloquer le convoyeur</button><button class="btn" id="bRepare">🔧 Bouchon fusible neuf</button></div>
+   <p class="note">Température en temps accéléré (×20). 1 doigt : tourner · 2 doigts : zoomer / déplacer · toucher une pièce : son nom et son rôle.</p>
+  </div>
+  <div class="page" id="pPieces"><table id="tPieces"></table><p class="note">Touchez une ligne pour repérer la pièce en 3D.</p></div>
+  <div class="page" id="pCours"></div>
+  <div class="page" id="pPannes"></div>
+  <div class="page" id="pQuiz"></div>
+ </div>
+</div>
+<script>/*BUNDLE*/</script>
+</body>
+</html>
