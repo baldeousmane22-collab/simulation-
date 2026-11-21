@@ -464,7 +464,7 @@ function majReperes() {
     if (vis) {
       if (G.suit) { vTmp.set(0, 0.25, 0); G.suit.localToWorld(vTmp); }
       else vTmp.copy(G.ancre).addScaledVector(G.ex, etat.ecl);
-      if (G.id === 'huile') vTmp.set(0, Math.min(hCap, 0) - 0.9, 0);
+      if (G.id === 'huile') vTmp.set(0, -R0 - 0.35, 0);
       vTmp.project(camera);
       vis = vTmp.z < 1 && Math.abs(vTmp.x) < 1 && Math.abs(vTmp.y) < 1;
       if (vis) { G.el.style.left = ((vTmp.x + 1) / 2 * w) + 'px'; G.el.style.top = ((1 - vTmp.y) / 2 * h) + 'px'; }
@@ -488,9 +488,11 @@ const etat = {
 };
 const fRemp = () => etat.V / V_TOT;
 function coupleCoupleur(wp, wt, f) {
-  if (wp < 0.05 || f <= 0.002) return 0;
-  const s = (wp - wt) / wp, Af = A_REF * Math.pow(f / F_REF, 1.6);
-  return C_N * Af * (s / (Math.abs(s) + S0)) * (wp / W_N) * (wp / W_N);
+  // vitesse de référence = la plus rapide des deux roues (la turbine peut entraîner la pompe en ralentissement)
+  const wr = Math.max(wp, wt);
+  if (wr < 0.05 || f <= 0.002) return 0;
+  const s = (wp - wt) / wr, Af = A_REF * Math.pow(f / F_REF, 1.6);
+  return C_N * Af * (s / (Math.abs(s) + S0)) * (wr / W_N) * (wr / W_N);
 }
 function trous() {    // orifices ouverts : bouchon de remplissage dévissé, bouchon fusible fondu
   const o = [];
@@ -503,7 +505,7 @@ function simuler(dt) {
   // physique moteur / coupleur / convoyeur (sous-pas pour la stabilité)
   const n = Math.ceil(dt / 0.002), h = dt / n, f = fRemp(), wt0 = etat.wt;
   for (let i = 0; i < n; i++) {
-    const Tm = etat.marche ? C_N * Math.min(2.4, Math.max(0, (W_S - etat.wp) / (W_S - W_N))) : 0;
+    const Tm = etat.marche ? C_N * Math.min(2.8, Math.max(0, (W_S - etat.wp) / (W_S - W_N))) : 0;
     const Cc = coupleCoupleur(etat.wp, etat.wt, f);
     const fr = 0.015 * C_N * Math.min(1, etat.wp / 5);
     etat.wp = Math.max(0, etat.wp + (Tm - Cc - fr) / J_P * h);
@@ -517,11 +519,11 @@ function simuler(dt) {
   }
   etat.P = etat.Cc * Math.max(0, etat.wp - etat.wt);
   // protection du moteur (surcharge prolongée)
-  if (etat.marche && etat.Tm > 2.3 * C_N) { etat.tSurch += dt; if (etat.tSurch > 5) { etat.marche = false; etat.disj = true; } } else etat.tSurch = Math.max(0, etat.tSurch - dt);
+  if (etat.marche && etat.Tm > 2.6 * C_N) { etat.tSurch += dt; if (etat.tSurch > 4) { etat.marche = false; etat.disj = true; } } else etat.tSurch = Math.max(0, etat.tSurch - dt);
   // échauffement (temps accéléré)
-  // accéléré ×10 en régime établi ou à l'arrêt ; ×4 turbine bloquée ; temps réel pendant la mise en vitesse
+  // accéléré ×10 en régime établi ou à l'arrêt ; ×2 turbine bloquée ; temps réel pendant la mise en vitesse
   etat.accT += ((etat.wt - wt0) / dt - etat.accT) * Math.min(1, dt * 3);
-  const fac = etat.accT > 1.5 ? 1 : etat.wp > 50 && etat.wt < 1 ? 4 : ACC_TH;
+  const fac = etat.accT > 1.5 ? 1 : etat.wp > 50 && etat.wt < 1 ? 2 : ACC_TH;
   const hth = 60 + 60 * etat.wt / W_N;
   etat.th += fac * (etat.P - hth * (etat.th - T_AMB)) / C_TH * dt;
   if (etat.th >= T_FUS && !etat.fondu) { etat.fondu = true; if (F1.ame) F1.ame.visible = false; }
@@ -530,7 +532,7 @@ function simuler(dt) {
   for (const a0 of trous()) {
     const a = etat.aT + a0, yH = RH * Math.cos(a);
     let debit = 0;
-    if (tourne) debit = etat.V > 0.02 ? 1.4 : 0;
+    if (tourne) debit = etat.V > 0.02 ? Math.min(4, 0.6 + Math.max(etat.wp, etat.wt) * 0.02) : 0;   // éjection centrifuge
     else { const lv = niveau(fRemp()); if (yH < lv) debit = Math.min(4, 0.25 + 3 * (lv - yH)); if (debit) { const vMin = V_TOT * fracSous(yH); debit = Math.min(debit, (etat.V - vMin) / dt); } }
     if (debit > 0.001) {
       etat.V = Math.max(0, etat.V - debit * dt);
@@ -544,7 +546,8 @@ function simuler(dt) {
     }
   }
   // remplissage à l'entonnoir
-  if (etat.verse && peutVerser()) etat.V = Math.min(V_TOT, etat.V + 1.2 * dt);
+  if (etat.verse && !peutVerser()) finVerse();
+  if (etat.verse) etat.V = Math.min(V_TOT, etat.V + 1.2 * dt);
   // historique pour la courbe
   hist.t += dt; if (hist.t > 0.1) { hist.t = 0; hist.d.push([etat.wp, etat.wt, etat.th]); if (hist.d.length > 300) hist.d.shift(); }
 }
@@ -697,7 +700,7 @@ function afficher() {
   $('#rF').textContent = fmt(f * 100, 0) + ' %';
   $('#rA').textContent = fmt(a, 0) + '°';
   $('#rC').textContent = fmt(V_CONS) + ' L · α ' + fmt(ALPHA, 0) + '°';
-  const rb = $('#rBar'); rb.style.width = Math.min(100, f * 100) + '%'; rb.style.background = f > 0.82 ? 'var(--ko)' : Math.abs(etat.V - V_CONS) <= 0.35 ? 'var(--ok)' : 'var(--acc)';
+  const rb = $('#rBar'); rb.style.width = Math.min(100, f * 100) + '%'; rb.style.background = f > 0.805 ? 'var(--ko)' : Math.abs(etat.V - V_CONS) <= 0.35 ? 'var(--ok)' : 'var(--acc)';
   if (!document.activeElement || document.activeElement.id !== 'sAng') { $('#sAng').value = Math.round(a); }
   $('#vAng').textContent = fmt(a, 0) + '°';
   $('#vF').textContent = fmt(f * 100, 0) + ' %'; if (document.activeElement?.id !== 'sF') $('#sF').value = Math.round(f * 100);
@@ -729,7 +732,7 @@ function afficher() {
   else if (etat.disj) { t = '⚡ Le disjoncteur du moteur a déclenché : couple demandé trop fort trop longtemps. Cause probable : trop d\'huile dans le coupleur (couple de démarrage excessif). Corrigez le remplissage puis redémarrez.'; c = 'a'; }
   else if (etat.marche && etat.V < 0.3) { t = 'Coupleur vide : le moteur tourne mais rien n\'est transmis. Faites le plein (onglet Remplissage).'; c = 'w'; }
   else if (etat.bloque && etat.marche) { t = 'Convoyeur bloqué : la turbine est arrêtée, glissement 100 %. Le moteur et le réducteur sont protégés, mais toute la puissance (' + fmt(etat.P / 1000, 0) + ' kW) chauffe l\'huile : le bouchon fusible va fondre.'; c = 'a'; }
-  else if (f > 0.82) { t = 'Trop d\'huile (' + fmt(f * 100, 0) + ' %) : couple de démarrage trop fort, pression interne élevée (pas assez d\'air pour la dilatation), risque de fuite et de surcharge du moteur.'; c = 'a'; }
+  else if (f > 0.805) { t = 'Trop d\'huile (' + fmt(f * 100, 0) + ' %) : couple de démarrage trop fort, pression interne élevée (pas assez d\'air pour la dilatation), risque de fuite et de surcharge du moteur.'; c = 'a'; }
   else if (etat.marche && etat.wt < 0.9 * etat.wp && etat.wp > 100) { t = 'Démarrage : le moteur a pris sa vitesse presque à vide ; le couple transmis augmente et la bande accélère progressivement.'; c = 'w'; }
   else if (etat.marche && s > 0.07) { t = 'Glissement élevé (' + fmt(s * 100) + ' %) : remplissage insuffisant ou surcharge. ' + fmt(etat.P / 1000) + ' kW sont perdus en chaleur.'; c = 'w'; }
   else if (etat.th > 110) { t = 'Température élevée : surveillez, le bouchon fusible fond à ' + T_FUS + ' °C.'; c = 'w'; }
@@ -794,7 +797,8 @@ $('#bBloque').onclick = () => { etat.bloque = !etat.bloque; };
 $('#bRepare').onclick = () => {
   if (!etat.fondu) { dire('Le bouchon fusible est en bon état.'); return; }
   if (!etat.consigne || !arreteTotal()) { dire('Pour changer le bouchon fusible : arrêtez et consignez le moteur (onglet Remplissage).'); return; }
-  etat.fondu = false; F1.ame.visible = true; etat.th = Math.min(etat.th, 60);
+  if (etat.th > 70) { dire('Huile / carter encore à ' + fmt(etat.th, 0) + ' °C : attendez le refroidissement avant de démonter le bouchon fusible.'); return; }
+  etat.fondu = false; F1.ame.visible = true;
   dire('Bouchon fusible neuf (140 °C) monté. Refaites le plein à la quantité prescrite (onglet Remplissage).');
 };
 document.querySelectorAll('#onglets button').forEach(b => b.onclick = () => {

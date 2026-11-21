@@ -59,7 +59,8 @@ p,li{font-size:13.5px;line-height:1.45}ul,ol{padding-left:20px;margin:4px 0}
 #graph{width:100%;height:120px;background:var(--pan2);border-radius:8px;display:block;margin:6px 0}
 .leg{font-size:12px;color:var(--mut)}.leg i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin:0 4px 0 8px}
 #etapes li{color:var(--mut);padding:3px 0;font-size:13.5px}#etapes li.fait{color:var(--ok)}#etapes li.cour{color:var(--acc);font-weight:700}
-.btn.gros{min-height:58px;font-size:15px}
+.btn.gros{min-height:58px;font-size:15px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+@media (max-height:460px){#titre small{display:none}}
 @media (orientation:landscape) and (min-width:700px){#app{flex-direction:row}#vue{flex:1 1 60%}#panneau{flex:0 0 380px;border-top:0;border-left:1px solid var(--bd)}}
 </style>
 </head>
@@ -68,7 +69,7 @@ p,li{font-size:13.5px;line-height:1.45}ul,ol{padding-left:20px;margin:4px 0}
  <div id="vue">
   <canvas id="c3d"></canvas>
   <div id="labels"></div>
-  <div id="titre">Coupleur hydraulique VOITH type T<small>Remplissage constant · taille 487 · moteur 110 kW – 1480 tr/min</small></div>
+  <div id="titre">Coupleur hydraulique Voith<small>Type T · taille 487 · 110 kW – 1480 tr/min</small></div>
   <div id="etat" class="arret">ARRÊT</div>
   <div id="fiche"><button class="x" id="ficheX" aria-label="Fermer">✕</button><div id="ficheT"></div></div>
   <div id="outils">
