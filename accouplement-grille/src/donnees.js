@@ -3,7 +3,7 @@
 // Valeurs d'exemple pour la formation : les vraies valeurs sont dans la notice du fabricant (tableaux par taille).
 
 export const PIECES = [
-  { n: 1, id: 'moteur', court: 'Moteur', nom: 'Moteur électrique (machine menante)', mat: '315 kW – 1485 tr/min (exemple)', role: 'Entraîne le moyeu côté moteur par son arbre claveté.' },
+  { n: 1, id: 'moteur', court: 'Moteur', nom: 'Moteur électrique (machine menante)', mat: '4 pôles – 1475 tr/min en charge, 472 kW transmis (plaque du réducteur)', role: 'Entraîne le moyeu côté moteur par son arbre claveté.' },
   { n: 2, id: 'moyeuA', court: 'Moyeu moteur', nom: 'Moyeu côté moteur', mat: 'Acier forgé, rainures rectifiées', role: 'Claveté sur l\'arbre du moteur. Ses rainures axiales reçoivent une moitié de chaque barreau de la grille.' },
   { n: 3, id: 'moyeuB', court: 'Moyeu réducteur', nom: 'Moyeu côté réducteur', mat: 'Acier forgé, rainures rectifiées', role: 'Claveté sur l\'arbre d\'entrée (arbre rapide) du réducteur. Il reçoit l\'autre moitié des barreaux.' },
   { n: 4, id: 'grille', court: 'Grille', nom: 'Grille (ressort serpentin) en 6 segments', mat: 'Acier à ressort trempé, grenaillé', role: 'Transmet le couple d\'un moyeu à l\'autre en fléchissant. Elle amortit les chocs et accepte de petits défauts d\'alignement. C\'est la pièce d\'usure.' },
@@ -15,7 +15,7 @@ export const PIECES = [
   { n: 10, id: 'bouchons', court: 'Bouchons', nom: 'Bouchons de graissage (×2)', mat: 'Acier', role: 'Permettent de remplir et de compléter la graisse sans démonter.' },
   { n: 11, id: 'graisse', court: 'Graisse', nom: 'Graisse pour accouplement', mat: 'Graisse spéciale accouplements (NLGI 1 environ)', role: 'Lubrifie le contact grille / rainures. Sans graisse, la grille et les dents s\'usent très vite.' },
   { n: 12, id: 'arbres', court: 'Arbres', nom: 'Arbres et clavettes', mat: 'Acier C45 / 42CrMo4', role: 'Arbre du moteur et arbre d\'entrée du réducteur ; les clavettes transmettent le couple aux moyeux.' },
-  { n: 13, id: 'machine', court: 'Réducteur', nom: 'Réducteur à renvoi d\'angle (machine entraînée)', mat: 'Carter en fonte à ailettes, rapport ≈ 20', role: 'Reçoit le couple du moteur par l\'accouplement sur son arbre rapide, et entraîne le convoyeur par son arbre de sortie lent. Son arbre d\'entrée doit être parfaitement aligné avec celui du moteur.' }
+  { n: 13, id: 'machine', court: 'Réducteur', nom: 'Réducteur à renvoi d\'angle (machine entraînée)', mat: 'SEW-Eurodrive X3KS230 · i = 20,08 · 1475 → 73 tr/min', role: 'Reçoit le couple du moteur par l\'accouplement sur son arbre rapide, et entraîne le convoyeur par son arbre de sortie lent. Son arbre d\'entrée doit être parfaitement aligné avec celui du moteur.' }
 ];
 
 export const MONTAGE = [
@@ -49,7 +49,7 @@ export const COURS_HTML = `
 </ul>
 <p>Plus l'alignement est bon, plus la grille et les rainures durent longtemps. Les vraies valeurs sont dans le tableau du fabricant pour chaque taille.</p>
 <h3>Calcul du couple</h3>
-<p><b>C = 9550 × P / n</b>. Pour 315 kW à 1485 tr/min : C = 9550 × 315 / 1485 ≈ 2 026 N·m. Ici, l'accouplement (couple nominal 4 000 N·m) a un facteur de service de 4 000 / 2 026 ≈ 2.</p>
+<p><b>C = 9550 × P / n</b>. Pour le réducteur SEW X3KS230 (472 kW à 1475 tr/min) : C = 9550 × 472 / 1475 ≈ 3 056 N·m. Avec un accouplement de 6 000 N·m (valeur d'exemple : lire la taille réelle sur l'accouplement), le facteur de service vaut 6 000 / 3 056 ≈ 2.</p>
 <h3>Entretien</h3>
 <ul>
 <li>Regraisser selon le planning (souvent une fois par an en service normal, plus souvent en ambiance chaude ou poussiéreuse).</li>
@@ -77,7 +77,7 @@ export const QUIZ = [
   { q: 'Pourquoi les rainures ont-elles des flancs courbes ?', r: ['Pour faire joli', 'Pour obtenir une raideur progressive', 'Pour faciliter l\'usinage'], b: 1, e: 'Quand le couple augmente, la portée du barreau raccourcit : l\'accouplement devient plus raide.' },
   { q: 'Que faut-il enfiler sur les arbres AVANT les moyeux ?', r: ['Les joints à lèvres', 'La grille', 'Les boulons'], b: 0, e: 'Les joints ne passent pas par-dessus les moyeux une fois ceux-ci montés.' },
   { q: 'Avec quoi enfonce-t-on les segments de grille ?', r: ['Un marteau en acier', 'Un maillet en caoutchouc', 'Une presse hydraulique'], b: 1, e: 'Un marteau en acier marque et fragilise l\'acier à ressort.' },
-  { q: 'Couple pour 315 kW à 1485 tr/min ?', r: ['≈ 212 N·m', '≈ 2 026 N·m', '≈ 20 260 N·m'], b: 1, e: 'C = 9550 × 315 / 1485 ≈ 2 026 N·m.' },
+  { q: 'Couple transmis par l\'accouplement pour 472 kW à 1475 tr/min ?', r: ['≈ 306 N·m', '≈ 3 056 N·m', '≈ 30 560 N·m'], b: 1, e: 'C = 9550 × 472 / 1475 ≈ 3 056 N·m. Le réducteur (i = 20,08) le multiplie ensuite : ≈ 59 000 N·m à la sortie.' },
   { q: 'Que provoque un manque de graisse ?', r: ['Rien', 'Usure rapide de la grille et des rainures, échauffement', 'Une meilleure transmission'], b: 1, e: 'Le contact métal sur métal s\'use très vite et chauffe.' },
   { q: 'On change une grille usée. On remplace…', r: ['Seulement le segment cassé', 'Tous les segments et les joints', 'Seulement la graisse'], b: 1, e: 'On remplace toujours la grille complète et les joints, puis on regraisse.' },
   { q: 'Le désalignement angulaire de service maximum (exemple) est…', r: ['0,25°', '2,5°', '25°'], b: 0, e: 'Un accouplement à grille tolère de petits défauts seulement ; au montage on vise beaucoup mieux (0,10°).' },

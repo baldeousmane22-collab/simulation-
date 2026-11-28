@@ -452,8 +452,8 @@ pannes provoquées (ventilateur, ailettes encrassées, niveau bas, surcharge), o
 - Dossier séparé : `accouplement-grille/` (appli seule) ; sources dans `src/` (`bash src/build.sh`), projet Android dans `apk/`.
 
 Deux moyeux à 48 rainures évasées vers le jeu, grille en acier à ressort en 6 segments (déformable en temps réel),
-carter en deux demi-coquilles (joints plats, 8 boulons, bouchons de graissage), joints à lèvres, graisse, moteur 315 kW et machine.
-Physique de torsion à deux inerties avec raideur progressive (4 000 N·m pour 0,4°, valeurs d'exemple) : démarrage, à-coup de bourrage,
+carter en deux demi-coquilles (joints plats, 8 boulons, bouchons de graissage), joints à lèvres, graisse, entre le moteur et le réducteur SEW X3KS230 (472 kW, 1475 tr/min, i = 20,08).
+Physique de torsion à deux inerties avec raideur progressive (6 000 N·m pour 0,4°, valeur d'exemple) : démarrage, à-coup de bourrage,
 blocage de la machine et rupture de la grille, courbe du couple sur 0,5 s, ralenti ×10. Désalignement angulaire / parallèle et écartement
 réglables (exagérés à l'écran), manque de graisse, usure et température. Onglet **Montage** en 9 étapes animées
 (joints, moyeux, cale d'épaisseur, comparateur, graissage, pose des segments, fermeture du carter). Onglets **Pièces**, **Cours**, **Pannes**, **Quiz**.

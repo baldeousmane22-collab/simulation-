@@ -477,9 +477,9 @@ function majReperes() {
 }
 
 // ---------- physique : deux inerties reliées par la grille (raideur progressive) ----------
-const WS = TAU * 1500 / 60, WN = TAU * 1485 / 60, C_MOT = 9550 * 315 / 1485;   // moteur 315 kW
-const CN = 4000, PHI_N = 0.4 * Math.PI / 180;                                     // accouplement : 4 000 N·m pour 0,4° de torsion
-const J_M = 6, J_L = 25, AMORT = 250;
+const WS = TAU * 1500 / 60, WN = TAU * 1475 / 60, C_MOT = 9550 * 472 / 1475;   // 472 kW à 1475 tr/min (plaque SEW X3KS230)
+const CN = 6000, PHI_N = 0.4 * Math.PI / 180, I_RED = 20.08;                      // accouplement : 6 000 N·m pour 0,4° (exemple) ; rapport du réducteur
+const J_M = 10, J_L = 40, AMORT = 390;
 const etat = {
   vue: 'coupe', ecl: 0, eclCible: 0, pause: false, lent: false,
   marche: false, cmF: 0, wm: 0, wl: 0, phi: 0, cc: 0, pic: 0, charge: 0.8, choc: 0, bloc: false, casse: false, declenche: '',
@@ -532,7 +532,7 @@ function appliquer(dtR, dtSim) {
   alignB.position.set((etat.gap - 4) / 10, -etat.par / 10 * EXA_PAR, 0);
   spinA.rotation.x = spinArbreA.rotation.x = spinCH.rotation.x = spinCB.rotation.x = spinJA.rotation.x = spinJB.rotation.x = spinG.rotation.x = etat.angA;
   spinB.rotation.x = spinArbreB.rotation.x = etat.angB;
-  spinSortie.rotation.z = -etat.angB / 20;          // arbre de sortie du réducteur (rapport ≈ 20)
+  spinSortie.rotation.z = -etat.angB / I_RED;       // arbre de sortie du réducteur
   // vue éclatée + montage
   const k = dtR ? 1 - Math.exp(-dtR * 4) : 1;
   etat.ecl += (etat.eclCible - etat.ecl) * k; if (Math.abs(etat.ecl - etat.eclCible) < 1e-3) etat.ecl = etat.eclCible;
@@ -612,6 +612,7 @@ function dire(t) { const m = $('#msg'); m.textContent = t; m.className = 'msg a'
 function afficher() {
   const nm = etat.wm * 60 / TAU, nl = etat.wl * 60 / TAU;
   $('#mNm').textContent = fmt(nm) + ' tr/min'; $('#mNl').textContent = fmt(Math.abs(nl)) + ' tr/min';
+  $('#mNs').textContent = fmt(Math.abs(nl) / I_RED, 1) + ' tr/min'; $('#mCs').textContent = fmt(Math.abs(etat.cc) * I_RED * 0.96) + ' N·m';
   $('#mC').textContent = fmt(Math.abs(etat.cc)) + ' N·m'; $('#mU').textContent = fmt(Math.abs(etat.cc) / CN * 100) + ' %';
   $('#mPhi').textContent = fmt(Math.abs(etat.phi) * 180 / Math.PI, 2) + '°';
   $('#mPic').textContent = fmt(etat.pic) + ' N·m';

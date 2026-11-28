@@ -71,7 +71,7 @@ p,li{font-size:13.5px;line-height:1.45}ul,ol{padding-left:20px;margin:4px 0}
  <div id="vue">
   <canvas id="c3d"></canvas>
   <div id="labels"></div>
-  <div id="titre">Accouplement à ressort serpentin (grille)<small>Entre le moteur et le réducteur · type T10 · 4 000 N·m (exemple)</small></div>
+  <div id="titre">Accouplement à ressort serpentin (grille)<small>Entre le moteur et le réducteur · SEW X3KS230 · 472 kW · i = 20,08</small></div>
   <div id="etat" class="arret">ARRÊT</div>
   <div id="fiche"><button class="x" id="ficheX" aria-label="Fermer">✕</button><div id="ficheT"></div></div>
   <div id="outils">
@@ -94,13 +94,14 @@ p,li{font-size:13.5px;line-height:1.45}ul,ol{padding-left:20px;margin:4px 0}
    <div class="rang">
     <button class="btn" id="bLent">🐢 Ralenti ×10</button><button class="btn" id="bPause">⏸ Pause</button>
    </div>
-   <label class="cur">Charge du réducteur : <b id="vCh">80 %</b> du couple nominal moteur (2 026 N·m)</label>
+   <label class="cur">Charge du réducteur : <b id="vCh">80 %</b> de 3 056 N·m (472 kW à 1475 tr/min)</label>
    <input type="range" id="sCh" min="0" max="150" step="5" value="80">
    <div class="rang"><button class="btn" id="bChoc">💥 À-coup (bourrage)</button><button class="btn" id="bBloc">⛔ Blocage convoyeur</button></div>
    <div class="mes">
     <div>Vitesse moteur<b id="mNm">–</b></div><div>Vitesse entrée réducteur<b id="mNl">–</b></div>
     <div>Couple transmis<b id="mC">–</b></div><div>% du couple nominal<b id="mU">–</b></div>
     <div>Torsion de la grille<b id="mPhi">–</b></div><div>Pic de couple<b id="mPic">–</b></div>
+    <div>Sortie réducteur (÷ 20,08)<b id="mNs">–</b></div><div>Couple sortie réducteur<b id="mCs">–</b></div>
     <div>Usure grille / rainures<b id="mUs">–</b></div><div>Température carter<b id="mT">–</b></div>
    </div>
    <div class="barre"><i id="bar"></i></div>
