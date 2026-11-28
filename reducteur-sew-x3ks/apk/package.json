@@ -1,0 +1,19 @@
+{
+  "name": "reducteur-sew-x3ks-apk",
+  "version": "1.0.0",
+  "description": "APK Android (Capacitor) de la simulation 3D du réducteur SEW-Eurodrive X3KS230 (dossier reducteur-sew-x3ks).",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "preparer": "bash scripts/preparer-web.sh",
+    "cap:sync": "bash scripts/preparer-web.sh && npx cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.5.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3"
+  }
+}

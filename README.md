@@ -432,3 +432,15 @@ contrôle au repère α ≈ 67° où l'huile doit affleurer, revissage, déconsi
 débordement si trop plein, vidange. Onglet **Marche** : démarrage progressif, anneau d'huile et tourbillon torique animés,
 glissement, couple, puissance perdue, température, courbe 30 s ; essais sous-remplissage (fusible fondu),
 surremplissage (disjonction du moteur), convoyeur bloqué. Onglets **Pièces** (12 repères), **Cours**, **Pannes**, **Quiz**.
+
+# Réducteur SEW-Eurodrive X3KS230 — renvoi d'angle 3 trains en 3D
+
+- **Lien web** : https://baldeousmane22-collab.github.io/simulation-/reducteur-sew-x3ks/
+- **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/reducteur-sew-x3ks/ReducteurSEWX3KS.apk
+- Dossier séparé : `reducteur-sew-x3ks/` (appli seule) ; sources dans `src/` (`bash src/build.sh`), projet Android dans `apk/`.
+
+D'après la plaque : i = 20,08, PK1 = 472 kW, n1 = 1475 → n2 = 73 tr/min, MK2 = 59 278 N·m, Fs = 1,82, huile synthétique VG 320.
+Moteur, accouplement, ventilateur, carter à ailettes (inférieur / supérieur), couple conique 13/33 puis deux trains hélicoïdaux
+17/46 et 26/76 (rapport total 20,08), roulements, couvercles, voyant de niveau, vidange, bain d'huile et barbotage animé.
+Vues **Fermé / Ouvert / Transparent / Éclatée**, sens de rotation de chaque arbre, vitesses, couples, pertes, température d'huile,
+pannes provoquées (ventilateur, ailettes encrassées, niveau bas, surcharge), onglets **Pièces** (17 repères), **Plaque**, **Cours**, **Pannes**, **Quiz**.
