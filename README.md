@@ -444,3 +444,16 @@ Moteur, accouplement, ventilateur, carter à ailettes (inférieur / supérieur),
 17/46 et 26/76 (rapport total 20,08), roulements, couvercles, voyant de niveau, vidange, bain d'huile et barbotage animé.
 Vues **Fermé / Ouvert / Transparent / Éclatée**, sens de rotation de chaque arbre, vitesses, couples, pertes, température d'huile,
 pannes provoquées (ventilateur, ailettes encrassées, niveau bas, surcharge), onglets **Pièces** (17 repères), **Plaque**, **Cours**, **Pannes**, **Quiz**.
+
+# Accouplement à ressort serpentin (grille) — type T10 en 3D
+
+- **Lien web** : https://baldeousmane22-collab.github.io/simulation-/accouplement-grille/
+- **APK Android** : https://github.com/baldeousmane22-collab/simulation-/releases/download/accouplement-grille/AccouplementGrille.apk
+- Dossier séparé : `accouplement-grille/` (appli seule) ; sources dans `src/` (`bash src/build.sh`), projet Android dans `apk/`.
+
+Deux moyeux à 48 rainures évasées vers le jeu, grille en acier à ressort en 6 segments (déformable en temps réel),
+carter en deux demi-coquilles (joints plats, 8 boulons, bouchons de graissage), joints à lèvres, graisse, moteur 315 kW et machine.
+Physique de torsion à deux inerties avec raideur progressive (4 000 N·m pour 0,4°, valeurs d'exemple) : démarrage, à-coup de bourrage,
+blocage de la machine et rupture de la grille, courbe du couple sur 0,5 s, ralenti ×10. Désalignement angulaire / parallèle et écartement
+réglables (exagérés à l'écran), manque de graisse, usure et température. Onglet **Montage** en 9 étapes animées
+(joints, moyeux, cale d'épaisseur, comparateur, graissage, pose des segments, fermeture du carter). Onglets **Pièces**, **Cours**, **Pannes**, **Quiz**.

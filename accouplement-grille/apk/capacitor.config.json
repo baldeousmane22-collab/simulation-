@@ -1,0 +1,8 @@
+{
+  "appId": "fr.formation.accouplementgrille",
+  "appName": "Accouplement à grille",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#15181b"
+  }
+}
