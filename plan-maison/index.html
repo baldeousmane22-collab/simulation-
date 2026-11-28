@@ -1,0 +1,1255 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1e293b">
+<meta name="description" content="Plan de maison plain-pied 3 chambres : plan 2D coté, vue 3D, tableau des surfaces.">
+<title>Plan de maison</title>
+<style>
+  :root {
+    --fond: #0f172a; --barre: #1e293b; --texte: #f1f5f9; --accent: #f59e0b; --bouton: #334155;
+    --bas: env(safe-area-inset-bottom, 0px); --haut: env(safe-area-inset-top, 0px);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: var(--fond); color: var(--texte);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+  header { position: fixed; top: 0; left: 0; right: 0; z-index: 5; padding: calc(6px + var(--haut)) 8px 6px;
+    background: var(--barre); display: flex; align-items: center; gap: 6px; min-height: 48px; }
+  header h1 { font-size: 15px; margin: 0; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  header h1 small { display: block; font-weight: 400; font-size: 11px; color: #94a3b8; }
+  .outils { display: flex; gap: 5px; }
+  .outils[hidden] { display: none; }
+  .outils button { background: var(--bouton); color: var(--texte); border: 0; border-radius: 8px;
+    min-width: 38px; height: 36px; padding: 0 9px; font-size: 14px; font-weight: 600; }
+  .outils button.on { background: var(--accent); color: #111; }
+  main { position: fixed; left: 0; right: 0; top: calc(48px + var(--haut)); bottom: calc(60px + var(--bas)); }
+  .vue { position: absolute; inset: 0; display: none; }
+  .vue.active { display: block; }
+  #c2d { width: 100%; height: 100%; display: block; touch-action: none; background: #fff; }
+  #c3d { width: 100%; height: 100%; touch-action: none; }
+  #c3d canvas { display: block; touch-action: none; }
+  .astuce { position: absolute; left: 8px; bottom: 8px; background: rgba(15,23,42,.78); color: #e2e8f0;
+    font-size: 12px; padding: 5px 8px; border-radius: 6px; pointer-events: none; transition: opacity .6s; }
+  #msg3d { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    text-align: center; padding: 24px; color: #cbd5e1; font-size: 15px; }
+  #vueSurf { overflow-y: auto; -webkit-overflow-scrolling: touch; background: #f8fafc; color: #0f172a; }
+  #surfaces { max-width: 760px; margin: 0 auto; padding: 12px 12px 24px; }
+  #surfaces h2 { font-size: 17px; margin: 18px 0 6px; color: #1e293b; }
+  #surfaces h2:first-child { margin-top: 4px; }
+  #surfaces table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,.12); border-radius: 6px; overflow: hidden; }
+  #surfaces th, #surfaces td { padding: 6px 7px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+  #surfaces th { background: #1e293b; color: #fff; font-weight: 600; }
+  #surfaces td.n, #surfaces th.n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  #surfaces tr.total td { font-weight: 700; background: #fef3c7; }
+  #surfaces tr.sous td { font-weight: 600; background: #f1f5f9; }
+  #surfaces .ok { color: #15803d; font-weight: 700; }
+  #surfaces .ko { color: #b91c1c; font-weight: 700; }
+  #surfaces .env { color: #b45309; font-weight: 700; }
+  #surfaces p.note { font-size: 12px; color: #475569; margin: 6px 2px; line-height: 1.45; }
+  .pastille { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 5px;
+    vertical-align: -1px; border: 1px solid rgba(0,0,0,.25); }
+  nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: flex; background: var(--barre);
+    padding-bottom: var(--bas); border-top: 1px solid #334155; }
+  nav button { flex: 1; height: 60px; border: 0; background: none; color: #94a3b8; font-size: 13px;
+    font-weight: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  nav button b { font-size: 20px; line-height: 1; }
+  nav button.actif { color: var(--accent); background: #0f172a; }
+  #toast { position: fixed; left: 50%; bottom: calc(72px + var(--bas)); transform: translateX(-50%); z-index: 9;
+    background: #111827; color: #fff; padding: 9px 14px; border-radius: 8px; font-size: 13px; display: none;
+    max-width: 90vw; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,.4); }
+</style>
+<script>
+  // Three.js : par CDN dans le navigateur ; copie locale dans l'APK (fonctionne hors connexion).
+  (function () {
+    var C = window.Capacitor;
+    var natif = !!(C && C.isNativePlatform && C.isNativePlatform()) ||
+      (location.protocol === 'https:' && location.hostname === 'localhost') ||
+      /[?&]vendor=local\b/.test(location.search);
+    var base = natif ? './vendor/' : 'https://cdn.jsdelivr.net/npm/three@0.170.0/';
+    var s = document.createElement('script');
+    s.type = 'importmap';
+    s.textContent = JSON.stringify({ imports: {
+      'three': base + 'build/three.module.min.js',
+      'three/addons/': base + 'examples/jsm/'
+    } });
+    document.currentScript.after(s);
+  })();
+</script>
+</head>
+<body>
+<header>
+  <h1 id="titre">Plan maison<small>Plain-pied · 3 chambres · terrain 20 × 25 m</small></h1>
+  <div class="outils" id="outils2d">
+    <button id="bMoins" aria-label="Zoom arrière">−</button>
+    <button id="bPlus" aria-label="Zoom avant">+</button>
+    <button id="bAjuster" aria-label="Ajuster le plan à l'écran">⤢</button>
+    <button id="bCotes" class="on" aria-label="Afficher ou masquer les cotes">Cotes</button>
+    <button id="bPng" aria-label="Exporter le plan en image PNG">PNG</button>
+  </div>
+  <div class="outils" id="outils3d" hidden>
+    <button id="bToit" aria-label="Afficher ou masquer le toit">Toit</button>
+    <button id="bEtiq" class="on" aria-label="Étiquettes des pièces">Noms</button>
+    <button id="bDessus" aria-label="Vue de dessus">⬇</button>
+    <button id="bRecentrer" aria-label="Recentrer la vue">⟲</button>
+  </div>
+</header>
+
+<main>
+  <section id="vue2d" class="vue active">
+    <canvas id="c2d"></canvas>
+    <div class="astuce" id="astuce2d">1 doigt : déplacer · 2 doigts : zoomer</div>
+  </section>
+  <section id="vue3d" class="vue">
+    <div id="c3d"></div>
+    <div id="msg3d">Chargement de la vue 3D…</div>
+    <div class="astuce" id="astuce3d" style="opacity:0">1 doigt : tourner · 2 doigts : zoomer / déplacer</div>
+  </section>
+  <section id="vueSurf" class="vue"><div id="surfaces"></div></section>
+</main>
+
+<nav>
+  <button data-vue="vue2d" class="actif"><b>📐</b>Plan 2D</button>
+  <button data-vue="vue3d"><b>🏠</b>Vue 3D</button>
+  <button data-vue="vueSurf"><b>📊</b>Surfaces</button>
+</nav>
+<div id="toast"></div>
+
+<script type="module">
+/* =====================================================================
+   CONFIGURATION — toutes les dimensions du projet (en mètres)
+   Modifier une valeur ici met à jour le plan 2D, la 3D, les cotes,
+   les surfaces et les vérifications.
+   ===================================================================== */
+const CONFIG = {
+  projet: {
+    titre: 'MAISON INDIVIDUELLE DE PLAIN-PIED',
+    sousTitre: '3 chambres avec douches · annexe · abri voiture',
+    planche: 'Plan de masse et de distribution',
+    echelle: 100,          // 1/100 pour l'export PNG (format A3)
+    ppp: 200,              // résolution de l'export PNG (points par pouce)
+    version: '1.0'
+  },
+  terrain: { largeur: 20.00, profondeur: 25.00, cloture: 0.15, hauteurCloture: 1.80 },
+  // Implantation dans la profondeur, depuis la rue :
+  // cour avant | terrasse | maison (maison.profondeur) | passage | annexe (annexe.profondeur)
+  implantation: { courAvant: 6.00, terrasse: 1.50, passage: 2.50, reculLateral: 2.50 },
+  maison: {
+    largeur: 15.00, profondeur: 12.00,
+    murExt: 0.20,          // murs extérieurs
+    cloison: 0.10,         // cloisons
+    refend: 0.20,          // mur de refend porteur (portée de 12 m) entre la zone jour et le couloir
+    hsp: 3.00,             // hauteur sous plafond
+    couloir: 1.20,
+    soubassement: 0.15     // hauteur du dallage au-dessus du terrain
+  },
+  // Dimensions intérieures (l = largeur sur la façade, p = profondeur)
+  pieces: {
+    salon:   { l: 6.00, p: 5.00 },   // « environ » : le salon prend l'espace restant
+    cuisine: { l: 4.00, p: 3.50 },   // « environ » : la cuisine prend la largeur restante de la bande arrière
+    ch1: { l: 3.50, p: 4.00 },
+    ch2: { l: 3.50, p: 4.00 },
+    ch3: { l: 4.50, p: 4.00 },       // chambre parentale
+    d1:  { l: 1.80, p: 2.00 },
+    d2:  { l: 1.80, p: 2.00 },
+    d3:  { l: 2.20, p: 2.00 }
+  },
+  ouvertures: {
+    porte: 0.90, porteEntree: 1.00, porteDouche: 0.70,
+    fenetre: 1.20, fenetreDouche: 0.60,
+    hPorte: 2.10, allege: 1.00, linteau: 2.20, allegeDouche: 1.60
+  },
+  portail: { largeur: 3.50 },
+  portillon: { largeur: 1.00 },
+  allee: { largeur: 1.20 },
+  abri: { largeur: 3.00, profondeur: 5.50, retraitLateral: 0.50, retraitRue: 0.25, hauteur: 2.40 },
+  annexe: { largeur: 5.00, profondeur: 3.00, murExt: 0.20, cloison: 0.10, largeurDouche: 1.30, hauteur: 2.80 },
+  toit: { debord: 0.40, hauteur: 2.40 }
+};
+
+/* =====================================================================
+   OUTILS
+   ===================================================================== */
+const r2 = v => Math.round(v * 100) / 100;
+const egal = (a, b) => Math.abs(a - b) < 0.0051;
+const fmt = v => r2(v).toFixed(2).replace('.', ',');
+const fmtS = v => r2(v).toFixed(2).replace('.', ',') + ' m²';
+const $ = s => document.querySelector(s);
+
+/* =====================================================================
+   CALCUL DU PLAN : pièces, murs, ouvertures, cotes, vérifications
+   Repère : x = largeur (0 = limite gauche vue de la rue), y = profondeur (0 = rue)
+   ===================================================================== */
+function construirePlan(C) {
+  const T = C.terrain, I = C.implantation, M = C.maison, P = C.pieces, O = C.ouvertures;
+  const e = M.murExt, c = M.cloison, rf = M.refend;
+  const pieces = [], murs = [], ouvertures = [], verifs = [];
+
+  const piece = (id, nom, x0, y0, x1, y1, couleur, zone = 'maison', note = '') => {
+    const p = { id, nom, x0: r2(x0), y0: r2(y0), x1: r2(x1), y1: r2(y1), couleur, zone, note };
+    p.l = r2(p.x1 - p.x0); p.p = r2(p.y1 - p.y0); p.s = r2(p.l * p.p);
+    pieces.push(p); return p;
+  };
+  const mur = (id, x0, y0, x1, y1, t, bat = 'maison') => {
+    const m = { id, x0: r2(x0), y0: r2(y0), x1: r2(x1), y1: r2(y1), t, bat };
+    m.horiz = (m.x1 - m.x0) >= (m.y1 - m.y0);
+    murs.push(m); return m;
+  };
+  // sens : +1 = la porte s'ouvre vers les x / y croissants ; ch : charnière au début (0) ou à la fin (1)
+  const porte = (mur, centre, l, sens, ch, nom) => ouvertures.push({ mur, type: 'porte', a: r2(centre - l / 2), b: r2(centre + l / 2), l, sens, ch, nom });
+  const fenetre = (mur, centre, l, allege, nom) => ouvertures.push({ mur, type: 'fenetre', a: r2(centre - l / 2), b: r2(centre + l / 2), l, allege, nom });
+
+  const COUL = {
+    salon: '#f5e6c8', cuisine: '#f8d9a6', couloir: '#e8e2d6', chambre: '#d7e6f5', parent: '#cfe0f3',
+    douche: '#c8ecef', dressing: '#e9def3'
+  };
+
+  /* ---------- Maison ---------- */
+  const X0 = I.reculLateral, Y0 = r2(I.courAvant + I.terrasse);
+  const X1 = r2(X0 + M.largeur), Y1 = r2(Y0 + M.profondeur);
+  const ix0 = r2(X0 + e), ix1 = r2(X1 - e), iy0 = r2(Y0 + e), iy1 = r2(Y1 - e);
+  const xm = r2((X0 + X1) / 2);                       // axe de la maison (porte d'entrée)
+
+  // Bandes en profondeur : zone jour (avant) | refend | couloir | cloison | zone nuit (arrière)
+  const Bb = Math.max(P.ch1.p, P.ch2.p);
+  const yB = r2(iy1 - Bb);                // début de la bande arrière
+  const yC1 = r2(yB - c), yC0 = r2(yC1 - M.couloir);
+  const yF = r2(yC0 - rf);                // fin de la zone jour
+
+  // Bande arrière : Ch1 | douche 1 + dressing 1 | douche 2 + dressing 2 | Ch2 | cuisine
+  const xa0 = ix0, xa1 = r2(xa0 + P.ch1.l);
+  const xb0 = r2(xa1 + c), xb1 = r2(xb0 + P.d1.l);
+  const xc0 = r2(xb1 + c), xc1 = r2(xc0 + P.d2.l);
+  const xd0 = r2(xc1 + c), xd1 = r2(xd0 + P.ch2.l);
+  const xe0 = r2(xd1 + c), xe1 = ix1;
+  const yD1 = r2(iy1 - P.d1.p), yD2 = r2(iy1 - P.d2.p);
+
+  // Zone jour : salon | Ch3 (au fond, côté couloir) avec dressing 3 + douche 3 côté façade
+  const xg0 = r2(ix1 - P.ch3.l);
+  const yG0 = r2(yF - P.ch3.p);           // début de la chambre 3
+  const yR1 = r2(yG0 - c);                // fin de la rangée dressing / douche 3
+  const xh0 = r2(ix1 - P.d3.l);           // début de la douche 3
+
+  const salon = piece('salon', 'Salon / séjour', ix0, iy0, r2(xg0 - c), yF, COUL.salon, 'maison', 'Prend l\'espace restant');
+  const couloir = piece('couloir', 'Couloir', ix0, yC0, ix1, yC1, COUL.couloir, 'maison', 'Distribution');
+  const ch1 = piece('ch1', 'Chambre 1', xa0, yB, xa1, iy1, COUL.chambre);
+  const dr1 = piece('dr1', 'Dressing 1', xb0, yB, xb1, r2(yD1 - c), COUL.dressing, 'maison', 'Accès par la chambre 1');
+  const d1 = piece('d1', 'Douche 1', xb0, yD1, xb1, iy1, COUL.douche, 'maison', 'Accès par la chambre 1');
+  const dr2 = piece('dr2', 'Dressing 2', xc0, yB, xc1, r2(yD2 - c), COUL.dressing, 'maison', 'Accès par la chambre 2');
+  const d2 = piece('d2', 'Douche 2', xc0, yD2, xc1, iy1, COUL.douche, 'maison', 'Accès par la chambre 2');
+  const ch2 = piece('ch2', 'Chambre 2', xd0, yB, xd1, iy1, COUL.chambre);
+  const cuisine = piece('cuisine', 'Cuisine', xe0, yB, xe1, iy1, COUL.cuisine, 'maison', 'Fermée');
+  const ch3 = piece('ch3', 'Chambre 3 (parentale)', xg0, yG0, ix1, yF, COUL.parent);
+  const dr3 = piece('dr3', 'Dressing 3', xg0, iy0, r2(xh0 - c), yR1, COUL.dressing, 'maison', 'Accès par la chambre 3');
+  const d3 = piece('d3', 'Douche 3', xh0, iy0, ix1, yR1, COUL.douche, 'maison', 'Accès par la chambre 3');
+
+  // Murs extérieurs (façade et arrière sur toute la longueur, pignons entre les deux)
+  mur('mF', X0, Y0, X1, iy0, 'ext'); mur('mB', X0, iy1, X1, Y1, 'ext');
+  mur('mL', X0, iy0, ix0, iy1, 'ext'); mur('mR', ix1, iy0, X1, iy1, 'ext');
+  // Refend et cloisons
+  mur('rf', ix0, yF, ix1, yC0, 'rf');
+  mur('cC', ix0, yC1, ix1, yB, 'cl');
+  mur('c1', xa1, yB, xb0, iy1, 'cl'); mur('c2', xb1, yB, xc0, iy1, 'cl');
+  mur('c3', xc1, yB, xd0, iy1, 'cl'); mur('c4', xd1, yB, xe0, iy1, 'cl');
+  mur('cD1', xb0, r2(yD1 - c), xb1, yD1, 'cl'); mur('cD2', xc0, r2(yD2 - c), xc1, yD2, 'cl');
+  mur('c5', r2(xg0 - c), iy0, xg0, yF, 'cl');
+  mur('c6', xg0, yR1, ix1, yG0, 'cl');
+  mur('c7', r2(xh0 - c), iy0, xh0, yR1, 'cl');
+
+  // Ouvertures de la maison
+  porte('mF', xm, O.porteEntree, +1, 0, 'Entrée');
+  fenetre('mF', r2((ix0 + xm) / 2), O.fenetre, O.allege, 'Salon');
+  fenetre('mF', r2((xm + salon.x1) / 2), O.fenetre, O.allege, 'Salon');
+  fenetre('mL', r2((iy0 + yF) / 2), O.fenetre, O.allege, 'Salon');
+  fenetre('mB', r2((xa0 + xa1) / 2), O.fenetre, O.allege, 'Chambre 1');
+  fenetre('mB', r2((xb0 + xb1) / 2), O.fenetreDouche, O.allegeDouche, 'Douche 1');
+  fenetre('mB', r2((xc0 + xc1) / 2), O.fenetreDouche, O.allegeDouche, 'Douche 2');
+  fenetre('mB', r2((xd0 + xd1) / 2), O.fenetre, O.allege, 'Chambre 2');
+  fenetre('mB', r2((xe0 + xe1) / 2), O.fenetre, O.allege, 'Cuisine');
+  fenetre('mR', r2((iy0 + yR1) / 2), O.fenetreDouche, O.allegeDouche, 'Douche 3');
+  fenetre('mR', r2((yG0 + yF) / 2), O.fenetre, O.allege, 'Chambre 3');
+  porte('rf', xm, O.porte, -1, 0, 'Salon');
+  porte('rf', r2(xg0 + 0.20 + O.porte / 2), O.porte, -1, 0, 'Chambre 3');
+  porte('cC', r2(xa1 - 0.20 - O.porte / 2), O.porte, +1, 1, 'Chambre 1');
+  porte('cC', r2(xd0 + 0.15 + O.porte / 2), O.porte, +1, 0, 'Chambre 2');
+  porte('cC', r2(xe0 + 0.15 + O.porte / 2), O.porte, +1, 0, 'Cuisine');
+  porte('c1', r2(iy1 - 0.55 - O.porteDouche / 2), O.porteDouche, -1, 1, 'Douche 1');
+  porte('c1', r2(yD1 - c - 0.15 - O.porteDouche / 2), O.porteDouche, -1, 0, 'Dressing 1');
+  porte('c3', r2(iy1 - 0.55 - O.porteDouche / 2), O.porteDouche, +1, 1, 'Douche 2');
+  porte('c3', r2(yD2 - c - 0.15 - O.porteDouche / 2), O.porteDouche, +1, 0, 'Dressing 2');
+  porte('c6', r2((xh0 + ix1) / 2), O.porteDouche, +1, 1, 'Douche 3');
+  porte('c6', r2((xg0 + xh0 - c) / 2), O.porteDouche, +1, 0, 'Dressing 3');
+
+  /* ---------- Annexe (adossée à la clôture arrière, centrée) ---------- */
+  const A = C.annexe, ea = A.murExt;
+  const AY1 = T.profondeur, AY0 = r2(AY1 - A.profondeur);
+  const AX0 = r2((T.largeur - A.largeur) / 2), AX1 = r2(AX0 + A.largeur);
+  const aix0 = r2(AX0 + ea), aix1 = r2(AX1 - ea), aiy0 = r2(AY0 + ea), aiy1 = r2(AY1 - ea);
+  const axD = r2(aix1 - A.largeurDouche);
+  const aCh = piece('a_ch', 'Chambre annexe', aix0, aiy0, r2(axD - A.cloison), aiy1, COUL.chambre, 'annexe');
+  const aD = piece('a_d', 'Douche annexe', axD, aiy0, aix1, aiy1, COUL.douche, 'annexe', 'Accès par la chambre');
+  mur('aF', AX0, AY0, AX1, aiy0, 'ext', 'annexe'); mur('aB', AX0, aiy1, AX1, AY1, 'ext', 'annexe');
+  mur('aL', AX0, aiy0, aix0, aiy1, 'ext', 'annexe'); mur('aR', aix1, aiy0, AX1, aiy1, 'ext', 'annexe');
+  mur('aC', r2(axD - A.cloison), aiy0, axD, aiy1, 'cl', 'annexe');
+  porte('aF', r2(aix0 + 0.20 + O.porte / 2), O.porte, +1, 0, 'Entrée annexe');
+  fenetre('aF', r2(aCh.x1 - 0.30 - O.fenetre / 2), O.fenetre, O.allege, 'Chambre annexe');
+  fenetre('aR', r2((aiy0 + aiy1) / 2), O.fenetreDouche, O.allegeDouche, 'Douche annexe');
+  porte('aC', r2(aiy1 - 0.15 - O.porteDouche / 2), O.porteDouche, -1, 1, 'Douche annexe');
+
+  /* ---------- Extérieurs ---------- */
+  const B = C.abri;
+  const abri = { x0: B.retraitLateral, y0: B.retraitRue, x1: r2(B.retraitLateral + B.largeur), y1: r2(B.retraitRue + B.profondeur) };
+  const xAbri = r2((abri.x0 + abri.x1) / 2);
+  const portail = { a: r2(xAbri - C.portail.largeur / 2), b: r2(xAbri + C.portail.largeur / 2) };
+  const portillon = { a: r2(xm - C.portillon.largeur / 2), b: r2(xm + C.portillon.largeur / 2) };
+  const allee = { x0: r2(xm - C.allee.largeur / 2), x1: r2(xm + C.allee.largeur / 2), y0: 0, y1: I.courAvant };
+  const terrasse = { x0: X0, x1: X1, y0: I.courAvant, y1: Y0 };
+  const ec = T.cloture;
+  // Clôture (épaisseur prise à l'intérieur des limites) : segments [x0, y0, x1, y1]
+  const cloture = [
+    [0, 0, portail.a, ec], [portail.b, 0, portillon.a, ec], [portillon.b, 0, T.largeur, ec],
+    [0, ec, ec, r2(T.profondeur - ec)], [r2(T.largeur - ec), ec, T.largeur, r2(T.profondeur - ec)],
+    [0, r2(T.profondeur - ec), AX0, T.profondeur], [AX1, r2(T.profondeur - ec), T.largeur, T.profondeur]
+  ].map(s => s.map(r2));
+
+  /* ---------- Chaînes de cotes ---------- */
+  const murOuv = id => ouvertures.filter(o => o.mur === id).sort((a, b) => a.a - b.a);
+  const chaineOuv = (id, debut, fin) => [debut, ...murOuv(id).flatMap(o => [o.a, o.b]), fin];
+  const uniq = arr => [...new Set(arr.map(r2))].sort((a, b) => a - b);
+  const cotes = [
+    // Terrain : largeur
+    { o: 'h', pts: [0, AX0, AX1, T.largeur], at: r2(T.profondeur + 1.0), de: T.profondeur },
+    { o: 'h', pts: [0, X0, X1, T.largeur], at: r2(T.profondeur + 2.0), de: T.profondeur },
+    { o: 'h', pts: [0, T.largeur], at: r2(T.profondeur + 3.0), de: T.profondeur, fort: true },
+    { o: 'h', pts: uniq([0, portail.a, portail.b, portillon.a, portillon.b, T.largeur]), at: -2.6, de: 0 },
+    { o: 'h', pts: uniq([0, abri.x0, abri.x1, allee.x0, allee.x1, T.largeur]), at: -3.6, de: 0 },
+    // Terrain : profondeur
+    { o: 'v', pts: [0, I.courAvant, Y0, Y1, AY0, T.profondeur], at: r2(T.largeur + 1.0), de: T.largeur },
+    { o: 'v', pts: [0, T.profondeur], at: r2(T.largeur + 2.0), de: T.largeur, fort: true },
+    { o: 'v', pts: [0, abri.y0, abri.y1, I.courAvant], at: -1.0, de: 0 },
+    { o: 'v', pts: [0, T.profondeur], at: -2.0, de: 0, fort: true },
+    // Maison : façade (sur la terrasse)
+    { o: 'h', pts: chaineOuv('mF', X0, X1), at: r2(Y0 - 0.40), de: Y0 },
+    { o: 'h', pts: uniq([X0, ix0, salon.x1, xg0, dr3.x1, xh0, ix1, X1]), at: r2(Y0 - 1.05), de: Y0 },
+    // Maison : arrière
+    { o: 'h', pts: chaineOuv('mB', X0, X1), at: r2(Y1 + 0.45), de: Y1 },
+    { o: 'h', pts: uniq([X0, xa0, xa1, xb0, xb1, xc0, xc1, xd0, xd1, xe0, ix1, X1]), at: r2(Y1 + 1.05), de: Y1 },
+    // Maison : pignons
+    { o: 'v', pts: chaineOuv('mL', Y0, Y1), at: r2(X0 - 0.45), de: X0 },
+    { o: 'v', pts: uniq([Y0, iy0, yF, yC0, yC1, yB, iy1, Y1]), at: r2(X0 - 1.05), de: X0 },
+    { o: 'v', pts: [Y0, Y1], at: r2(X0 - 1.65), de: X0 },
+    { o: 'v', pts: chaineOuv('mR', Y0, Y1), at: r2(X1 + 0.45), de: X1 },
+    { o: 'v', pts: uniq([Y0, iy0, yR1, yG0, yF, yC0, yC1, yB, iy1, Y1]), at: r2(X1 + 1.05), de: X1 },
+    { o: 'v', pts: [Y0, Y1], at: r2(X1 + 1.65), de: X1 },
+    // Portes intérieures (positions mesurées dans le couloir)
+    { o: 'h', pts: chaineOuv('rf', ix0, ix1), at: r2(yC0 + 0.28), de: yC0, fin: true },
+    { o: 'h', pts: chaineOuv('cC', ix0, ix1), at: r2(yC1 - 0.28), de: yC1, fin: true, dessous: true },
+    // Colonne douche / dressing et chambre 3 (cotes intérieures)
+    { o: 'v', pts: [yB, r2(yD1 - c), yD1, iy1], at: r2(xb0 + 0.30), de: xb0, fin: true },
+    // Annexe
+    { o: 'h', pts: chaineOuv('aF', AX0, AX1), at: r2(AY0 - 0.45), de: AY0 },
+    { o: 'h', pts: uniq([AX0, aix0, aCh.x1, axD, aix1, AX1]), at: r2(AY0 - 0.95), de: AY0 },
+    { o: 'v', pts: [AY0, aiy0, aiy1, AY1], at: r2(AX0 - 0.45), de: AX0 },
+    { o: 'v', pts: chaineOuv('aR', AY0, AY1), at: r2(AX1 + 0.45), de: AX1 }
+  ];
+
+  /* ---------- Vérifications ---------- */
+  const somme = pts => r2(pts[pts.length - 1] - pts[0]);
+  const detail = pts => pts.slice(1).map((v, i) => fmt(v - pts[i])).join(' + ');
+  const verifChaine = (libelle, pts, attendu) => verifs.push({ libelle, calcul: detail(pts), valeur: somme(pts), attendu, ok: egal(somme(pts), attendu) });
+  verifChaine('Profondeur du terrain (rue → fond)', [0, I.courAvant, Y0, Y1, AY0, T.profondeur], T.profondeur);
+  verifs.push({ libelle: 'Somme des bandes d\'implantation', calcul: [I.courAvant, I.terrasse, M.profondeur, I.passage, A.profondeur].map(fmt).join(' + '),
+    valeur: r2(I.courAvant + I.terrasse + M.profondeur + I.passage + A.profondeur), attendu: T.profondeur,
+    ok: egal(I.courAvant + I.terrasse + M.profondeur + I.passage + A.profondeur, T.profondeur) && egal(AY0 - Y1, I.passage) });
+  verifChaine('Largeur du terrain (maison)', [0, X0, X1, T.largeur], T.largeur);
+  verifs.push({ libelle: 'Reculs latéraux de la maison', calcul: `gauche ${fmt(X0)} / droite ${fmt(T.largeur - X1)}`, valeur: r2(T.largeur - X1), attendu: I.reculLateral, ok: egal(T.largeur - X1, I.reculLateral) });
+  verifChaine('Façade sur rue (portail, portillon)', cotes[3].pts, T.largeur);
+  verifChaine('Largeur du terrain (annexe)', [0, AX0, AX1, T.largeur], T.largeur);
+  verifChaine('Cour avant (abri voiture)', [0, abri.y0, abri.y1, I.courAvant], I.courAvant);
+  verifChaine('Maison — bande arrière (largeur)', cotes[12].pts, M.largeur);
+  verifChaine('Maison — zone jour (largeur)', cotes[10].pts, M.largeur);
+  verifChaine('Maison — pignon gauche (profondeur)', cotes[14].pts, M.profondeur);
+  verifChaine('Maison — pignon droit (profondeur)', cotes[17].pts, M.profondeur);
+  verifChaine('Colonne dressing + douche 1', [yB, r2(yD1 - c), yD1, iy1], P.ch1.p);
+  verifChaine('Annexe (largeur)', cotes[23].pts, A.largeur);
+  verifChaine('Annexe (profondeur)', cotes[24].pts, A.profondeur);
+  verifs.push({ libelle: 'Abri aligné sur le portail', calcul: `axe abri ${fmt(xAbri)} = axe portail ${fmt((portail.a + portail.b) / 2)}`, valeur: r2((portail.a + portail.b) / 2), attendu: xAbri, ok: egal((portail.a + portail.b) / 2, xAbri) && portail.a >= ec });
+  verifs.push({ libelle: 'Allée alignée sur la porte d\'entrée', calcul: `axe allée ${fmt((allee.x0 + allee.x1) / 2)} = axe porte ${fmt(xm)}`, valeur: r2((allee.x0 + allee.x1) / 2), attendu: xm, ok: egal((allee.x0 + allee.x1) / 2, xm) });
+  // Aucun vide : pièces + murs = emprise de chaque bâtiment
+  const aire = (lst, bat) => r2(lst.filter(o => (o.zone || o.bat) === bat).reduce((s, o) => s + (o.s !== undefined ? o.s : (o.x1 - o.x0) * (o.y1 - o.y0)), 0));
+  const pm = aire(pieces, 'maison'), mm = aire(murs, 'maison');
+  verifs.push({ libelle: 'Maison sans vide : pièces + murs = emprise', calcul: `${fmt(pm)} + ${fmt(mm)}`, valeur: r2(pm + mm), attendu: r2(M.largeur * M.profondeur), ok: egal(pm + mm, M.largeur * M.profondeur) });
+  const pa = aire(pieces, 'annexe'), ma = aire(murs, 'annexe');
+  verifs.push({ libelle: 'Annexe sans vide : pièces + murs = emprise', calcul: `${fmt(pa)} + ${fmt(ma)}`, valeur: r2(pa + ma), attendu: r2(A.largeur * A.profondeur), ok: egal(pa + ma, A.largeur * A.profondeur) });
+  // Aucun chevauchement entre pièces et murs
+  const rects = [...pieces, ...murs];
+  let chevauchement = 0;
+  for (let i = 0; i < rects.length; i++) for (let j = i + 1; j < rects.length; j++) {
+    const a = rects[i], b = rects[j];
+    const ox = Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0), oy = Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0);
+    if (ox > 0.001 && oy > 0.001) chevauchement++;
+  }
+  verifs.push({ libelle: 'Aucun chevauchement pièces / murs', calcul: `${rects.length} éléments contrôlés`, valeur: chevauchement, attendu: 0, ok: chevauchement === 0, entier: true });
+  // Ouvertures dans leur mur
+  const horsMur = ouvertures.filter(o => { const m = murs.find(w => w.id === o.mur); const d = m.horiz ? [m.x0, m.x1] : [m.y0, m.y1]; return o.a < d[0] - 0.001 || o.b > d[1] + 0.001; }).length;
+  verifs.push({ libelle: 'Portes et fenêtres dans leurs murs', calcul: `${ouvertures.length} ouvertures`, valeur: horsMur, attendu: 0, ok: horsMur === 0, entier: true });
+
+  // Programme demandé / obtenu
+  const programme = [
+    ['Salon', P.salon, salon, 'environ (espace restant)'], ['Cuisine fermée', P.cuisine, cuisine, 'environ'],
+    ['Couloir (largeur)', { l: M.couloir, p: null }, couloir, ''],
+    ['Chambre 1', P.ch1, ch1, ''], ['Douche 1', P.d1, d1, ''], ['Chambre 2', P.ch2, ch2, ''], ['Douche 2', P.d2, d2, ''],
+    ['Chambre 3 (parentale)', P.ch3, ch3, ''], ['Douche 3', P.d3, d3, '']
+  ].map(([nom, dem, obt, note]) => {
+    let ok;
+    if (nom.startsWith('Couloir')) ok = egal(obt.p, M.couloir);
+    else ok = (egal(dem.l, obt.l) && egal(dem.p, obt.p)) || (egal(dem.l, obt.p) && egal(dem.p, obt.l));
+    return { nom, dem, obt, note, ok };
+  });
+
+  return {
+    C, pieces, murs, ouvertures, cotes, verifs, programme, cloture,
+    maison: { x0: X0, y0: Y0, x1: X1, y1: Y1 }, annexe: { x0: AX0, y0: AY0, x1: AX1, y1: AY1 },
+    abri, portail, portillon, allee, terrasse, xm,
+    bornes: { x0: -3.6, y0: -10.4, x1: T.largeur + 3.6, y1: T.profondeur + 4.0 }
+  };
+}
+
+const PLAN = construirePlan(CONFIG);
+
+/* =====================================================================
+   VUE 2D — dessin sur canvas (cotes, portes, fenêtres, cartouche)
+   ===================================================================== */
+const canvas = $('#c2d');
+const vue = { s: 20, ox: 0, oy: 0, cotes: true };
+let W = 0, H = 0, DPR = 1;
+
+function dessinerPlan(ctx, v, opts) {
+  const { s, ox, oy } = v;
+  const D = opts.dpr;
+  const pl = PLAN, C = pl.C, T = C.terrain;
+  // monde → écran : X = ox + x*s ; Y = oy - y*s
+  const sx = x => ox + x * s, sy = y => oy - y * s;
+  const monde = () => ctx.setTransform(s * D, 0, 0, -s * D, ox * D, oy * D);
+  const ecran = () => ctx.setTransform(D, 0, 0, D, 0, 0);
+  const lw = px => px / s;
+  const rect = (x0, y0, x1, y1) => ctx.rect(x0, y0, x1 - x0, y1 - y0);
+  const fillR = (x0, y0, x1, y1, col) => { ctx.fillStyle = col; ctx.fillRect(x0, y0, x1 - x0, y1 - y0); };
+  const strokeR = (x0, y0, x1, y1, col, px) => { ctx.strokeStyle = col; ctx.lineWidth = lw(px); ctx.strokeRect(x0, y0, x1 - x0, y1 - y0); };
+  const ligne = (x0, y0, x1, y1, col, px, tirets) => {
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.strokeStyle = col; ctx.lineWidth = lw(px);
+    ctx.setLineDash(tirets ? tirets.map(t => t / s) : []); ctx.stroke(); ctx.setLineDash([]);
+  };
+  // Texte en coordonnées monde, taille en mètres
+  const texte = (str, x, y, taille, o = {}) => {
+    const px = taille * s;
+    if (px < (opts.minTexte ?? 3.2)) return 0;
+    ecran();
+    ctx.save();
+    ctx.translate(sx(x), sy(y));
+    if (o.rot) ctx.rotate(o.rot);
+    ctx.font = `${o.gras ? '700' : '400'} ${px}px ${o.police || 'Arial, Helvetica, sans-serif'}`;
+    ctx.textAlign = o.align || 'center'; ctx.textBaseline = o.base || 'middle';
+    const w = ctx.measureText(str).width;
+    if (o.fond) {
+      ctx.fillStyle = o.fond;
+      const ax = ctx.textAlign === 'left' ? 0 : ctx.textAlign === 'right' ? -w : -w / 2;
+      ctx.fillRect(ax - px * 0.25, -px * 0.62, w + px * 0.5, px * 1.24);
+    }
+    ctx.fillStyle = o.couleur || '#111';
+    ctx.fillText(str, 0, 0);
+    ctx.restore();
+    monde();
+    return w / s;
+  };
+  const largeurTexte = (str, taille) => { ecran(); ctx.font = `400 ${taille * s}px Arial, Helvetica, sans-serif`; const w = ctx.measureText(str).width / s; monde(); return w; };
+
+  ecran();
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, opts.W, opts.H);
+  monde();
+
+  // ---------- Rue, terrain ----------
+  fillR(-3.6, -2.0, T.largeur + 3.6, 0, '#cfd3d8');
+  ligne(-3.6, -2.0, T.largeur + 3.6, -2.0, '#9aa0a6', 1);
+  for (let x = -3; x < T.largeur + 3.6; x += 2) ligne(x, -1.0, x + 1, -1.0, '#ffffff', 2);
+  texte('RUE', T.largeur / 2 + 4.7, -1.45, 0.45, { gras: true, couleur: '#4b5563' });
+  fillR(0, 0, T.largeur, T.profondeur, '#e4f1dc');
+  // Revêtements extérieurs
+  const ab = pl.abri;
+  fillR(ab.x0, 0, ab.x1, ab.y1, '#d9d6cf');                       // accès voiture + dalle de l'abri
+  fillR(pl.portail.a, 0, pl.portail.b, ab.y0, '#d9d6cf');
+  fillR(pl.allee.x0, pl.allee.y0, pl.allee.x1, pl.allee.y1, '#eadcc0');   // allée piétonne
+  for (let y = 0.6; y < pl.allee.y1; y += 0.6) ligne(pl.allee.x0, y, pl.allee.x1, y, '#cdb991', 0.6);
+  const te = pl.terrasse;
+  fillR(te.x0, te.y0, te.x1, te.y1, '#efe3cf');
+  for (let x = te.x0 + 0.5; x < te.x1; x += 0.5) ligne(x, te.y0, x, te.y1, '#e0cfb0', 0.5);
+  strokeR(te.x0, te.y0, te.x1, te.y1, '#8b7355', 1);
+  // Poteaux de la terrasse couverte
+  for (const px of poteauxTerrasse()) fillR(px - 0.125, te.y0, px + 0.125, te.y0 + 0.25, '#555');
+  // Débord de toiture (tirets)
+  const db = C.toit.debord;
+  ctx.beginPath(); rect(pl.maison.x0 - db, te.y0 - db, pl.maison.x1 + db, pl.maison.y1 + db);
+  ctx.strokeStyle = '#8b5a2b'; ctx.lineWidth = lw(1); ctx.setLineDash([6 / s, 4 / s]); ctx.stroke(); ctx.setLineDash([]);
+
+  // ---------- Clôture, portail, portillon ----------
+  for (const [x0, y0, x1, y1] of pl.cloture) fillR(x0, y0, x1, y1, '#5b5b5b');
+  const ec = T.cloture;
+  const battant = (xh, l, sens) => { // battant de portail (vers l'intérieur du terrain)
+    const xb = xh + sens * l;
+    ligne(xh, ec, xh, ec + l, '#1f2937', 1.6);
+    ctx.beginPath(); ctx.arc(xh, ec, l, sens > 0 ? 0 : Math.PI, Math.PI / 2, sens < 0);
+    ctx.strokeStyle = '#6b7280'; ctx.lineWidth = lw(0.8); ctx.setLineDash([4 / s, 3 / s]); ctx.stroke(); ctx.setLineDash([]);
+    return xb;
+  };
+  const lp = (pl.portail.b - pl.portail.a) / 2;
+  battant(pl.portail.a, lp, +1); battant(pl.portail.b, lp, -1);
+  battant(pl.portillon.a, pl.portillon.b - pl.portillon.a, +1);
+  fillR(pl.portail.a - 0.1, 0, pl.portail.a, 0.25, '#222'); fillR(pl.portail.b, 0, pl.portail.b + 0.1, 0.25, '#222');
+  fillR(pl.portillon.a - 0.1, 0, pl.portillon.a, 0.25, '#222'); fillR(pl.portillon.b, 0, pl.portillon.b + 0.1, 0.25, '#222');
+
+  // ---------- Abri voiture + voiture ----------
+  ctx.beginPath(); rect(ab.x0, ab.y0, ab.x1, ab.y1);
+  ctx.strokeStyle = '#374151'; ctx.lineWidth = lw(1.2); ctx.setLineDash([8 / s, 4 / s]); ctx.stroke(); ctx.setLineDash([]);
+  ligne(ab.x0, ab.y0, ab.x1, ab.y1, '#9ca3af', 0.6, [5, 4]); ligne(ab.x1, ab.y0, ab.x0, ab.y1, '#9ca3af', 0.6, [5, 4]);
+  for (const [x, y] of [[ab.x0, ab.y0], [ab.x1, ab.y0], [ab.x0, ab.y1], [ab.x1, ab.y1]])
+    fillR(x - (x === ab.x0 ? 0 : 0.12), y - (y === ab.y0 ? 0 : 0.12), x + (x === ab.x0 ? 0.12 : 0), y + (y === ab.y0 ? 0.12 : 0), '#333');
+  dessinerVoiture2D(ctx, (ab.x0 + ab.x1) / 2, (ab.y0 + ab.y1) / 2, lw);
+
+  // ---------- Pièces ----------
+  for (const p of pl.pieces) fillR(p.x0, p.y0, p.x1, p.y1, p.couleur);
+  // Carrelage des douches
+  for (const p of pl.pieces.filter(p => p.id.startsWith('d') && !p.id.startsWith('dr') || p.id === 'a_d')) {
+    for (let x = p.x0 + 0.3; x < p.x1; x += 0.3) ligne(x, p.y0, x, p.y1, '#a7d8dd', 0.4);
+    for (let y = p.y0 + 0.3; y < p.y1; y += 0.3) ligne(p.x0, y, p.x1, y, '#a7d8dd', 0.4);
+  }
+
+  // ---------- Murs ----------
+  for (const m of pl.murs) {
+    fillR(m.x0, m.y0, m.x1, m.y1, m.t === 'cl' ? '#4b5563' : '#1f2937');
+    if (m.t !== 'cl') { // hachures des murs porteurs
+      ctx.save(); ctx.beginPath(); rect(m.x0, m.y0, m.x1, m.y1); ctx.clip();
+      ctx.beginPath();
+      const L = Math.max(m.x1 - m.x0, m.y1 - m.y0) + 1;
+      for (let k = -L; k < L; k += 0.12) { ctx.moveTo(m.x0 + k, m.y0); ctx.lineTo(m.x0 + k + 1, m.y0 + 1); }
+      ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = lw(0.6); ctx.stroke(); ctx.restore();
+    }
+  }
+  // ---------- Ouvertures ----------
+  for (const o of pl.ouvertures) {
+    const m = pl.murs.find(w => w.id === o.mur);
+    const sol = '#ffffff';
+    if (m.horiz) {
+      fillR(o.a, m.y0 - 0.002, o.b, m.y1 + 0.002, sol);
+      ligne(o.a, m.y0, o.a, m.y1, '#111', 1.2); ligne(o.b, m.y0, o.b, m.y1, '#111', 1.2);
+    } else {
+      fillR(m.x0 - 0.002, o.a, m.x1 + 0.002, o.b, sol);
+      ligne(m.x0, o.a, m.x1, o.a, '#111', 1.2); ligne(m.x0, o.b, m.x1, o.b, '#111', 1.2);
+    }
+    if (o.type === 'fenetre') {
+      if (m.horiz) {
+        strokeR(o.a, m.y0, o.b, m.y1, '#111', 0.9);
+        const t = m.y1 - m.y0;
+        ligne(o.a, m.y0 + t * 0.4, o.b, m.y0 + t * 0.4, '#2563eb', 1.1); ligne(o.a, m.y0 + t * 0.6, o.b, m.y0 + t * 0.6, '#2563eb', 1.1);
+      } else {
+        strokeR(m.x0, o.a, m.x1, o.b, '#111', 0.9);
+        const t = m.x1 - m.x0;
+        ligne(m.x0 + t * 0.4, o.a, m.x0 + t * 0.4, o.b, '#2563eb', 1.1); ligne(m.x0 + t * 0.6, o.a, m.x0 + t * 0.6, o.b, '#2563eb', 1.1);
+      }
+    } else {
+      // Porte : vantail + arc d'ouverture
+      const l = o.b - o.a;
+      ctx.strokeStyle = '#111';
+      if (m.horiz) {
+        const face = o.sens > 0 ? m.y1 : m.y0;
+        const hx = o.ch === 0 ? o.a : o.b, autre = o.ch === 0 ? o.b : o.a;
+        ligne(hx, face, hx, face + o.sens * l, '#111', 1.8);
+        const a0 = Math.atan2(o.sens * l, 0), a1 = Math.atan2(0, autre - hx);
+        ctx.beginPath(); ctx.arc(hx, face, l, a0, a1, arcInverse(a0, a1)); ctx.lineWidth = lw(0.8); ctx.strokeStyle = '#444'; ctx.stroke();
+      } else {
+        const face = o.sens > 0 ? m.x1 : m.x0;
+        const hy = o.ch === 0 ? o.a : o.b, autre = o.ch === 0 ? o.b : o.a;
+        ligne(face, hy, face + o.sens * l, hy, '#111', 1.8);
+        const a0 = Math.atan2(0, o.sens * l), a1 = Math.atan2(autre - hy, 0);
+        ctx.beginPath(); ctx.arc(face, hy, l, a0, a1, arcInverse(a0, a1)); ctx.lineWidth = lw(0.8); ctx.strokeStyle = '#444'; ctx.stroke();
+      }
+    }
+  }
+  // Largeur des portes (côté opposé à l'ouverture)
+  const dejaCotes = ['mF', 'mB', 'mL', 'mR', 'rf', 'cC', 'aF', 'aR'];     // portes déjà dans une chaîne de cotes
+  for (const o of pl.ouvertures.filter(o => o.type === 'porte' && !dejaCotes.includes(o.mur))) {
+    const m = pl.murs.find(w => w.id === o.mur);
+    const t = 0.20, c = (o.a + o.b) / 2;
+    if (m.horiz) texte(fmt(o.l), c, o.sens > 0 ? m.y0 - t : m.y1 + t, 0.17, { couleur: '#7c2d12' });
+    else texte(fmt(o.l), o.sens > 0 ? m.x0 - t : m.x1 + t, c, 0.17, { couleur: '#7c2d12', rot: -Math.PI / 2 });
+  }
+  // Contours des bâtiments
+  strokeR(pl.maison.x0, pl.maison.y0, pl.maison.x1, pl.maison.y1, '#000', 1.6);
+  strokeR(pl.annexe.x0, pl.annexe.y0, pl.annexe.x1, pl.annexe.y1, '#000', 1.6);
+
+  // ---------- Étiquettes des pièces ----------
+  for (const p of pl.pieces) {
+    const cx = (p.x0 + p.x1) / 2;
+    let cy = (p.y0 + p.y1) / 2;
+    if (p.id === 'couloir') {
+      texte(`COULOIR  ${fmt(p.l)} × ${fmt(p.p)}  ·  ${fmtS(p.s)}`, ix(p, 0.27), cy, 0.18, { gras: true, fond: 'rgba(232,226,214,0.95)' });
+      continue;
+    }
+    if (p.id === 'salon') cy = p.y0 + (p.y1 - p.y0) * 0.58;
+    const petite = p.l < 2.5;
+    const nom = petite ? p.nom.replace(' annexe', '').replace('Chambre 3 (parentale)', 'Ch. 3') : p.nom;
+    let tN = petite ? 0.21 : 0.30;
+    const wN = largeurTexte(nom.toUpperCase(), tN) * 1.08;
+    if (wN > p.l - 0.25) tN *= (p.l - 0.25) / wN;
+    texte(nom.toUpperCase(), cx, cy + tN * 0.95, tN, { gras: true, fond: 'rgba(255,255,255,0.78)' });
+    texte(`${fmt(p.l)} × ${fmt(p.p)}`, cx, cy, petite ? 0.17 : 0.22, { couleur: '#374151' });
+    texte(fmtS(p.s), cx, cy - tN * 0.95, petite ? 0.18 : 0.24, { gras: true, couleur: '#7c2d12' });
+  }
+  function ix(p, f) { return p.x0 + (p.x1 - p.x0) * f; }
+  // Étiquettes extérieures
+  texte('ABRI VOITURE', (ab.x0 + ab.x1) / 2, ab.y1 - 0.45, 0.24, { gras: true, fond: 'rgba(255,255,255,0.8)' });
+  texte(`${fmt(ab.x1 - ab.x0)} × ${fmt(ab.y1 - ab.y0)} = ${fmtS((ab.x1 - ab.x0) * (ab.y1 - ab.y0))}`, (ab.x0 + ab.x1) / 2, ab.y1 - 0.8, 0.17, { fond: 'rgba(255,255,255,0.8)' });
+  texte(`TERRASSE COUVERTE  ${fmt(te.x1 - te.x0)} × ${fmt(te.y1 - te.y0)} = ${fmtS((te.x1 - te.x0) * (te.y1 - te.y0))}`, (te.x0 + pl.xm) / 2 + 0.6, te.y0 + 0.2, 0.16, { gras: true, couleur: '#6b4f2a' });
+  texte('ALLÉE PIÉTONNE', (pl.allee.x0 + pl.allee.x1) / 2, 3.2, 0.2, { gras: true, rot: -Math.PI / 2, couleur: '#6b4f2a' });
+  texte(`${fmt(pl.allee.x1 - pl.allee.x0)} × ${fmt(pl.allee.y1 - pl.allee.y0)}`, (pl.allee.x0 + pl.allee.x1) / 2 + 0.3, 3.2, 0.16, { rot: -Math.PI / 2, couleur: '#6b4f2a' });
+  texte('COUR AVANT', 14.8, 3.6, 0.3, { gras: true, couleur: '#4d7c0f' });
+  texte(`PASSAGE ${fmt(pl.annexe.y0 - pl.maison.y1)} m`, 4.6, (pl.maison.y1 + pl.annexe.y0) / 2 + 0.55, 0.22, { gras: true, couleur: '#4d7c0f' });
+  texte('JARDIN', 3.7, 23.6, 0.3, { gras: true, couleur: '#4d7c0f' });
+  texte('JARDIN', 16.3, 23.6, 0.3, { gras: true, couleur: '#4d7c0f' });
+  texte('ANNEXE', (pl.annexe.x0 + pl.annexe.x1) / 2, pl.annexe.y1 + 0.35, 0.2, { gras: true, couleur: '#111' });
+  texte(`PORTAIL ${fmt(pl.portail.b - pl.portail.a)}`, (pl.portail.a + pl.portail.b) / 2, -0.35, 0.2, { gras: true, couleur: '#111' });
+  texte(`PORTILLON ${fmt(pl.portillon.b - pl.portillon.a)}`, (pl.portillon.a + pl.portillon.b) / 2, -0.35, 0.2, { gras: true, couleur: '#111' });
+  texte('Clôture sur tout le pourtour', 15.4, 0.45, 0.17, { couleur: '#374151' });
+
+  // ---------- Cotes ----------
+  if (v.cotes) for (const ch of pl.cotes) dessinerChaine(ch);
+
+  function dessinerChaine(ch) {
+    const coul = ch.fort ? '#b91c1c' : '#1d4ed8';
+    const tT = ch.fort ? 0.26 : (ch.fin ? 0.15 : 0.19);
+    const pts = ch.pts;
+    const ext = 0.12;
+    const hor = ch.o === 'h';
+    const L = (a1, b1, a2, b2, px) => hor ? ligne(a1, b1, a2, b2, coul, px) : ligne(b1, a1, b2, a2, coul, px);
+    // ligne de cote
+    L(pts[0], ch.at, pts[pts.length - 1], ch.at, 0.8);
+    const dirExt = Math.sign(ch.at - ch.de) || 1;
+    let voie = 0;
+    pts.forEach((p, i) => {
+      L(p, ch.de + dirExt * 0.06, p, ch.at + dirExt * ext, 0.5);             // ligne d'attache
+      const t = 0.09;                                                           // trait oblique
+      if (hor) ligne(p - t, ch.at - t, p + t, ch.at + t, coul, 1.4);
+      else ligne(ch.at - t, p - t, ch.at + t, p + t, coul, 1.4);
+      if (i === 0) return;
+      const a = pts[i - 1], d = p - a;
+      if (d < 0.005) return;
+      const str = fmt(d);
+      const w = largeurTexte(str, tT);
+      const tient = w + 0.06 < d;
+      let dec = ch.dessous ? -1 : 1;              // côté du texte par rapport à la ligne
+      let k = 1;
+      if (!tient) { voie++; dec = voie % 2 ? -dec : dec; k = voie % 2 ? 1 : 1.9; }
+      const off = dec * (tT * 0.75) * k * (hor ? 1 : -1);
+      const m = (a + p) / 2;
+      if (hor) texte(str, m, ch.at + off, tT, { couleur: coul, gras: ch.fort });
+      else texte(str, ch.at - off, m, tT, { couleur: coul, gras: ch.fort, rot: -Math.PI / 2 });
+    });
+  }
+
+  // ---------- Flèche du nord ----------
+  const nx = T.largeur + 2.2, ny = T.profondeur + 2.6;
+  ctx.beginPath(); ctx.arc(nx, ny, 0.85, 0, Math.PI * 2); ctx.strokeStyle = '#111'; ctx.lineWidth = lw(1); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(nx, ny + 0.75); ctx.lineTo(nx - 0.32, ny - 0.55); ctx.lineTo(nx, ny - 0.3); ctx.closePath(); ctx.fillStyle = '#111'; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(nx, ny + 0.75); ctx.lineTo(nx + 0.32, ny - 0.55); ctx.lineTo(nx, ny - 0.3); ctx.closePath(); ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
+  texte('N', nx, ny + 1.15, 0.38, { gras: true });
+
+  // ---------- Cartouche (tableau des surfaces, légende, échelle, titre) ----------
+  dessinerCartouche();
+
+  function dessinerCartouche() {
+    const y0 = -4.4, y1 = -10.2, xA = -3.4, xB = 7.4, xC = 14.6, xD = T.largeur + 3.4;
+    fillR(xA, y1, xD, y0, '#ffffff');
+    strokeR(xA, y1, xD, y0, '#111', 1.6);
+    ligne(xB, y1, xB, y0, '#111', 1.2); ligne(xC, y1, xC, y0, '#111', 1.2);
+    // Tableau des surfaces
+    const S = calculerSurfaces();
+    texte('TABLEAU DES SURFACES', (xA + xB) / 2, y0 - 0.42, 0.28, { gras: true });
+    const lignes = [
+      ['Surface habitable maison', fmtS(S.habMaison)],
+      ['Surface habitable annexe', fmtS(S.habAnnexe)],
+      ['SURFACE HABITABLE TOTALE', fmtS(S.habTotale), true],
+      ['Emprise maison ' + `${fmt(C.maison.largeur)} × ${fmt(C.maison.profondeur)}`, fmtS(S.empMaison)],
+      ['Emprise annexe ' + `${fmt(C.annexe.largeur)} × ${fmt(C.annexe.profondeur)}`, fmtS(S.empAnnexe)],
+      ['Emprise abri voiture ' + `${fmt(C.abri.largeur)} × ${fmt(C.abri.profondeur)}`, fmtS(S.empAbri)],
+      ['EMPRISE BÂTIE TOTALE', fmtS(S.empTotale), true],
+      [`Terrain ${fmt(T.largeur)} × ${fmt(T.profondeur)} = ${fmtS(S.terrain)}`, `${fmt(S.pct)} %`, true],
+      ['Terrasse couverte (non comptée)', fmtS(S.terrasse)]
+    ];
+    lignes.forEach(([a, b, g], i) => {
+      const y = y0 - 1.0 - i * 0.56;
+      if (g) fillR(xA + 0.1, y - 0.25, xB - 0.1, y + 0.25, '#fef3c7');
+      texte(a, xA + 0.3, y, 0.21, { align: 'left', gras: g });
+      texte(b, xB - 0.3, y, 0.21, { align: 'right', gras: g });
+      ligne(xA + 0.1, y - 0.28, xB - 0.1, y - 0.28, '#d1d5db', 0.5);
+    });
+    // Légende + échelle graphique
+    texte('LÉGENDE', (xB + xC) / 2, y0 - 0.42, 0.28, { gras: true });
+    const leg = [
+      ['#1f2937', `Mur extérieur ${fmt(C.maison.murExt)}`, true], ['#1f2937', `Refend porteur ${fmt(C.maison.refend)}`, true],
+      ['#4b5563', `Cloison ${fmt(C.maison.cloison)}`, false], ['#5b5b5b', `Clôture ${fmt(T.cloture)} (h ${fmt(T.hauteurCloture)})`, false]
+    ];
+    leg.forEach(([col, txt], i) => {
+      const y = y0 - 1.0 - i * 0.5;
+      fillR(xB + 0.35, y - 0.12, xB + 1.25, y + 0.12, col);
+      texte(txt, xB + 1.45, y, 0.2, { align: 'left' });
+    });
+    texte(`Portes ${fmt(C.ouvertures.porte)} · entrée ${fmt(C.ouvertures.porteEntree)} · douches ${fmt(C.ouvertures.porteDouche)}`, xB + 0.35, y0 - 3.0, 0.18, { align: 'left' });
+    texte(`Fenêtres ${fmt(C.ouvertures.fenetre)} (allège ${fmt(C.ouvertures.allege)}) · douches ${fmt(C.ouvertures.fenetreDouche)}`, xB + 0.35, y0 - 3.4, 0.18, { align: 'left' });
+    texte(`Hauteur sous plafond ${fmt(C.maison.hsp)} · cotes en mètres`, xB + 0.35, y0 - 3.8, 0.18, { align: 'left' });
+    // Échelle graphique 0–5 m
+    const ex = xB + 0.6, ey = y1 + 0.75;
+    for (let i = 0; i < 5; i++) fillR(ex + i, ey, ex + i + 1, ey + 0.18, i % 2 ? '#fff' : '#111');
+    strokeR(ex, ey, ex + 5, ey + 0.18, '#111', 1);
+    for (let i = 0; i <= 5; i++) texte(String(i), ex + i, ey + 0.42, 0.18);
+    texte('m', ex + 5.4, ey + 0.1, 0.18, { align: 'left' });
+    texte('Échelle graphique', ex + 2.5, ey + 0.8, 0.18, { gras: true });
+    // Cartouche
+    const cx = (xC + xD) / 2;
+    texte(C.projet.titre, cx, y0 - 0.55, 0.3, { gras: true });
+    texte(C.projet.sousTitre, cx, y0 - 1.05, 0.2);
+    ligne(xC, y0 - 1.45, xD, y0 - 1.45, '#111', 0.8);
+    const info = [
+      ['Planche', C.projet.planche],
+      ['Échelle', `1/${C.projet.echelle} (A3) · échelle graphique`],
+      ['Date', new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })],
+      ['Terrain', `${fmt(T.largeur)} m × ${fmt(T.profondeur)} m = ${fmtS(S.terrain)}`],
+      ['Niveau', 'Plain-pied (RDC) · HSP ' + fmt(C.maison.hsp) + ' m'],
+      ['Indice', 'Version ' + C.projet.version]
+    ];
+    info.forEach(([k, val], i) => {
+      const y = y0 - 1.9 - i * 0.55;
+      texte(k, xC + 0.3, y, 0.2, { align: 'left', gras: true });
+      texte(val, xC + 1.75, y, 0.2, { align: 'left' });
+    });
+  }
+  ecran();
+}
+
+function arcInverse(a0, a1) {
+  // sens de l'arc le plus court (90°) entre a0 et a1
+  let d = a1 - a0;
+  while (d > Math.PI) d -= 2 * Math.PI;
+  while (d < -Math.PI) d += 2 * Math.PI;
+  return d < 0;
+}
+
+function poteauxTerrasse() {
+  const t = PLAN.terrasse;
+  return [t.x0 + 0.125, t.x0 + (t.x1 - t.x0) / 3, t.x0 + 2 * (t.x1 - t.x0) / 3, t.x1 - 0.125];
+}
+
+function dessinerVoiture2D(ctx, cx, cy, lw) {
+  const l = 1.80, L = 4.20;
+  const x0 = cx - l / 2, y0 = cy - L / 2;
+  const arrondi = (x, y, w, h, r) => { ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h); };
+  ctx.fillStyle = '#111';
+  for (const [dx, dy] of [[-0.08, 0.6], [l - 0.12, 0.6], [-0.08, L - 1.15], [l - 0.12, L - 1.15]]) ctx.fillRect(x0 + dx, y0 + dy, 0.2, 0.55);
+  arrondi(x0, y0, l, L, 0.35); ctx.fillStyle = '#c0392b'; ctx.fill(); ctx.strokeStyle = '#5b1a12'; ctx.lineWidth = lw(1.2); ctx.stroke();
+  arrondi(x0 + 0.2, y0 + 0.95, l - 0.4, 2.3, 0.2); ctx.fillStyle = '#8f2a1f'; ctx.fill();
+  ctx.fillStyle = '#bfe3f2';
+  arrondi(x0 + 0.22, y0 + 0.75, l - 0.44, 0.55, 0.12); ctx.fill();   // lunette arrière (côté rue, la voiture recule)
+  arrondi(x0 + 0.22, y0 + 2.85, l - 0.44, 0.65, 0.12); ctx.fill();   // pare-brise (côté maison)
+  ctx.fillStyle = '#fff6b0';
+  ctx.fillRect(x0 + 0.15, y0 + L - 0.12, 0.35, 0.08); ctx.fillRect(x0 + l - 0.5, y0 + L - 0.12, 0.35, 0.08);
+}
+
+/* ---------- Surfaces ---------- */
+function calculerSurfaces() {
+  const C = CONFIG, P = PLAN.pieces;
+  const habMaison = r2(P.filter(p => p.zone === 'maison').reduce((s, p) => s + p.s, 0));
+  const habAnnexe = r2(P.filter(p => p.zone === 'annexe').reduce((s, p) => s + p.s, 0));
+  const empMaison = r2(C.maison.largeur * C.maison.profondeur);
+  const empAnnexe = r2(C.annexe.largeur * C.annexe.profondeur);
+  const empAbri = r2(C.abri.largeur * C.abri.profondeur);
+  const empTotale = r2(empMaison + empAnnexe + empAbri);
+  const terrain = r2(C.terrain.largeur * C.terrain.profondeur);
+  const terrasse = r2(C.maison.largeur * C.implantation.terrasse);
+  return {
+    habMaison, habAnnexe, habTotale: r2(habMaison + habAnnexe), empMaison, empAnnexe, empAbri, empTotale, terrain,
+    pct: r2(empTotale / terrain * 100), terrasse, pctAvecTerrasse: r2((empTotale + terrasse) / terrain * 100),
+    libre: r2(terrain - empTotale - terrasse)
+  };
+}
+
+/* ---------- Affichage 2D : taille, zoom, déplacement ---------- */
+function redimensionner2D() {
+  const r = canvas.getBoundingClientRect();
+  DPR = Math.min(window.devicePixelRatio || 1, 3);
+  W = r.width; H = r.height;
+  canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+  demanderDessin();
+}
+function ajuster() {
+  const b = PLAN.bornes, m = 6;
+  vue.s = Math.min((W - 2 * m) / (b.x1 - b.x0), (H - 2 * m) / (b.y1 - b.y0));
+  vue.ox = (W - (b.x1 - b.x0) * vue.s) / 2 - b.x0 * vue.s;
+  vue.oy = (H + (b.y1 - b.y0) * vue.s) / 2 + b.y0 * vue.s;
+  demanderDessin();
+}
+let dessinPrevu = false;
+function demanderDessin() {
+  if (dessinPrevu) return;
+  dessinPrevu = true;
+  requestAnimationFrame(() => {
+    dessinPrevu = false;
+    if (!W) return;
+    dessinerPlan(canvas.getContext('2d'), vue, { dpr: DPR, W, H });
+  });
+}
+function zoomer(f, px, py) {
+  const s2 = Math.max(3, Math.min(600, vue.s * f));
+  const k = s2 / vue.s;
+  vue.ox = px - (px - vue.ox) * k; vue.oy = py - (py - vue.oy) * k; vue.s = s2;
+  demanderDessin();
+}
+const pointeurs = new Map();
+let pinch = null;
+canvas.addEventListener('pointerdown', e => {
+  canvas.setPointerCapture(e.pointerId);
+  pointeurs.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
+  pinch = null;
+  $('#astuce2d').style.opacity = 0;
+});
+canvas.addEventListener('pointermove', e => {
+  const p = pointeurs.get(e.pointerId);
+  if (!p) return;
+  const nx = e.offsetX, ny = e.offsetY;
+  if (pointeurs.size === 1) {
+    vue.ox += nx - p.x; vue.oy += ny - p.y; p.x = nx; p.y = ny; demanderDessin();
+  } else if (pointeurs.size >= 2) {
+    p.x = nx; p.y = ny;
+    const [a, b] = [...pointeurs.values()];
+    const d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    if (pinch && pinch.d > 0) {
+      vue.ox += mx - pinch.mx; vue.oy += my - pinch.my;
+      zoomer(d / pinch.d, mx, my);
+    }
+    pinch = { d, mx, my };
+  }
+});
+const finPointeur = e => { pointeurs.delete(e.pointerId); pinch = null; };
+canvas.addEventListener('pointerup', finPointeur);
+canvas.addEventListener('pointercancel', finPointeur);
+canvas.addEventListener('wheel', e => { e.preventDefault(); zoomer(Math.exp(-e.deltaY * 0.0015), e.offsetX, e.offsetY); }, { passive: false });
+// Double tape (sans déplacement) : zoom ×2 à l'endroit touché
+let geste = null, dernierTap = 0;
+canvas.addEventListener('pointerdown', e => {
+  if (pointeurs.size === 1) geste = { x: e.offsetX, y: e.offsetY, t: performance.now(), multi: false };
+  else if (geste) geste.multi = true;
+});
+canvas.addEventListener('pointerup', e => {
+  if (!geste || pointeurs.size > 0) return;
+  const t = performance.now();
+  const tap = !geste.multi && t - geste.t < 250 && Math.hypot(e.offsetX - geste.x, e.offsetY - geste.y) < 10;
+  if (tap && t - dernierTap < 320) { zoomer(2, e.offsetX, e.offsetY); dernierTap = 0; }
+  else dernierTap = tap ? t : 0;
+  geste = null;
+});
+$('#bPlus').onclick = () => zoomer(1.5, W / 2, H / 2);
+$('#bMoins').onclick = () => zoomer(1 / 1.5, W / 2, H / 2);
+$('#bAjuster').onclick = ajuster;
+$('#bCotes').onclick = e => { vue.cotes = !vue.cotes; e.currentTarget.classList.toggle('on', vue.cotes); demanderDessin(); };
+
+/* ---------- Export PNG (planche A3 au 1/100) ---------- */
+async function exporterPNG() {
+  const C = CONFIG.projet;
+  const mmEnPx = C.ppp / 25.4;
+  const Wp = Math.round(297 * mmEnPx), Hp = Math.round(420 * mmEnPx);        // A3 portrait
+  const s = 1000 / C.echelle * mmEnPx;                                        // px par mètre
+  const b = PLAN.bornes;
+  const cv = document.createElement('canvas');
+  cv.width = Wp; cv.height = Hp;
+  const ctx = cv.getContext('2d');
+  const ox = (Wp - (b.x1 - b.x0) * s) / 2 - b.x0 * s;
+  const oy = (Hp + (b.y1 - b.y0) * s) / 2 + b.y0 * s;
+  dessinerPlan(ctx, { s, ox, oy, cotes: true }, { dpr: 1, W: Wp, H: Hp, minTexte: 0 });
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.strokeStyle = '#111'; ctx.lineWidth = 3;
+  const m = 10 * mmEnPx; ctx.strokeRect(m, m, Wp - 2 * m, Hp - 2 * m);       // cadre de la planche
+  const blob = await new Promise(res => cv.toBlob(res, 'image/png'));
+  const nom = 'plan-maison-' + new Date().toISOString().slice(0, 10) + '.png';
+  const Cap = window.Capacitor;
+  const natif = Cap && Cap.isNativePlatform && Cap.isNativePlatform();
+  if (natif && Cap.Plugins && Cap.Plugins.Filesystem && Cap.Plugins.Share) {
+    // APK Android : fichier dans le cache de l'appli, puis menu « Partager » (enregistrer, envoyer…)
+    const b64 = await new Promise(res => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1]); fr.readAsDataURL(blob); });
+    const ecrit = await Cap.Plugins.Filesystem.writeFile({ path: nom, data: b64, directory: 'CACHE' });
+    await Cap.Plugins.Share.share({ title: 'Plan de maison', text: 'Plan 2D coté (A3, 1/100)', files: [ecrit.uri], dialogTitle: 'Enregistrer ou envoyer le plan' });
+    return;
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nom; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+  toast(`Image enregistrée : ${nom} (A3, 1/${C.echelle})`);
+}
+$('#bPng').onclick = () => exporterPNG().catch(err => toast('Export impossible : ' + (err && err.message || err)));
+
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.style.display = 'block';
+  clearTimeout(toast.t); toast.t = setTimeout(() => { t.style.display = 'none'; }, 3500);
+}
+
+/* =====================================================================
+   SURFACES — tableaux et vérification des cotes
+   ===================================================================== */
+function remplirSurfaces() {
+  const S = calculerSurfaces();
+  const lignePiece = p => `<tr><td><span class="pastille" style="background:${p.couleur}"></span>${p.nom}${p.note ? ` <small style="color:#64748b">· ${p.note}</small>` : ''}</td><td class="n">${fmt(p.l)} × ${fmt(p.p)}</td><td class="n">${fmtS(p.s)}</td></tr>`;
+  const maison = PLAN.pieces.filter(p => p.zone === 'maison');
+  const annexe = PLAN.pieces.filter(p => p.zone === 'annexe');
+  const dimDem = d => d.p === null ? fmt(d.l) + ' (largeur)' : `${fmt(d.l)} × ${fmt(d.p)}`;
+  const dimObt = (n, o) => n.startsWith('Couloir') ? fmt(o.p) + ` (long. ${fmt(o.l)})` : `${fmt(o.l)} × ${fmt(o.p)}`;
+  $('#surfaces').innerHTML = `
+    <h2>Maison principale (plain-pied)</h2>
+    <table><tr><th>Pièce</th><th class="n">Dim. (m)</th><th class="n">Surface</th></tr>
+    ${maison.map(lignePiece).join('')}
+    <tr class="total"><td colspan="2">Surface habitable maison</td><td class="n">${fmtS(S.habMaison)}</td></tr></table>
+    <h2>Annexe</h2>
+    <table><tr><th>Pièce</th><th class="n">Dim. (m)</th><th class="n">Surface</th></tr>
+    ${annexe.map(lignePiece).join('')}
+    <tr class="total"><td colspan="2">Surface habitable annexe</td><td class="n">${fmtS(S.habAnnexe)}</td></tr></table>
+    <h2>Synthèse</h2>
+    <table><tr><th>Désignation</th><th class="n">Calcul</th><th class="n">Valeur</th></tr>
+    <tr class="total"><td>Surface habitable totale</td><td class="n">${fmt(S.habMaison)} + ${fmt(S.habAnnexe)}</td><td class="n">${fmtS(S.habTotale)}</td></tr>
+    <tr><td>Emprise maison</td><td class="n">${fmt(CONFIG.maison.largeur)} × ${fmt(CONFIG.maison.profondeur)}</td><td class="n">${fmtS(S.empMaison)}</td></tr>
+    <tr><td>Emprise annexe</td><td class="n">${fmt(CONFIG.annexe.largeur)} × ${fmt(CONFIG.annexe.profondeur)}</td><td class="n">${fmtS(S.empAnnexe)}</td></tr>
+    <tr><td>Emprise abri voiture</td><td class="n">${fmt(CONFIG.abri.largeur)} × ${fmt(CONFIG.abri.profondeur)}</td><td class="n">${fmtS(S.empAbri)}</td></tr>
+    <tr class="total"><td>Emprise bâtie totale</td><td class="n">maison + annexe + abri</td><td class="n">${fmtS(S.empTotale)}</td></tr>
+    <tr><td>Surface du terrain</td><td class="n">${fmt(CONFIG.terrain.largeur)} × ${fmt(CONFIG.terrain.profondeur)}</td><td class="n">${fmtS(S.terrain)}</td></tr>
+    <tr class="total"><td>Terrain occupé (emprise bâtie)</td><td class="n">${fmt(S.empTotale)} / ${fmt(S.terrain)}</td><td class="n">${fmt(S.pct)} %</td></tr>
+    <tr class="sous"><td>Terrasse couverte (en plus)</td><td class="n">${fmt(CONFIG.maison.largeur)} × ${fmt(CONFIG.implantation.terrasse)}</td><td class="n">${fmtS(S.terrasse)}</td></tr>
+    <tr><td>Occupation avec la terrasse</td><td class="n">${fmt(S.empTotale + S.terrasse)} / ${fmt(S.terrain)}</td><td class="n">${fmt(S.pctAvecTerrasse)} %</td></tr>
+    <tr><td>Espaces extérieurs libres</td><td class="n">cour, allée, passage, jardins</td><td class="n">${fmtS(S.libre)}</td></tr></table>
+    <h2>Programme demandé / obtenu</h2>
+    <table><tr><th>Pièce</th><th class="n">Demandé</th><th class="n">Obtenu</th><th></th></tr>
+    ${PLAN.programme.map(p => `<tr><td>${p.nom}${p.note ? ` <small style="color:#64748b">· ${p.note}</small>` : ''}</td><td class="n">${dimDem(p.dem)}</td><td class="n">${dimObt(p.nom, p.obt)}</td><td class="${p.ok ? 'ok' : 'env'}">${p.ok ? '✓' : '≈'}</td></tr>`).join('')}
+    </table>
+    <p class="note">Les dimensions sont intérieures (entre faces de murs). Le salon et la cuisine étaient demandés « environ » :
+    le salon prend tout l'espace restant de la zone jour (salon + séjour), la cuisine prend la largeur restante de la bande des chambres.
+    Les petites surfaces entre douches et couloir sont des dressings, accessibles uniquement par leur chambre.
+    Un mur de refend porteur de ${fmt(CONFIG.maison.refend)} sépare la zone jour du couloir (la maison fait ${fmt(CONFIG.maison.profondeur)} m de profondeur).</p>
+    <h2>Vérification des cotes</h2>
+    <table><tr><th>Contrôle</th><th class="n">Résultat</th><th></th></tr>
+    ${PLAN.verifs.map(v => `<tr><td>${v.libelle}<br><small style="color:#64748b">${v.calcul}</small></td><td class="n">${v.entier ? v.valeur : fmt(v.valeur)} ${v.entier ? '' : '= ' + fmt(v.attendu)}</td><td class="${v.ok ? 'ok' : 'ko'}">${v.ok ? '✓' : '✗'}</td></tr>`).join('')}
+    </table>
+    <p class="note">${PLAN.verifs.every(v => v.ok) ? '✓ Toutes les cotes s\'additionnent exactement.' : '✗ Certaines cotes ne s\'additionnent pas : vérifiez l\'objet CONFIG.'}
+    Toutes les cotes du plan sont calculées à partir de l'objet <code>CONFIG</code> en tête du code.</p>`;
+}
+
+/* =====================================================================
+   VUE 3D — Three.js (chargé à la première ouverture)
+   ===================================================================== */
+const V3 = { pret: false, enCours: false };
+
+async function initialiser3D() {
+  if (V3.pret || V3.enCours) return;
+  V3.enCours = true;
+  let THREE, OrbitControls;
+  try {
+    THREE = await import('three');
+    ({ OrbitControls } = await import('three/addons/controls/OrbitControls.js'));
+  } catch (err) {
+    V3.enCours = false;
+    $('#msg3d').innerHTML = 'La vue 3D n\'a pas pu être chargée.<br>Vérifiez la connexion Internet puis touchez « Vue 3D » à nouveau.';
+    return;
+  }
+  const C = CONFIG, pl = PLAN, T = C.terrain;
+  const conteneur = $('#c3d');
+  const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  conteneur.appendChild(renderer.domElement);
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color('#bfdcf5');
+  scene.fog = new THREE.Fog('#bfdcf5', 70, 140);
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 400);
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; controls.dampingFactor = 0.08;
+  controls.maxPolarAngle = Math.PI / 2 - 0.04; controls.minDistance = 3; controls.maxDistance = 90;
+  controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+
+  scene.add(new THREE.HemisphereLight('#ffffff', '#7a8f6a', 1.6));
+  const soleil = new THREE.DirectionalLight('#ffffff', 2.2);
+  soleil.position.set(-14, 28, 18);
+  soleil.castShadow = true;
+  soleil.shadow.mapSize.set(2048, 2048);
+  Object.assign(soleil.shadow.camera, { left: -22, right: 22, top: 22, bottom: -22, near: 1, far: 80 });
+  soleil.shadow.bias = -0.0005;
+  scene.add(soleil);
+
+  // Repère : X = x − L/2 ; Z = P/2 − y (la rue est vers +Z) ; hauteur = Y
+  const L2 = T.largeur / 2, P2 = T.profondeur / 2;
+  const mats = {};
+  const mat = (col, o = {}) => {
+    const k = col + JSON.stringify(o);
+    if (!mats[k]) mats[k] = new THREE.MeshLambertMaterial({ color: col, ...o });
+    return mats[k];
+  };
+  const boite = (x0, y0, x1, y1, z0, z1, m, parent = scene, ombre = true) => {
+    const w = x1 - x0, d = y1 - y0, h = z1 - z0;
+    if (w <= 0.0001 || d <= 0.0001 || h <= 0.0001) return null;
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+    mesh.position.set((x0 + x1) / 2 - L2, (z0 + z1) / 2, P2 - (y0 + y1) / 2);
+    if (ombre) { mesh.castShadow = true; mesh.receiveShadow = true; }
+    parent.add(mesh);
+    return mesh;
+  };
+
+  // Sol
+  const exterieur = new THREE.Mesh(new THREE.PlaneGeometry(160, 160), mat('#c9bfa5'));
+  exterieur.rotation.x = -Math.PI / 2; exterieur.position.y = -0.03; exterieur.receiveShadow = true; scene.add(exterieur);
+  boite(0, 0, T.largeur, T.profondeur, -0.02, 0.0, mat('#7cb862'), scene, false).receiveShadow = true;
+  boite(-30, -9, T.largeur + 30, -2.0, -0.02, 0.005, mat('#4b5056'), scene, false).receiveShadow = true;   // chaussée
+  boite(-30, -2.0, T.largeur + 30, 0, -0.02, 0.06, mat('#b8b8b0'), scene, false).receiveShadow = true;    // trottoir
+  for (let x = -28; x < T.largeur + 28; x += 4) boite(x, -5.6, x + 2, -5.4, 0, 0.012, mat('#f5f5f5'), scene, false);
+  const ab = pl.abri, te = pl.terrasse, base = C.maison.soubassement;
+  boite(ab.x0, 0, ab.x1, ab.y1, 0, 0.04, mat('#c9c4b8'));
+  boite(pl.portail.a, 0, pl.portail.b, ab.y0, 0, 0.04, mat('#c9c4b8'));
+  boite(pl.allee.x0, 0, pl.allee.x1, pl.allee.y1, 0, 0.05, mat('#e2cfa6'));
+
+  // Clôture, portail, portillon
+  const hc = T.hauteurCloture;
+  for (const [x0, y0, x1, y1] of pl.cloture) {
+    boite(x0, y0, x1, y1, 0, hc, mat('#ece6da'));
+    boite(x0 - 0.02, y0 - 0.02, x1 + 0.02, y1 + 0.02, hc, hc + 0.06, mat('#9a9184'));
+  }
+  const metal = mat('#2f3a45');
+  const grille = (a, b) => {
+    boite(a, 0.04, b, 0.09, 0.08, hc - 0.1, mat('#3d4a57', { transparent: true, opacity: 0.85 }));
+    for (let x = a + 0.12; x < b - 0.05; x += 0.14) boite(x - 0.015, 0.03, x + 0.015, 0.1, 0.08, hc - 0.05, metal);
+    boite(a, 0.03, b, 0.1, hc - 0.12, hc - 0.05, metal);
+  };
+  const lp = (pl.portail.b - pl.portail.a) / 2;
+  grille(pl.portail.a, pl.portail.a + lp - 0.01); grille(pl.portail.a + lp + 0.01, pl.portail.b);
+  grille(pl.portillon.a, pl.portillon.b);
+  for (const x of [pl.portail.a, pl.portail.b, pl.portillon.a, pl.portillon.b]) boite(x - 0.12, 0, x + 0.12, 0.24, 0, hc + 0.2, mat('#d9d0c0'));
+
+  // Bâtiments : dallage, sols colorés, murs avec ouvertures
+  const groupeToit = new THREE.Group(); scene.add(groupeToit);
+  const groupeEtiq = new THREE.Group(); scene.add(groupeEtiq);
+  const mai = pl.maison, ann = pl.annexe;
+  boite(mai.x0, mai.y0, mai.x1, mai.y1, 0, base, mat('#9ca3af'));
+  boite(te.x0, te.y0, te.x1, te.y1, 0, base, mat('#d8c3a0'));
+  boite(ann.x0, ann.y0, ann.x1, ann.y1, 0, base, mat('#9ca3af'));
+  for (const p of pl.pieces) boite(p.x0, p.y0, p.x1, p.y1, base, base + 0.012, mat(p.couleur), scene, false).receiveShadow = true;
+
+  const O = C.ouvertures;
+  const verre = mat('#9fd3ee', { transparent: true, opacity: 0.45 });
+  const menuiserie = mat('#f8fafc');
+  const porteMat = mat('#8b5a2b');
+  for (const m of pl.murs) {
+    const hMur = m.bat === 'annexe' ? C.annexe.hauteur : C.maison.hsp;
+    const z0 = base, z1 = base + hMur;
+    const col = m.t === 'ext' ? mat('#efe4cf') : mat('#fbfaf7');
+    const ouv = pl.ouvertures.filter(o => o.mur === m.id).sort((a, b) => a.a - b.a);
+    const [d0, d1] = m.horiz ? [m.x0, m.x1] : [m.y0, m.y1];
+    const bloc = (a, b, h0, h1, mm = col) => m.horiz ? boite(a, m.y0, b, m.y1, h0, h1, mm) : boite(m.x0, a, m.x1, b, h0, h1, mm);
+    let cur = d0;
+    for (const o of ouv) {
+      bloc(cur, o.a, z0, z1);
+      if (o.type === 'porte') {
+        const hp = Math.min(O.hPorte, hMur - 0.1);
+        bloc(o.a, o.b, z0 + hp, z1);
+        // vantail entrouvert (fin, couleur bois) pour les portes extérieures ; intérieures : ouvertes
+        if (m.t === 'ext') bloc(o.a + 0.02, o.b - 0.02, z0, z0 + hp - 0.01, porteMat).scale.set(m.horiz ? 1 : 0.25, 1, m.horiz ? 0.25 : 1);
+      } else {
+        bloc(o.a, o.b, z0, z0 + o.allege);
+        bloc(o.a, o.b, z0 + O.linteau, z1);
+        const g = bloc(o.a, o.b, z0 + o.allege, z0 + O.linteau, verre);
+        if (g) { g.castShadow = false; g.scale.set(m.horiz ? 1 : 0.2, 1, m.horiz ? 0.2 : 1); }
+        bloc(o.a, o.b, z0 + o.allege - 0.04, z0 + o.allege, menuiserie);
+      }
+      cur = o.b;
+    }
+    bloc(cur, d1, z0, z1);
+  }
+  // Poteaux de la terrasse
+  for (const x of poteauxTerrasse()) boite(x - 0.125, te.y0, x + 0.125, te.y0 + 0.25, base, base + C.maison.hsp, mat('#efe4cf'));
+
+  // Toiture à 4 pans de la maison (couvre aussi la terrasse)
+  const db = C.toit.debord, hz = base + C.maison.hsp;
+  boite(mai.x0 - db, te.y0 - db, mai.x1 + db, mai.y1 + db, hz, hz + 0.12, mat('#f1f1f1'), groupeToit);
+  toit4Pans(mai.x0 - db, te.y0 - db, mai.x1 + db, mai.y1 + db, hz + 0.12, C.toit.hauteur, mat('#b5502e', { side: THREE.DoubleSide }), groupeToit);
+  // Annexe : dalle avec débord sur 3 côtés (pas de débord sur la clôture arrière)
+  const hza = base + C.annexe.hauteur;
+  boite(ann.x0 - 0.3, ann.y0 - 0.3, ann.x1 + 0.3, ann.y1, hza, hza + 0.18, mat('#d6d3cd'), groupeToit);
+  boite(ann.x0 - 0.3, ann.y0 - 0.3, ann.x1 + 0.3, ann.y0 - 0.22, hza + 0.18, hza + 0.4, mat('#d6d3cd'), groupeToit);
+  // Abri voiture : poteaux + toiture
+  const hAb = C.abri.hauteur;
+  for (const [x, y] of [[ab.x0, ab.y0], [ab.x1 - 0.12, ab.y0], [ab.x0, ab.y1 - 0.12], [ab.x1 - 0.12, ab.y1 - 0.12]])
+    boite(x, y, x + 0.12, y + 0.12, 0.04, hAb, metal);
+  boite(ab.x0, ab.y0, ab.x1, ab.y1, hAb, hAb + 0.08, mat('#6b7f8f'), groupeToit);
+  voiture3D((ab.x0 + ab.x1) / 2, (ab.y0 + ab.y1) / 2);
+
+  // Quelques arbres dans les jardins
+  for (const [x, y, r] of [[3.5, 23.4, 1.1], [16.5, 23.4, 1.1], [17.5, 3.0, 1.3], [14.0, 2.2, 0.9]]) {
+    boite(x - 0.12, y - 0.12, x + 0.12, y + 0.12, 0, 1.6, mat('#6b4423'));
+    const f = new THREE.Mesh(new THREE.SphereGeometry(r, 14, 10), mat('#3f8f3a'));
+    f.position.set(x - L2, 1.6 + r * 0.8, P2 - y); f.castShadow = true; scene.add(f);
+  }
+
+  // Étiquettes
+  const etiquette = (txt1, txt2, x, y, h, coul = '#1e293b', echelle = 1) => {
+    const cv = document.createElement('canvas'); cv.width = 512; cv.height = 160;
+    const g = cv.getContext('2d');
+    g.font = '700 50px Arial'; const w1 = g.measureText(txt1).width;
+    g.font = '600 40px Arial'; const w2 = txt2 ? g.measureText(txt2).width : 0;
+    const w = Math.min(500, Math.max(w1, w2) + 40);
+    g.fillStyle = 'rgba(255,255,255,0.9)';
+    g.beginPath(); g.roundRect ? g.roundRect(256 - w / 2, txt2 ? 8 : 40, w, txt2 ? 144 : 80, 22) : g.rect(256 - w / 2, 8, w, 144); g.fill();
+    g.strokeStyle = coul; g.lineWidth = 4; g.stroke();
+    g.fillStyle = coul; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = '700 50px Arial'; g.fillText(txt1, 256, txt2 ? 54 : 80, 480);
+    if (txt2) { g.font = '600 40px Arial'; g.fillStyle = '#7c2d12'; g.fillText(txt2, 256, 112, 480); }
+    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
+    sp.scale.set(3.4 * echelle, 1.06 * echelle, 1);
+    sp.position.set(x - L2, h, P2 - y); sp.renderOrder = 10;
+    groupeEtiq.add(sp);
+  };
+  for (const p of pl.pieces) {
+    const petite = p.l < 2.5;
+    const nom = p.nom.replace(' (parentale)', '').replace(' annexe', petite ? '' : ' annexe');
+    etiquette(nom, fmtS(p.s), (p.x0 + p.x1) / 2, (p.y0 + p.y1) / 2, base + 1.3, '#1e293b', petite ? 0.72 : 1);
+  }
+  etiquette('Abri voiture', `${fmt(C.abri.largeur)} × ${fmt(C.abri.profondeur)}`, (ab.x0 + ab.x1) / 2, ab.y0 + 0.6, hAb + 0.7, '#334155', 0.9);
+  etiquette('Terrasse couverte', `${fmt(C.maison.largeur)} × ${fmt(C.implantation.terrasse)}`, (te.x0 + pl.xm) / 2, (te.y0 + te.y1) / 2, base + 2.2, '#6b4f2a', 0.9);
+  etiquette('Portail', fmt(C.portail.largeur), (pl.portail.a + pl.portail.b) / 2, -0.4, hc + 0.6, '#334155', 0.75);
+  etiquette('Portillon', fmt(C.portillon.largeur), (pl.portillon.a + pl.portillon.b) / 2, -0.4, hc + 0.6, '#334155', 0.75);
+  etiquette('Allée', null, pl.xm, 3.0, 0.7, '#6b4f2a', 0.7);
+  etiquette('Passage', fmt(pl.annexe.y0 - pl.maison.y1) + ' m', 5.0, (pl.maison.y1 + pl.annexe.y0) / 2, 0.8, '#3f6212', 0.8);
+
+  function toit4Pans(x0, y0, x1, y1, z, h, m, parent) {
+    const X = x => x - L2, Z = y => P2 - y;
+    const lx = x1 - x0, ly = y1 - y0;
+    const v = [];
+    const tri = (a, b, c) => v.push(...a, ...b, ...c);
+    const A = [X(x0), z, Z(y0)], B = [X(x1), z, Z(y0)], Cc = [X(x1), z, Z(y1)], D = [X(x0), z, Z(y1)];
+    let R1, R2;
+    if (lx >= ly) { const hd = ly / 2; R1 = [X(x0 + hd), z + h, Z(y0 + hd)]; R2 = [X(x1 - hd), z + h, Z(y0 + hd)];
+      tri(A, B, R2); tri(A, R2, R1); tri(Cc, D, R1); tri(Cc, R1, R2); tri(D, A, R1); tri(B, Cc, R2);
+    } else { const hd = lx / 2; R1 = [X(x0 + hd), z + h, Z(y0 + hd)]; R2 = [X(x0 + hd), z + h, Z(y1 - hd)];
+      tri(A, B, R1); tri(B, Cc, R2); tri(B, R2, R1); tri(Cc, D, R2); tri(D, A, R1); tri(D, R1, R2);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
+    g.computeVertexNormals();
+    const mesh = new THREE.Mesh(g, m); mesh.castShadow = true; mesh.receiveShadow = true;
+    parent.add(mesh);
+    // lignes de faîtage et d'arêtiers
+    const aretes = new THREE.BufferGeometry().setFromPoints([A, R1, B, R2, Cc, R2, D, R1, R1, R2].map(p => new THREE.Vector3(...p)));
+    const lignes = new THREE.LineSegments(aretes, new THREE.LineBasicMaterial({ color: '#7a2f17' }));
+    parent.add(lignes);
+  }
+
+  function voiture3D(cx, cy) {
+    const g = new THREE.Group();
+    const caisse = mat('#c0392b'), vitre = mat('#2c3e50'), noir = mat('#111111');
+    const l = 1.78, L = 4.2;
+    const b = (x0, y0, x1, y1, z0, z1, m) => boite(cx + x0, cy + y0, cx + x1, cy + y1, z0, z1, m, g);
+    b(-l / 2, -L / 2, l / 2, L / 2, 0.32, 0.92, caisse);
+    b(-l / 2 + 0.12, -0.95, l / 2 - 0.12, 1.15, 0.92, 1.45, vitre);
+    b(-l / 2 + 0.16, -0.85, l / 2 - 0.16, 1.05, 1.45, 1.5, caisse);
+    b(-l / 2 + 0.1, L / 2 - 0.02, -l / 2 + 0.45, L / 2 + 0.01, 0.62, 0.78, mat('#fff3a0'));
+    b(l / 2 - 0.45, L / 2 - 0.02, l / 2 - 0.1, L / 2 + 0.01, 0.62, 0.78, mat('#fff3a0'));
+    b(-l / 2 + 0.1, -L / 2 - 0.01, -l / 2 + 0.45, -L / 2 + 0.02, 0.62, 0.78, mat('#e74c3c'));
+    b(l / 2 - 0.45, -L / 2 - 0.01, l / 2 - 0.1, -L / 2 + 0.02, 0.62, 0.78, mat('#e74c3c'));
+    const roueGeo = new THREE.CylinderGeometry(0.33, 0.33, 0.24, 18);
+    for (const [dx, dy] of [[-l / 2, 1.3], [l / 2, 1.3], [-l / 2, -1.3], [l / 2, -1.3]]) {
+      const w = new THREE.Mesh(roueGeo, noir);
+      w.rotation.z = Math.PI / 2; w.position.set(cx + dx - L2, 0.37, P2 - (cy + dy)); w.castShadow = true; g.add(w);
+    }
+    scene.add(g);
+  }
+
+  // Interface 3D
+  let toitVisible = false, etiqVisible = true;
+  const majVisibilite = () => {
+    groupeToit.visible = toitVisible;
+    groupeEtiq.visible = etiqVisible;
+    $('#bToit').classList.toggle('on', toitVisible);
+    $('#bToit').textContent = toitVisible ? 'Toit ✓' : 'Toit';
+    $('#bEtiq').classList.toggle('on', etiqVisible);
+  };
+  $('#bToit').onclick = () => { toitVisible = !toitVisible; if (toitVisible) etiqVisible = false; majVisibilite(); };
+  $('#bEtiq').onclick = () => { etiqVisible = !etiqVisible; majVisibilite(); };
+  const vueInitiale = () => {
+    const portrait = camera.aspect < 0.8;
+    camera.position.set(portrait ? 2 : 12, portrait ? 29 : 20, portrait ? 27 : 27);
+    controls.target.set(portrait ? -0.8 : 0, 0, portrait ? -1 : 0); controls.update();
+  };
+  $('#bRecentrer').onclick = vueInitiale;
+  $('#bDessus').onclick = () => { camera.position.set(0, 42, 0.01); controls.target.set(0, 0, 0); controls.update(); };
+  majVisibilite();
+
+  const taille = () => {
+    const r = conteneur.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    renderer.setSize(r.width, r.height, false);
+    renderer.domElement.style.width = r.width + 'px'; renderer.domElement.style.height = r.height + 'px';
+    camera.aspect = r.width / r.height;
+    camera.fov = camera.aspect < 0.8 ? 62 : 50;
+    camera.updateProjectionMatrix();
+  };
+  V3.taille = taille;
+  V3.demarrer = () => { taille(); renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); }); };
+  V3.arreter = () => renderer.setAnimationLoop(null);
+  taille(); vueInitiale();
+  V3.pret = true; V3.enCours = false;
+  window.__scene3d = { scene, camera, renderer, controls };
+  $('#msg3d').style.display = 'none';
+  const ast = $('#astuce3d'); ast.style.opacity = 1; setTimeout(() => { ast.style.opacity = 0; }, 4000);
+  if (vueCourante === 'vue3d') V3.demarrer();
+}
+
+/* =====================================================================
+   NAVIGATION
+   ===================================================================== */
+let vueCourante = 'vue2d';
+function afficher(id) {
+  vueCourante = id;
+  document.querySelectorAll('.vue').forEach(v => v.classList.toggle('active', v.id === id));
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('actif', b.dataset.vue === id));
+  $('#outils2d').hidden = id !== 'vue2d';
+  $('#outils3d').hidden = id !== 'vue3d';
+  if (id === 'vue2d') { redimensionner2D(); }
+  if (id === 'vue3d') { if (V3.pret) V3.demarrer(); else initialiser3D(); } else if (V3.pret) V3.arreter();
+  if (id === 'vueSurf') remplirSurfaces();
+}
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => afficher(b.dataset.vue));
+window.addEventListener('resize', () => {
+  const ancien = { W, H };
+  if (vueCourante === 'vue2d') {
+    redimensionner2D();
+    if (ancien.W) { vue.ox += (W - ancien.W) / 2; vue.oy += (H - ancien.H) / 2; }
+  }
+  if (vueCourante === 'vue3d' && V3.pret) V3.taille();
+});
+// Bouton « retour » d'Android dans l'APK : revenir au plan 2D avant de quitter
+const Cap = window.Capacitor;
+if (Cap && Cap.isNativePlatform && Cap.isNativePlatform() && Cap.Plugins && Cap.Plugins.App) {
+  Cap.Plugins.App.addListener('backButton', () => { if (vueCourante !== 'vue2d') afficher('vue2d'); else Cap.Plugins.App.exitApp(); });
+}
+
+redimensionner2D();
+ajuster();
+setTimeout(() => { $('#astuce2d').style.opacity = 0; }, 5000);
+remplirSurfaces();
+window.__plan = { PLAN, CONFIG, calculerSurfaces, vue, afficher, exporterPNG };
+const ko = PLAN.verifs.filter(v => !v.ok);
+if (ko.length) console.warn('Cotes incohérentes :', ko);
+</script>
+</body>
+</html>

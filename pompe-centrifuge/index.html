@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Pompe centrifuge 3D</title>
+  <meta name="description" content="Simulation 3D d'une pompe centrifuge pour la formation des mécaniciens : point de fonctionnement, courbes, NPSH, cavitation, amorçage, pannes et quiz.">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Pompe 3D">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<section id="pompe" class="ecran ecran-sim actif" aria-label="Banc pompe centrifuge">
+  <div id="pc-vue3d" class="zone3d">
+    <canvas id="pc-canvas" class="canvas3d" aria-label="Vue 3D du banc de pompe centrifuge"></canvas>
+
+    <div class="barre-haut">
+      <div class="titre-sim" id="pc-titre">Pompe centrifuge</div>
+      <button type="button" class="btn-rond" id="pc-etiquettes" title="Afficher / masquer les étiquettes" aria-label="Étiquettes" aria-pressed="true">🏷️</button>
+    </div>
+
+    <div class="hud">
+      <div class="hud-ligne">
+        <div class="hud-pression"><small>Débit</small><b id="pc-hud-q">0</b><small>m³/h</small></div>
+        <div class="hud-pression"><small>HMT</small><b id="pc-hud-h">0</b><small>m</small></div>
+      </div>
+      <div id="pc-alerte" class="hud-alerte" hidden></div>
+    </div>
+
+    <div class="legende-3d texte-seul" aria-hidden="true">Rotation de la roue ralentie · hauteur d'aspiration exagérée</div>
+    <button type="button" id="pc-recentrer" class="btn-recentrer">⌖ Recentrer la vue</button>
+    <div id="pc-chargement" class="chargement"><div class="roue"></div>Chargement de la 3D…</div>
+  </div>
+
+  <div id="pc-panneau" class="panneau">
+    <div class="barre-rapide">
+      <button type="button" id="pc-marche" class="btn-pompe" aria-pressed="false">
+        <i class="voyant"></i><span class="lib-pompe">Pompe<small>ARRÊT</small></span>
+      </button>
+      <div class="segmente" role="group" aria-label="Vanne de refoulement">
+        <button type="button" data-pc-vanne="5" title="Vanne de refoulement presque fermée"><b>▁</b><span>Fermée</span></button>
+        <button type="button" data-pc-vanne="40" title="Vanne de refoulement à moitié"><b>▄</b><span>Moitié</span></button>
+        <button type="button" data-pc-vanne="100" title="Vanne de refoulement grande ouverte"><b>█</b><span>Ouverte</span></button>
+      </div>
+      <button type="button" id="pc-replier" class="btn-rond petit btn-replier" aria-label="Replier le panneau" title="Replier / déplier">▾</button>
+    </div>
+
+    <nav class="onglets" role="tablist">
+      <button type="button" role="tab" data-pc-onglet="commandes" class="actif">Commandes</button>
+      <button type="button" role="tab" data-pc-onglet="courbes">Courbes</button>
+      <button type="button" role="tab" data-pc-onglet="pannes">Pannes</button>
+      <button type="button" role="tab" data-pc-onglet="quiz">Quiz</button>
+    </nav>
+
+    <div class="contenu-panneau" id="pc-contenu">
+      <!-- Onglet Commandes -->
+      <div class="onglet actif" data-pc-contenu="commandes">
+        <div id="pc-message" class="message"></div>
+
+        <div class="carte">
+          <h3>Démarrage d'une pompe centrifuge</h3>
+          <ol class="procedure" id="pc-procedure"></ol>
+        </div>
+
+        <div class="ligne-boutons">
+          <button type="button" id="pc-vanne-asp" class="btn-secondaire btn-etat" aria-pressed="false">Vanne d'aspiration : ouverte</button>
+          <button type="button" id="pc-amorcer" class="btn-secondaire">💧 Amorcer</button>
+        </div>
+
+        <label class="curseur">
+          <span class="lib">Vanne de refoulement <b id="pc-curseur-v-val">40 %</b></span>
+          <input type="range" id="pc-curseur-v" min="0" max="100" step="5" value="40">
+          <span class="bornes"><span>fermée</span><span>ouverte</span></span>
+        </label>
+        <label class="curseur">
+          <span class="lib">Fréquence du variateur <b id="pc-curseur-f-val">50 Hz</b></span>
+          <input type="range" id="pc-curseur-f" min="20" max="50" step="1" value="50">
+          <span class="bornes"><span>20 Hz</span><span>50 Hz</span></span>
+        </label>
+        <label class="curseur">
+          <span class="lib">Hauteur d'aspiration (niveau de la bâche) <b id="pc-curseur-a-val">2 m</b></span>
+          <input type="range" id="pc-curseur-a" min="-1" max="6" step="0.5" value="2">
+          <span class="bornes"><span>en charge</span><span>6 m</span></span>
+        </label>
+        <label class="curseur">
+          <span class="lib">Température de l'eau <b id="pc-curseur-t-val">20 °C</b></span>
+          <input type="range" id="pc-curseur-t" min="10" max="90" step="5" value="20">
+          <span class="bornes"><span>10 °C</span><span>90 °C</span></span>
+        </label>
+
+        <div class="mesures">
+          <div><small>Vitesse</small><b id="pc-m-n">0 tr/min</b></div>
+          <div><small>Débit</small><b id="pc-m-q">0 m³/h</b></div>
+          <div><small>Vacuomètre (aspiration)</small><b id="pc-m-pa">0 bar</b></div>
+          <div><small>Manomètre (refoulement)</small><b id="pc-m-pr">0 bar</b></div>
+          <div><small>Hauteur manométrique</small><b id="pc-m-h">0 m</b></div>
+          <div><small>Puissance absorbée</small><b id="pc-m-p">0 kW</b></div>
+          <div id="pc-c-i"><small>Intensité (In 6,1 A)</small><b id="pc-m-i">0 A</b></div>
+          <div><small>Rendement</small><b id="pc-m-eta">—</b></div>
+          <div id="pc-c-npsh"><small>NPSH disponible / requis</small><b id="pc-m-npsh">—</b></div>
+          <div id="pc-c-vib"><small>Vibrations</small><b id="pc-m-vib">0 mm/s</b></div>
+          <div id="pc-c-tc"><small>Eau du corps de pompe</small><b id="pc-m-tc">20 °C</b></div>
+          <div id="pc-c-tp"><small>Palier</small><b id="pc-m-tp">20 °C</b></div>
+        </div>
+
+        <div class="carte">
+          <h3>Calculs</h3>
+          <div id="pc-calcul" class="calcul"></div>
+        </div>
+        <button type="button" id="pc-reinit" class="btn-secondaire pleine-largeur">↺ Réinitialiser le banc</button>
+      </div>
+
+      <!-- Onglet Courbes -->
+      <div class="onglet" data-pc-contenu="courbes">
+        <div id="pc-courbes" class="courbes-svg"></div>
+        <div class="legende-courbes">
+          <span><i style="background:#2563eb"></i>Pompe (vitesse actuelle)</span>
+          <span><i class="tirets"></i>Pompe à 50 Hz</span>
+          <span><i style="background:#ea580c"></i>Réseau (vanne)</span>
+          <span><i style="background:#16a34a"></i>Rendement</span>
+          <span><i style="background:#7c3aed"></i>NPSH requis</span>
+          <span><i style="background:#0891b2"></i>NPSH disponible</span>
+        </div>
+        <p class="aide">Le point rouge est le <b>point de fonctionnement</b> : intersection de la courbe de la pompe (bleu) et de la courbe du réseau (orange). Fermer la vanne de refoulement relève la courbe du réseau ; baisser la fréquence abaisse la courbe de la pompe (H ∝ N²). En bas, la zone rouge est celle où le NPSH disponible est inférieur au NPSH requis : <b>cavitation</b>.</p>
+      </div>
+
+      <!-- Onglet Pannes -->
+      <div class="onglet" data-pc-contenu="pannes">
+        <p class="aide">Activez une panne puis observez : manomètres, débit, bruit (bulles), vibrations, fuite, températures…</p>
+        <div id="pc-liste-pannes" class="liste-pannes"></div>
+        <div id="pc-detail-panne" class="detail-panne" hidden></div>
+        <div class="mystere">
+          <h3>🔍 Panne mystère</h3>
+          <p class="aide">Une panne est activée au hasard, pompe en marche. Observez, mesurez, puis faites votre diagnostic.</p>
+          <button type="button" id="pc-mystere" class="btn-principal">Lancer une panne mystère</button>
+          <div id="pc-mystere-choix" class="choix" hidden></div>
+          <div id="pc-mystere-resultat" class="resultat" hidden></div>
+        </div>
+        <button type="button" id="pc-reparer" class="btn-secondaire pleine-largeur">🔧 Tout réparer</button>
+      </div>
+
+      <!-- Onglet Quiz -->
+      <div class="onglet" data-pc-contenu="quiz">
+        <div id="pc-quiz"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="pc-fiche" class="feuille" role="dialog" aria-modal="true" aria-labelledby="pc-fiche-nom" hidden>
+    <div class="feuille-entete">
+      <h2 id="pc-fiche-nom"></h2>
+      <button type="button" class="btn-rond petit fermer" id="pc-fermer" aria-label="Fermer">✕</button>
+    </div>
+    <div class="feuille-corps" id="pc-fiche-corps"></div>
+  </div>
+</section>
+
+<div id="erreur-webgl" class="erreur" hidden>
+  <h2>La 3D n'a pas pu démarrer</h2>
+  <p>Votre navigateur ne prend pas en charge WebGL ou il est désactivé. Essayez avec Chrome à jour.</p>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
