@@ -5,7 +5,7 @@ import { PIECES, MONTAGE, COURS_HTML, PANNES_HTML, QUIZ } from './donnees.js';
 
 const $ = s => document.querySelector(s);
 const canvas = $('#c3d'), vue = $('#vue');
-const renderer = new T.WebGLRenderer({ canvas, antialias: true });
+const renderer = new T.WebGLRenderer({ canvas, antialias: !/[?&]video/.test(location.search), preserveDrawingBuffer: /[?&]video/.test(location.search) });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.localClippingEnabled = true;
 renderer.shadowMap.enabled = true;
@@ -718,6 +718,7 @@ function pas(dt) {
   appliquer(dt, dtSim);
 }
 function boucle(t) {
+  if (window.__manuel) return;                       // mode image par image (enregistrement vidéo)
   const dt = Math.min(0.05, (t - tPrec) / 1000); tPrec = t;
   pas(dt); majCam(dt); renderer.render(scene, camera); majReperes();
   if (t - tAff > 150) { afficher(); courbe(); tAff = t; }
@@ -727,6 +728,8 @@ afficher(); requestAnimationFrame(boucle);
 window.__etat = etat;
 window.__pique = (x, y) => { toucher(x, y); return choisie; };
 window.__avance = n => { for (let i = 0; i < n; i++) { pas(0.05); majCam(0.05); } afficher(); };
+window.__avanceSeul = dt => { pas(dt); majCam(dt); };
 window.__vue = majVue;
+window.__frame = dt => { pas(dt); majCam(dt); renderer.render(scene, camera); majReperes(); afficher(); };
 window.__etape = allerEtape;
 window.__setCam = v => { cible.az = cam.az = v.az; cible.el = cam.el = v.el; cible.d = cam.d = v.d; cible.c.set(...v.c); cam.c.set(...v.c); };
