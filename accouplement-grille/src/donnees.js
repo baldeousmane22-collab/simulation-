@@ -5,7 +5,7 @@
 export const PIECES = [
   { n: 1, id: 'moteur', court: 'Moteur', nom: 'Moteur électrique (machine menante)', mat: '315 kW – 1485 tr/min (exemple)', role: 'Entraîne le moyeu côté moteur par son arbre claveté.' },
   { n: 2, id: 'moyeuA', court: 'Moyeu moteur', nom: 'Moyeu côté moteur', mat: 'Acier forgé, rainures rectifiées', role: 'Claveté sur l\'arbre du moteur. Ses rainures axiales reçoivent une moitié de chaque barreau de la grille.' },
-  { n: 3, id: 'moyeuB', court: 'Moyeu machine', nom: 'Moyeu côté machine', mat: 'Acier forgé, rainures rectifiées', role: 'Claveté sur l\'arbre de la machine entraînée. Il reçoit l\'autre moitié des barreaux.' },
+  { n: 3, id: 'moyeuB', court: 'Moyeu réducteur', nom: 'Moyeu côté réducteur', mat: 'Acier forgé, rainures rectifiées', role: 'Claveté sur l\'arbre d\'entrée (arbre rapide) du réducteur. Il reçoit l\'autre moitié des barreaux.' },
   { n: 4, id: 'grille', court: 'Grille', nom: 'Grille (ressort serpentin) en 6 segments', mat: 'Acier à ressort trempé, grenaillé', role: 'Transmet le couple d\'un moyeu à l\'autre en fléchissant. Elle amortit les chocs et accepte de petits défauts d\'alignement. C\'est la pièce d\'usure.' },
   { n: 5, id: 'carterH', court: 'Demi-carter haut', nom: 'Demi-carter supérieur', mat: 'Alliage d\'aluminium moulé', role: 'Enferme la grille et la graisse, et empêche les segments de s\'échapper sous la force centrifuge.' },
   { n: 6, id: 'carterB', court: 'Demi-carter bas', nom: 'Demi-carter inférieur', mat: 'Alliage d\'aluminium moulé', role: 'Seconde moitié du carter, boulonnée sur la première au plan de joint.' },
@@ -14,8 +14,8 @@ export const PIECES = [
   { n: 9, id: 'joints', court: 'Joints', nom: 'Joints à lèvres (×2)', mat: 'Élastomère NBR', role: 'Glissés sur les moyeux, ils ferment le carter et gardent la graisse.' },
   { n: 10, id: 'bouchons', court: 'Bouchons', nom: 'Bouchons de graissage (×2)', mat: 'Acier', role: 'Permettent de remplir et de compléter la graisse sans démonter.' },
   { n: 11, id: 'graisse', court: 'Graisse', nom: 'Graisse pour accouplement', mat: 'Graisse spéciale accouplements (NLGI 1 environ)', role: 'Lubrifie le contact grille / rainures. Sans graisse, la grille et les dents s\'usent très vite.' },
-  { n: 12, id: 'arbres', court: 'Arbres', nom: 'Arbres et clavettes', mat: 'Acier C45 / 42CrMo4', role: 'Arbre moteur et arbre machine ; les clavettes transmettent le couple aux moyeux.' },
-  { n: 13, id: 'machine', court: 'Machine', nom: 'Machine entraînée (réducteur)', mat: 'Carter en fonte', role: 'Reçoit le couple. Son arbre doit être bien aligné avec celui du moteur.' }
+  { n: 12, id: 'arbres', court: 'Arbres', nom: 'Arbres et clavettes', mat: 'Acier C45 / 42CrMo4', role: 'Arbre du moteur et arbre d\'entrée du réducteur ; les clavettes transmettent le couple aux moyeux.' },
+  { n: 13, id: 'machine', court: 'Réducteur', nom: 'Réducteur à renvoi d\'angle (machine entraînée)', mat: 'Carter en fonte à ailettes, rapport ≈ 20', role: 'Reçoit le couple du moteur par l\'accouplement sur son arbre rapide, et entraîne le convoyeur par son arbre de sortie lent. Son arbre d\'entrée doit être parfaitement aligné avec celui du moteur.' }
 ];
 
 export const MONTAGE = [
@@ -23,7 +23,7 @@ export const MONTAGE = [
   { t: '1. Glisser les joints sur les arbres', d: 'Les deux joints à lèvres sont enfilés AVANT les moyeux, lèvre tournée vers l\'intérieur du carter. Après, c\'est trop tard !' },
   { t: '2. Monter les moyeux', d: 'Moyeux montés sur les arbres avec leur clavette (chauffés vers 120 °C s\'ils sont frettés, jamais au chalumeau en un point). Face du moyeu au ras du bout d\'arbre.' },
   { t: '3. Régler l\'écartement', d: 'Approcher les machines et régler le jeu entre les faces des moyeux avec une cale d\'épaisseur : 4 mm dans cet exemple (valeur du tableau du fabricant).' },
-  { t: '4. Aligner', d: 'Contrôler au comparateur ou au laser l\'alignement parallèle et angulaire, puis caler les pattes de la machine. Exemple de tolérance de montage : 0,20 mm et 0,10°.' },
+  { t: '4. Aligner', d: 'Contrôler au comparateur ou au laser l\'alignement parallèle et angulaire, puis caler les pattes du moteur (le réducteur, plus lourd, sert de référence). Exemple de tolérance de montage : 0,20 mm et 0,10°.' },
   { t: '5. Graisser les rainures', d: 'Remplir les rainures des deux moyeux de graisse pour accouplement.' },
   { t: '6. Poser les segments de grille', d: 'Placer les segments un par un, tous dans le même sens, en les enfonçant au maillet en caoutchouc. Ne jamais frapper avec un marteau en acier.' },
   { t: '7. Garnir de graisse', d: 'Remplir les espaces entre barreaux et autour de la grille avec la graisse.' },
@@ -33,7 +33,7 @@ export const MONTAGE = [
 
 export const COURS_HTML = `
 <h3>Principe</h3>
-<p>Les deux moyeux portent sur leur pourtour des <b>rainures axiales</b>. Une <b>grille en acier à ressort</b>, pliée en serpentin, est posée dans les rainures des deux moyeux à la fois. Le couple passe du moyeu moteur → barreaux de la grille → moyeu machine. Les barreaux travaillent en <b>flexion</b>, comme des lames de ressort.</p>
+<p>Les deux moyeux portent sur leur pourtour des <b>rainures axiales</b>. Une <b>grille en acier à ressort</b>, pliée en serpentin, est posée dans les rainures des deux moyeux à la fois. Placé entre le moteur et le réducteur, il transmet le couple : moyeu moteur → barreaux de la grille → moyeu réducteur. Les barreaux travaillent en <b>flexion</b>, comme des lames de ressort.</p>
 <h3>Raideur progressive</h3>
 <p>Les flancs des rainures sont <b>courbes</b> : la rainure est étroite côté extérieur et s'élargit vers le jeu entre les moyeux.</p>
 <ul>
@@ -81,6 +81,6 @@ export const QUIZ = [
   { q: 'Que provoque un manque de graisse ?', r: ['Rien', 'Usure rapide de la grille et des rainures, échauffement', 'Une meilleure transmission'], b: 1, e: 'Le contact métal sur métal s\'use très vite et chauffe.' },
   { q: 'On change une grille usée. On remplace…', r: ['Seulement le segment cassé', 'Tous les segments et les joints', 'Seulement la graisse'], b: 1, e: 'On remplace toujours la grille complète et les joints, puis on regraisse.' },
   { q: 'Le désalignement angulaire de service maximum (exemple) est…', r: ['0,25°', '2,5°', '25°'], b: 0, e: 'Un accouplement à grille tolère de petits défauts seulement ; au montage on vise beaucoup mieux (0,10°).' },
-  { q: 'Que se passe-t-il si la machine se bloque net en marche ?', r: ['Le moteur s\'arrête doucement', 'Le pic de couple peut casser la grille', 'La graisse protège tout'], b: 1, e: 'L\'énergie de rotation du moteur se décharge dans la grille : le pic de couple dépasse largement le couple nominal.' },
+  { q: 'Que se passe-t-il si le convoyeur se bloque net derrière le réducteur ?', r: ['Le moteur s\'arrête doucement', 'Le pic de couple peut casser la grille', 'La graisse protège tout'], b: 1, e: 'L\'énergie de rotation du moteur se décharge dans la grille : le pic de couple dépasse largement le couple nominal.' },
   { q: 'Que fait-on avant d\'ouvrir le carter ?', r: ['On ralentit le moteur', 'On consigne le moteur', 'On enlève les bouchons'], b: 1, e: 'Toujours consigner (cadenas) : personne ne doit pouvoir démarrer pendant l\'intervention.' }
 ];

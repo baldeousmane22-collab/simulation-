@@ -55,7 +55,11 @@ const BASE = {
   moteur: { color: 0x5f666c, metalness: 0.35, roughness: 0.6 },
   peint: { color: 0x3f6a82, metalness: 0.3, roughness: 0.62 },
   chassis: { color: 0x3a3f45, metalness: 0.5, roughness: 0.65 },
-  laiton: { color: 0xb08a3c, metalness: 0.9, roughness: 0.35 }
+  laiton: { color: 0xb08a3c, metalness: 0.9, roughness: 0.35 },
+  peintF: { color: 0x34576b, metalness: 0.3, roughness: 0.66 },
+  caoutch: { color: 0x151618, metalness: 0, roughness: 0.82 },
+  verre: { color: 0x9fb4c0, metalness: 0.1, roughness: 0.05, transparent: true, opacity: 0.5 },
+  inox: { color: 0xc7ccd0, metalness: 0.85, roughness: 0.35 }
 };
 const coupePlan = new T.Plane(new T.Vector3(0, 0, -1), 0);          // garde z <= 0
 const matsPiece = {}, cache = {}, matsCoupe = [];
@@ -145,15 +149,46 @@ const spinArbreA = new T.Group(); racine.add(spinArbreA);
 }
 // ---------- alignement côté machine (défauts exagérés) ----------
 const alignB = new T.Group(); racine.add(alignB);
-const gMach = piece('machine', alignB, [14, 0, 0], [35, 13.5, 0]);
+const gMach = piece('machine', alignB, [14, 0, 0], [33, 11.5, 12.5]);
 const spinArbreB = new T.Group(); alignB.add(spinArbreB);
+const spinSortie = new T.Group(); spinSortie.position.set(48, 3, 0); gMach.add(spinSortie);
 {
-  const mp = M('machine', 'peint');
-  boite(gMach, mp, 20, 50, -17, 12, -13, 13);
-  for (let y = -14; y < 11; y += 2.2) { boite(gMach, mp, 22, 48, y - 0.25, y + 0.25, 13, 13.8); boite(gMach, mp, 22, 48, y - 0.25, y + 0.25, -13.8, -13); }
-  maille(gMach, cylX(9, 2.4, 48), mp, 19, 0, 0);
-  maille(gMach, cylX(7, 1.2, 48), M('machine', 'sombre'), 17.4, 0, 0);
-  boite(gMach, mp, 20, 50, -21, -17, -16, 16);
+  // réducteur à renvoi d'angle : carter bleu à ailettes, plan de joint horizontal (y = 0), arbre de sortie perpendiculaire (axe Z)
+  const mp = M('machine', 'peint'), ms = M('machine', 'sombre'), mf = M('machine', 'peintF');
+  const corps = (x0, x1, y0, y1, zz) => {
+    boite(gMach, mp, x0, x1, y0, y1, -zz, zz);
+    for (let y = y0 + 1.4; y < y1 - 0.8; y += 1.8) if (Math.abs(y) > 1.2) {   // ailettes horizontales
+      boite(gMach, mp, x0 + 0.6, x1 - 0.6, y - 0.22, y + 0.22, zz, zz + 1.0); boite(gMach, mp, x0 + 0.6, x1 - 0.6, y - 0.22, y + 0.22, -zz - 1.0, -zz);
+    }
+  };
+  corps(21, 33, -17, 8.5, 9.5);          // côté entrée (couple conique)
+  corps(33, 60, -17, 15, 12);            // côté grandes roues
+  boite(gMach, mf, 20.4, 60.6, -0.6, 0.6, -13.3, 13.3);               // bride du plan de joint
+  for (let x = 23; x < 60; x += 4) for (const z of [-12.9, 12.9]) if (x < 33 ? Math.abs(z) < 13 : true) maille(gMach, hex(0.55, 0.6), ms, x, 0.9, x < 33 ? Math.sign(z) * 10.4 : z, false);
+  boite(gMach, mf, 18, 62, -21, -17, -15, 15);                       // pattes / semelle
+  // palier d'entrée + couvercle boulonné
+  maille(gMach, cylX(7.5, 3, 48), mp, 19.5, 0, 0);
+  maille(gMach, cylX(6.8, 0.8, 48), mf, 17.8, 0, 0);
+  for (let i = 0; i < 8; i++) { const a = i / 8 * TAU; const b = maille(gMach, hex(0.5, 0.5), ms, 17.2, Math.cos(a) * 5.8, Math.sin(a) * 5.8, false); b.rotation.z = Math.PI / 2; }
+  maille(gMach, cylX(5.9, 0.6, 40), M('machine', 'caoutch'), 17.1, 0, 0);
+  // couvercles de paliers sur les faces avant / arrière, arbre de sortie côté -Z
+  [[27, 3, 9.5, 4.5], [40, 3, 12, 5.5], [48, 3, 12, 7.5]].forEach(([x, y, z, r]) => {
+    for (const sg of [1, -1]) {
+      maille(gMach, new T.CylinderGeometry(r, r, 1.6, 48).rotateX(Math.PI / 2), mp, x, y, sg * (z + 1.8));
+      maille(gMach, new T.CylinderGeometry(r * 0.9, r * 0.9, 0.5, 48).rotateX(Math.PI / 2), mf, x, y, sg * (z + 2.85));
+      for (let i = 0; i < 8; i++) { const a = i / 8 * TAU; const b = maille(gMach, hex(0.45, 0.45), ms, x + Math.cos(a) * r * 0.75, y + Math.sin(a) * r * 0.75, sg * (z + 3.2), false); b.rotation.x = Math.PI / 2; }
+    }
+  });
+  // anneaux de levage, reniflard, voyant d'huile
+  [[26, 8.5], [55, 15]].forEach(([x, y]) => maille(gMach, new T.TorusGeometry(1.4, 0.4, 10, 24), mf, x, y + 1.5, 0));
+  maille(gMach, new T.CylinderGeometry(0.8, 0.6, 1.6, 16), ms, 44, 15.8, 4);
+  boite(gMach, ms, 59.9, 60.6, -12, -6, -1, 1); boite(gMach, M('machine', 'verre'), 60.6, 60.8, -11.5, -6.5, -0.6, 0.6);
+  // plaque signalétique
+  boite(gMach, M('machine', 'inox'), 40, 47, 5, 9, 13.02, 13.12);
+  // arbre de sortie (lent), clavette et petite flèche de rotation
+  const mo = M('machine', 'acier');
+  maille(spinSortie, new T.CylinderGeometry(4.2, 4.2, 12, 40).rotateX(Math.PI / 2), mo, 0, 0, -20);
+  boite(spinSortie, M('machine', 'sombre'), -0.8, 0.8, 3.7, 4.6, -25.5, -16);
   const ma = M('arbres', 'acier');
   maille(spinArbreB, cylX(5.5, 19.6), ma, 10.0, 0, 0);
   boite(spinArbreB, M('arbres', 'sombre'), 0.3, 19.5, 5.0, 6.2, -1.4, 1.4);
@@ -332,10 +367,10 @@ const gComp = new T.Group(); racine.add(gComp);
 // ---------- caméra (1 doigt : tourner ; 2 doigts : zoom + déplacement) ----------
 const cam = { az: 0, el: 0, d: 80, c: new T.Vector3() }, cible = { az: 0, el: 0, d: 80, c: new T.Vector3() };
 const VUES = {
-  normale: { az: 0.38, el: 0.28, d: 125, c: [-3, -3, 0] },
+  normale: { az: 0.38, el: 0.28, d: 135, c: [2, -3, 0] },
   coupe: { az: 0.42, el: 0.28, d: 62, c: [0, -1, 0] },
   sanscarter: { az: 0.45, el: 0.36, d: 58, c: [0, 0, 0] },
-  eclatee: { az: 0.3, el: 0.3, d: 125, c: [0, 1, 0] },
+  eclatee: { az: 0.3, el: 0.3, d: 135, c: [2, 1, 0] },
   montage: { az: 0.45, el: 0.32, d: 80, c: [0, 2, 0] }
 };
 function cadrer(nom) {
@@ -463,13 +498,13 @@ function simuler(dtSim) {
     const cr = (etat.charge * C_MOT + etat.choc + (etat.bloc ? 60000 : 0)) * Math.max(-1, Math.min(1, etat.wl / 4)) + 30 * Math.sign(etat.wl);
     etat.wm += (cm - cc - 0.4 * etat.wm) / J_M * dt;
     etat.wl += (cc - cr) / J_L * dt;
-    if (etat.bloc && !etat.casse && Math.abs(etat.wl) < 0.5 && Math.abs(cc) < 60000) etat.wl = 0;   // machine coincée
+    if (etat.bloc && !etat.casse && Math.abs(etat.wl) < 0.5 && Math.abs(cc) < 60000) etat.wl = 0;   // réducteur / convoyeur coincé
     if (!etat.marche && etat.wm < 0.05 && etat.wm > -0.05) etat.wm = 0;
     if (Math.abs(etat.wl) < 0.02 && Math.abs(cc) < 40) etat.wl = 0;
     if (!etat.casse) etat.phi += (etat.wm - etat.wl) * dt;
     etat.cc = cc; if (Math.abs(cc) > etat.pic) etat.pic = Math.abs(cc);
     const cg = Math.abs(coupleGrille(etat.phi));
-    if (!etat.casse && cg > 2.5 * CN) { etat.casse = true; etat.pic = Math.max(etat.pic, cg); etat.phi = 0; etat.declenche = 'casse'; dire('RUPTURE DE LA GRILLE : le couple dans la grille (' + fmt(cg) + ' N·m) a dépassé la résistance de la grille. La machine n\'est plus entraînée.'); }
+    if (!etat.casse && cg > 2.5 * CN) { etat.casse = true; etat.pic = Math.max(etat.pic, cg); etat.phi = 0; etat.declenche = 'casse'; dire('RUPTURE DE LA GRILLE : le couple dans la grille (' + fmt(cg) + ' N·m) a dépassé la résistance de la grille. Le réducteur n\'est plus entraîné.'); }
     hAcc += dt; if (hAcc >= 1e-3) { hAcc = 0; hist[hIdx] = cc / CN; hIdx = (hIdx + 1) % hist.length; }
   }
   if (etat.choc > 0) { etat.tChoc -= dtSim; if (etat.tChoc <= 0) etat.choc = 0; }
@@ -497,6 +532,7 @@ function appliquer(dtR, dtSim) {
   alignB.position.set((etat.gap - 4) / 10, -etat.par / 10 * EXA_PAR, 0);
   spinA.rotation.x = spinArbreA.rotation.x = spinCH.rotation.x = spinCB.rotation.x = spinJA.rotation.x = spinJB.rotation.x = spinG.rotation.x = etat.angA;
   spinB.rotation.x = spinArbreB.rotation.x = etat.angB;
+  spinSortie.rotation.z = -etat.angB / 20;          // arbre de sortie du réducteur (rapport ≈ 20)
   // vue éclatée + montage
   const k = dtR ? 1 - Math.exp(-dtR * 4) : 1;
   etat.ecl += (etat.eclCible - etat.ecl) * k; if (Math.abs(etat.ecl - etat.eclCible) < 1e-3) etat.ecl = etat.eclCible;
@@ -627,7 +663,7 @@ $('#bLent').onclick = () => { etat.lent = !etat.lent; };
 $('#bPause').onclick = () => { etat.pause = !etat.pause; };
 $('#sCh').oninput = e => { etat.charge = +e.target.value / 100; $('#vCh').textContent = e.target.value + ' %'; };
 $('#bChoc').onclick = () => { if (!etat.marche) { dire('Démarrez d\'abord.'); return; } etat.choc = 2.2 * C_MOT; etat.tChoc = 0.25; etat.pic = 0; dire('À-coup : bourrage de 0,25 s (couple résistant + 2,2 × nominal moteur). Regardez la courbe : la grille amortit le choc.'); };
-$('#bBloc').onclick = () => { if (!etat.marche) { dire('Démarrez d\'abord.'); return; } etat.bloc = true; etat.pic = 0; dire('Blocage net de la machine : toute l\'énergie de rotation du moteur se décharge dans la grille…'); };
+$('#bBloc').onclick = () => { if (!etat.marche) { dire('Démarrez d\'abord.'); return; } etat.bloc = true; etat.pic = 0; dire('Blocage net (convoyeur coincé derrière le réducteur) : toute l\'énergie de rotation du moteur se décharge dans la grille…'); };
 function majCurseurs() {
   $('#sAng').value = etat.ang; $('#vAng').textContent = fmt(etat.ang, 2) + '°';
   $('#sPar').value = etat.par; $('#vPar').textContent = fmt(etat.par, 2) + ' mm';
